@@ -32,6 +32,7 @@ import qualified Util.Exception as UE
     KW_FINAL            { t@(Lex.Ident "final" _) }
     KW_MUT              { t@(Lex.Ident "mut" _) }
     KW_INLINE           { t@(Lex.Ident "inline" _) }
+    KW_NATIVE           { t@(Lex.Ident "native" _) }
 
     KW_PUBLIC           { t@(Lex.Ident "public" _) }
     KW_PROTECTED        { t@(Lex.Ident "protected" _) }
@@ -98,14 +99,17 @@ import qualified Util.Exception as UE
 
     -- literals / identifiers
     identity            { t@(Lex.Ident _ _) }
+    annotation          { t@(Lex.Annotation _ _ _) }
     number              { t@(Lex.NumberConst _ _) }
     character           { t@(Lex.CharConst _ _) }
     string              { t@(Lex.StrConst _ _) }
+    nativebody          { t@(Lex.NativeBody _ _) }
 
     '('                 { t@(Lex.Symbol Lex.LParen _) }
     ')'                 { t@(Lex.Symbol Lex.RParen _) }
     '{'                 { t@(Lex.Symbol Lex.LBrace _) }
     '}'                 { t@(Lex.Symbol Lex.RBrace _) }
+    '@'                 { t@(Lex.Symbol Lex.At _) }
     
     ';'                 { t@(Lex.Symbol Lex.Semicolon _) }
     ','                 { t@(Lex.Symbol Lex.Comma _) }
@@ -113,6 +117,7 @@ import qualified Util.Exception as UE
     '::'                { t@(Lex.Symbol Lex.DoubleColon _) }
     '->'                { t@(Lex.Symbol Lex.Arrow _) }
     '!->'                { t@(Lex.Symbol Lex.NotArrow _) }
+    '<->'               { t@(Lex.Symbol Lex.IffArrow _) }
     '=>'                { t@(Lex.Symbol Lex.FatArrow _) }
     '.'                 { t@(Lex.Symbol Lex.Dot _) }
 
@@ -124,7 +129,10 @@ import qualified Util.Exception as UE
 -- helper precedence for ternary "if ... else ..."
 %right KW_IF
 
--- 17: logical-implication
+-- 17: logical-iff (lower than implication)
+%right '<->'
+
+-- 18: logical-implication
 %right '->' '!->'
 
 -- 16: logical-or
@@ -184,7 +192,10 @@ import qualified Util.Exception as UE
 #include "Parse/GrammarStmtBlock"
 #include "Parse/GrammarExpr"
 
-StmtEOF :: { Statement } :      Stmt EOF { $1 };
+StmtEOF :: { Statement }
+    : Stmt EOF       { $1 }
+    | Stmt Sep EOF   { $1 }
+    ;
 
 {
 -- Happy 2.0 expects a polymorphic error handler.

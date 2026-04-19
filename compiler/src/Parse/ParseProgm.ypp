@@ -43,8 +43,9 @@ import qualified Util.FileHelper as FileHelper
 
     KW_PACKAGE          { t@(Lex.Ident "package" _) }
     KW_IMPORT           { t@(Lex.Ident "import" _) }
-    KW_JAVANAME         { t@(Lex.Ident "javaname" _) }
+    KW_CLASSNAME        { t@(Lex.Ident "classname" _) }
     KW_JVMCLASS         { t@(Lex.Ident "JvmClass" _) }
+    KW_NATIVE           { t@(Lex.Ident "native" _) }
 
     KW_AS               { t@(Lex.Ident "as" _) }
     KW_IF               { t@(Lex.Ident "if" _) }
@@ -106,9 +107,11 @@ import qualified Util.FileHelper as FileHelper
 
     -- literals / identifiers
     identity            { t@(Lex.Ident _ _) }
+    annotation          { t@(Lex.Annotation _ _ _) }
     number              { t@(Lex.NumberConst _ _) }
     character           { t@(Lex.CharConst _ _) }
     string              { t@(Lex.StrConst _ _) }
+    nativebody          { t@(Lex.NativeBody _ _) }
 
     '('                 { t@(Lex.Symbol Lex.LParen _) }
     ')'                 { t@(Lex.Symbol Lex.RParen _) }
@@ -122,6 +125,7 @@ import qualified Util.FileHelper as FileHelper
     '::'                { t@(Lex.Symbol Lex.DoubleColon _) }
     '->'                { t@(Lex.Symbol Lex.Arrow _) }
     '!->'                { t@(Lex.Symbol Lex.NotArrow _) }
+    '<->'               { t@(Lex.Symbol Lex.IffArrow _) }
     '=>'                { t@(Lex.Symbol Lex.FatArrow _) }
     '.'                 { t@(Lex.Symbol Lex.Dot _) }
 
@@ -133,7 +137,10 @@ import qualified Util.FileHelper as FileHelper
 -- helper precedence for ternary "if ... else ..."
 %right KW_IF
 
--- 17: logical-implication
+-- 17: logical-iff (lower than implication)
+%right '<->'
+
+-- 18: logical-implication
 %right '->' '!->'
 
 -- 16: logical-or
@@ -195,7 +202,27 @@ import qualified Util.FileHelper as FileHelper
 
 
 ProgramEOF :: { Program }
-    : DeclSeqOpt StmtSeqOpt EOF { ($1, $2) }
+    : EOF                               { ([], []) }
+    | TopSeq EOF                        { splitTopItems (reverse $1) }
+    | SepSeq EOF                        { ([], []) }
+    | SepSeq TopSeq EOF                 { splitTopItems (reverse $2) }
+    | TopSeq SepSeq EOF                 { splitTopItems (reverse $1) }
+    | SepSeq TopSeq SepSeq EOF          { splitTopItems (reverse $2) }
+
+
+TopItem :: { Either Declaration Statement }
+    : Decl { Left $1 }
+    | Stmt { Right $1 }
+
+
+TopSeq :: { [Either Declaration Statement] }
+    : TopItem            { [$1] }
+    | TopSeq TopItem     { $2 : $1 }
+
+
+SepSeq :: { () }
+    : Sep                { () }
+    | SepSeq Sep         { () }
 
 
 {
@@ -232,5 +259,14 @@ fileLexparseProgm p = do
     case result of
         Left err -> pure (Left [err])
         Right code -> pure (lexparseProgm p code)
+
+
+splitTopItems :: [Either Declaration Statement] -> Program
+splitTopItems = foldr step ([], [])
+    where
+        step :: Either Declaration Statement -> Program -> Program
+        step one (decls, stmts) = case one of
+            Left d -> (d : decls, stmts)
+            Right s -> (decls, s : stmts)
 }
 
