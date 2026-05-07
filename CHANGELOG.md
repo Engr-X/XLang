@@ -1,5 +1,25 @@
 # Revision history for xlang
 
+## Alpha-1.1.2 -- 2026-05-07
+
+### Build & Runtime Layout
+
+- Renamed native runtime base library from `libxlang-base` to `libxlang-core`.
+- Updated root build pipeline to align with split runtime projects:
+  - compiler -> syslib staging -> `runtime/core` -> `runtime/gc` + `runtime/exception` -> `libs/std/native` -> tools.
+- Updated `runtime/core`, `libs/std/native`, and compiler-side references to use `libxlang-core` consistently.
+
+### Windows Linking
+
+- Fixed x64 `--include-runtime` link failure caused by picking wrong-architecture local `libgcc.a`/`libgcc_eh.a`.
+- Compiler linker now avoids resolving MinGW toolchain runtime libs from local `xlang/native` and prefers current toolchain paths discovered from `ld`.
+- `stage_syslibs` now filters GCC search paths by target triple (default `x86_64-w64-mingw32`) to avoid staging i386 artifacts into x64 builds.
+- Fixed `stage_syslibs` shell syntax issue in Makefile (`if ... then` parse error under `/bin/sh`).
+
+### Clean Targets
+
+- Updated root `clean` / `clean_ide` to include moved runtime and native project IDE/build cleanup paths (`runtime/core`, `runtime/gc`, `runtime/exception`, `libs/std/native`).
+
 ## Alpha-1.1.1 -- 2026-04-28
 
 ### Compiler & Language
@@ -44,7 +64,7 @@
 
 - Added/expanded x64 target build usage in project docs.
 - Native std build flow under `libs/std/native` now includes both:
-  - `libxlang-base`
+  - `libxlang-core`
   - `libxlang-std`
 - Fixed native std Makefile path-resolution issue so `XLANG_EXE` resolves from repo root build output.
 
