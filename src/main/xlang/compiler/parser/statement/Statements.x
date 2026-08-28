@@ -30,10 +30,6 @@ import xlang.util.string.StringBuilder
 
 struct Statements
 {
-    static fun compareTokenPosition(left: pointer<*>, right: pointer<*>) -> int =
-        TokenPosition.compareToken(left, right)
-
-
     private val statements: pointer<ArrayList>
 
     private var extraTokens: pointer<ArrayList>
@@ -104,7 +100,7 @@ struct Statements
         }
 
         result.pushAll(this.extraTokens)
-        result.setCmparator(Statements.compareTokenPosition)
+        result.setComparator(TokenPosition.compareToken)
         result.sort()
         return result
     }
