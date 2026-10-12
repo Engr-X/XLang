@@ -226,14 +226,11 @@ struct PackageTree
 
 
     constructor():
-        this.root = null
+        this.root = PackageNode.fromRoot()
 
 
     fun registerPackage(qname: pointer<ArrayList>) -> pointer<PackageNode>
     {
-        if this.root == null:
-            this.root = PackageNode.fromRoot()
-
         var current: pointer<PackageNode> = this.root
 
         if qname == null:
