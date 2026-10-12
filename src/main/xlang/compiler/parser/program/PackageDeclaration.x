@@ -255,50 +255,46 @@ struct PackageDeclaration
  * <p>{@code PackageDeclarationMaybe} is used by parser productions in which a
  * package declaration may be absent.
  *
- * <p>Unlike wrappers that normalize a missing value into an empty AST object,
- * this structure preserves the absence of a package declaration using a
- * {@code null} pointer.
- *
- * <p>The wrapper therefore allows callers to distinguish between a source file
- * that explicitly contains a package declaration and one that contains no
- * package declaration at all.
+ * <p>When a source file has no explicit package declaration, this wrapper
+ * normalizes that absence to a {@code PackageDeclaration} with an empty
+ * qualified name. The empty qualified name represents the root package.
  */
 struct PackageDeclarationMaybe
 {
     /**
      * The optional package declaration represented by this wrapper.
      *
-     * <p>A {@code null} value indicates that no package declaration was present.
+     * <p>This pointer is normalized to a non-null declaration. An empty qualified
+     * name represents the root package.
      */
     private var packageDeclaration: pointer<PackageDeclaration>
 
 
     /**
-     * Creates an empty optional package declaration.
+     * Creates a package declaration representing the root package.
      *
-     * <p>The internal package-declaration pointer is initialized to
-     * {@code null}, explicitly representing the absence of a package
-     * declaration.
+     * <p>The internal declaration has an empty qualified-name collection.
      */
     constructor():
-        this.packageDeclaration = null
+        this.packageDeclaration = new PackageDeclaration(null)
 
 
     /**
      * Creates an optional package-declaration wrapper around the supplied
      * declaration.
      *
-     * <p>The supplied pointer is stored directly and is not copied or cloned.
-     *
-     * <p>If {@code packageDeclaration} is {@code null}, this wrapper represents
-     * the absence of a package declaration.
+     * <p>A non-null pointer is stored directly and is not copied or cloned.
+     * If {@code packageDeclaration} is {@code null}, a root-package declaration
+     * with an empty qualified name is created instead.
      *
      * @param packageDeclaration	a pointer to the package declaration to
-     * 					            store, or {@code null} if no declaration is
-     * 					            present
+     * 					            store, or {@code null} to represent the root package
      */
     constructor(packageDeclaration: pointer<PackageDeclaration>):
-        this.packageDeclaration = packageDeclaration
+        this.packageDeclaration = if packageDeclaration == null:
+                new PackageDeclaration(null)
+            else:
+                packageDeclaration
 
 
     /**
@@ -307,11 +303,10 @@ struct PackageDeclarationMaybe
      * <p>The returned pointer refers directly to the internally stored
      * {@code PackageDeclaration} and is not copied or cloned.
      *
-     * <p>The result is {@code null} when the parser did not produce a package
-     * declaration.
+     * <p>The result is never {@code null}; the root package is represented by a
+     * declaration whose qualified-name collection is empty.
      *
-     * @return				    a pointer to the stored package declaration, or
-     * 					        {@code null} if no package declaration is present
+     * @return				    a pointer to the stored package declaration
      */
     fun toPackageDeclaration() -> pointer<PackageDeclaration> = this.packageDeclaration
 }

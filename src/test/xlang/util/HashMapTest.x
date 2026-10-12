@@ -46,18 +46,11 @@ fun genTest() -> pointer<TestGroup>
 }
 
 
-private fun intCmp(left: pointer<*>, right: pointer<*>) -> int
+private fun intEq(left: pointer<*>, right: pointer<*>) -> bool
 {
     val lhs: int = (left as pointer<int>).deref
     val rhs: int = (right as pointer<int>).deref
-
-    if lhs == rhs:
-        return 0
-
-    return if lhs < rhs:
-        -1
-    else:
-        1
+    return lhs == rhs
 }
 
 
@@ -67,7 +60,7 @@ private fun intHash(value: pointer<*>) -> int =
 
 private fun putGetTest() -> int
 {
-    val map: pointer<HashMap> = new HashMap(intCmp, intHash)
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
     val keySpace: blob[sizeof(int) * 3]
     val valueSpace: blob[sizeof(int) * 3]
     val keys: pointer<int> = keySpace as pointer<int>
@@ -128,7 +121,7 @@ private fun putGetTest() -> int
 
 private fun putIfAbsentTest() -> int
 {
-    val map: pointer<HashMap> = new HashMap(intCmp, intHash)
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
     val keySpace: blob[sizeof(int) * 2]
     val valueSpace: blob[sizeof(int) * 2]
     val keys: pointer<int> = keySpace as pointer<int>
@@ -168,7 +161,7 @@ private fun putIfAbsentTest() -> int
 
 private fun removeClearTest() -> int
 {
-    val map: pointer<HashMap> = new HashMap(intCmp, intHash)
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
     val keySpace: blob[sizeof(int) * 4]
     val valueSpace: blob[sizeof(int) * 3]
     val keys: pointer<int> = keySpace as pointer<int>
@@ -221,7 +214,7 @@ private fun removeClearTest() -> int
 
 private fun getEntriesTest() -> int
 {
-    val map: pointer<HashMap> = new HashMap(intCmp, intHash)
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
     val keySpace: blob[sizeof(int) * 2]
     val valueSpace: blob[sizeof(int) * 2]
     val keys: pointer<int> = keySpace as pointer<int>
@@ -275,7 +268,7 @@ private fun getEntriesTest() -> int
 
 private fun toArrayTest() -> int
 {
-    val map: pointer<HashMap> = new HashMap(intCmp, intHash)
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
     val keySpace: blob[sizeof(int) * 3]
     val valueSpace: blob[sizeof(int) * 3]
     val keys: pointer<int> = keySpace as pointer<int>

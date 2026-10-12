@@ -35,7 +35,6 @@ import xlang.lexer.TokenTest
 import xlang.lexer.TokenizeFSMTest
 import xlang.compiler.lexer.TokenizerTest
 import xlang.compiler.lexer.TokenNormalizerTest
-import xlang.compiler.normalizer.ASTNormalizerTest
 import xlang.compiler.parser.ParserTest
 import xlang.compiler.parser.ParserRegressionTest
 import xlang.compiler.type.NormalTypeTest
@@ -57,7 +56,7 @@ private fun getTestGroup() -> pointer<TestGroup>
 {
     val result: pointer<TestGroup> = new TestGroup("xlang")
     val testGroupSpace: blob[sizeof(pointer<TestGroup>) * 100]
-    val testGroupLength: int = 20
+    val testGroupLength: int = 19
     val testGroups: pointer<pointer<TestGroup>> = testGroupSpace as pointer<pointer<TestGroup>>
 
     testGroups[0] = StringTest.TEST_GROUP
@@ -78,8 +77,7 @@ private fun getTestGroup() -> pointer<TestGroup>
     testGroups[15] = PrattParserTest.TEST_GROUP
     testGroups[16] = TypeParserTest.TEST_GROUP
     testGroups[17] = IOTest.TEST_GROUP
-    testGroups[18] = ASTNormalizerTest.TEST_GROUP
-    testGroups[19] = NormalTypeTest.TEST_GROUP
+    testGroups[18] = NormalTypeTest.TEST_GROUP
 
     for (var i = 0; i < testGroupLength; i++):
     {

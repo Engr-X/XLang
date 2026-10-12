@@ -124,7 +124,7 @@ private fun selectiveImportCanResolveTest() -> int
     if normalType.canResolve(importDecl):
         return 1
 
-    if !normalType.isPackageUnresolved():
+    if normalType.isResolved():
         return 2
 
     if !String.streq(normalType.getTypeName(), "Node"):

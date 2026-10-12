@@ -24,15 +24,12 @@
         { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.AnyKind" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.AnyKind" }], "pivot_index": "1", "action": "deleteLineTerminatorAfterBanToken" }
     ],
     "others": [
-        [   "private fun tokenKindCmp(left: pointer<*>, right: pointer<*>) -> int",
+        [   "private fun tokenKindEq(left: pointer<*>, right: pointer<*>) -> bool",
             "{",
             "    val lhs: int = (left as pointer<int>).deref",
             "    val rhs: int = (right as pointer<int>).deref",
             "",
-            "    if lhs == rhs:",
-            "        return 0",
-            "",
-            "    return (if lhs < rhs: -1 else: 1)",
+            "    return lhs == rhs",
             "}" ],
 
 
@@ -97,7 +94,7 @@
 
         [   "private fun initBanAfter() -> pointer<HashSet>",
             "{",
-            "    val result: pointer<HashSet> = new HashSet(sizeof(int), tokenKindCmp, tokenKindHash)",
+            "    val result: pointer<HashSet> = new HashSet(sizeof(int), tokenKindEq, tokenKindHash)",
             "",
             "    addCommonBanKinds(result)",
             "",
@@ -107,7 +104,7 @@
 
         [   "private fun initBanBefore() -> pointer<HashSet>",
             "{",
-            "    val result: pointer<HashSet> = new HashSet(sizeof(int), tokenKindCmp, tokenKindHash)",
+            "    val result: pointer<HashSet> = new HashSet(sizeof(int), tokenKindEq, tokenKindHash)",
             "",
             "    addCommonBanKinds(result)",
             "    addBanKind(result, Tokenizer.DOUBLE_PLUS)",

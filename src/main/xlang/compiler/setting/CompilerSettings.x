@@ -25,6 +25,7 @@ package xlang.compiler.setting
 import xlang.System
 import xlang.compiler.parser.expression.Atom
 import xlang.compiler.parser.program.PreprocessSetting
+import xlang.util.ArrayList
 import xlang.util.IO
 import xlang.util.string.StringBuilder
 
@@ -232,6 +233,31 @@ struct CompilerSettings
             val token: pointer<Token> = atom.getAllTokens().get(0) as pointer<Token>
             this.outerClass = token.text
         }
+
+        return this
+    }
+
+
+    /**
+     * Applies all preprocessing settings to this compiler settings instance.
+     *
+     * <p>Settings are applied in list order through {@link #set}. If the same
+     * option appears more than once, the later setting may replace the value
+     * established by an earlier one.
+     *
+     * <p>If {@code settings} is {@code null}, no changes are made.
+     *
+     * @param settings          preprocessing settings to apply, or {@code null}
+     *
+     * @return                  this {@code CompilerSettings} instance
+     */
+    fun setAll(settings: pointer<ArrayList>) -> pointer<CompilerSettings>
+    {
+        if settings == null:
+            return this
+
+        for (var i = 0; i < settings.length; i++):
+            this.set(settings.get(i) as pointer<PreprocessSetting>)
 
         return this
     }

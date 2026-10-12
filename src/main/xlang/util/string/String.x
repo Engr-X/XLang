@@ -379,6 +379,51 @@ fun strHash(item: pointer<*>) -> int
 
 
 /**
+ * Compares two lists of strings for equality.
+ *
+ * Two lists are considered equal if they have the same length and all
+ * corresponding strings are equal. Null pointers are considered equal
+ * only when both arguments are null.
+ *
+ * @param left                  Pointer to the first ArrayList containing strings.
+ * @param right                 Pointer to the second ArrayList containing strings.
+ *
+ * @return                      True if both lists are equal, false otherwise.
+ */
+fun stringListEq(left: pointer<*>, right: pointer<*>) -> bool
+{
+    val lhs: pointer<ArrayList> = left as pointer<ArrayList>
+    val rhs: pointer<ArrayList> = right as pointer<ArrayList>
+
+    if lhs == rhs:
+        return true
+
+    if lhs == null || rhs == null:
+        return false
+
+    if lhs.length != rhs.length:
+        return false
+
+    for (var i: int = 0; i < lhs.length; i++):
+    {
+        val lhsSlot: pointer<pointer<char>> =
+            lhs.get(i) as pointer<pointer<char>>
+
+        val rhsSlot: pointer<pointer<char>> =
+            rhs.get(i) as pointer<pointer<char>>
+
+        val lhsStr: pointer<char> = lhsSlot.deref
+        val rhsStr: pointer<char> = rhsSlot.deref
+
+        if !streq(lhsStr, rhsStr):
+            return false
+    }
+
+    return true
+}
+
+
+/**
  * Compares two lists of strings lexicographically.
  *
  * <p>Both arguments are expected to point to {@link ArrayList} instances

@@ -779,7 +779,7 @@ struct Function
     constructor(functionName: pointer<char>, params: pointer<FunctionParams>, bodyExpr: pointer<Expression>)
     {
         this.annotations = new ArrayList(sizeof(Annotation))
-        this.modifiers = new HashSet(sizeof(Modifier), Modifier.compareModifier, Modifier.hashcode)
+        this.modifiers = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
         this.functionName = functionName
         this.params = params
         this.returnType = null
@@ -885,7 +885,7 @@ struct Function
     fun setModifiers(modifiers: pointer<HashSet>) -> pointer<Function>
     {
         this.modifiers = if modifiers == null:
-                new HashSet(sizeof(Modifier), Modifier.compareModifier, Modifier.hashcode)
+                new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
             else:
                 modifiers
 

@@ -29,26 +29,33 @@ import xlang.util.HashMap
 import xlang.util.string.String
 
 
-private fun importPackageNameCmp(left: pointer<*>, right: pointer<*>) -> int
+/**
+ * Compares two imported package names for equality.
+ *
+ * <p>Package names are considered equal if they contain the same number of
+ * components and all corresponding components are equal.
+ *
+ * @param left              first imported package name
+ * @param right             second imported package name
+ *
+ * @return                  {@code true} if both package names are equal;
+ *                          {@code false} otherwise
+ */
+private fun importPackageNameEq(left: pointer<*>, right: pointer<*>) -> bool
 {
     val lhs: pointer<ArrayList> = left as pointer<ArrayList>
     val rhs: pointer<ArrayList> = right as pointer<ArrayList>
 
     if lhs == rhs:
-        return 0
+        return true
 
-    if lhs == null:
-        return -1
+    if lhs == null || rhs == null:
+        return false
 
-    if rhs == null:
-        return 1
+    if lhs.length != rhs.length:
+        return false
 
-    val length: int = if lhs.length < rhs.length:
-            lhs.length
-        else:
-            rhs.length
-
-    for (var i: int = 0; i < length; i++):
+    for (var i: int = 0; i < lhs.length; i++):
     {
         val lhsSlot: pointer<pointer<char>> = lhs.get(i) as pointer<pointer<char>>
         val rhsSlot: pointer<pointer<char>> = rhs.get(i) as pointer<pointer<char>>
@@ -66,19 +73,14 @@ private fun importPackageNameCmp(left: pointer<*>, right: pointer<*>) -> int
         if lhsStr == rhsStr:
             continue
 
-        if lhsStr == null:
-            return -1
+        if lhsStr == null || rhsStr == null:
+            return false
 
-        if rhsStr == null:
-            return 1
-
-        val cmp: int = String.strcmp(lhsStr, rhsStr)
-
-        if cmp != 0:
-            return cmp
+        if !String.streq(lhsStr, rhsStr):
+            return false
     }
 
-    return lhs.length - rhs.length
+    return true
 }
 
 
@@ -174,7 +176,7 @@ struct Imports
 
     constructor()
     {
-        this.packages = new HashMap(importPackageNameCmp, importPackageNameHash)
+        this.packages = new HashMap(importPackageNameEq, importPackageNameHash)
     }
 
 

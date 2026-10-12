@@ -287,7 +287,7 @@ struct ImportDeclarationsMaybe
      * imports can be represented without retaining a {@code null} list pointer.
      */
     constructor():
-        this.imports = new ArrayList(sizeof(NamespaceImport))
+        this.imports = new ArrayList(sizeof(ImportDeclaration))
 
 
     /**

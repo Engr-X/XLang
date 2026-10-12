@@ -35,24 +35,24 @@ struct MapEntry
 
     var value: pointer<*>
 
-    var keyCmp: (pointer<*>, pointer<*>) -> int
+    var keyEq: (pointer<*>, pointer<*>) -> bool
 
     var keyHashCode: (pointer<*>) -> int
 
 
     constructor(key: pointer<*>, value: pointer<*>,
-        keyCmp: (pointer<*>, pointer<*>) -> int, keyHashCode: (pointer<*>) -> int
+        keyEq: (pointer<*>, pointer<*>) -> bool, keyHashCode: (pointer<*>) -> int
     )
     {
         this.key = key
         this.value = value
-        this.keyCmp = keyCmp
+        this.keyEq = keyEq
         this.keyHashCode = keyHashCode
     }
 }
 
 
-private fun hashMapEntryCmp(a: pointer<*>, b: pointer<*>) -> int
+private fun hashMapEntryEq(a: pointer<*>, b: pointer<*>) -> bool
 {
     val entryA: pointer<MapEntry> =
         a as pointer<MapEntry>
@@ -60,10 +60,7 @@ private fun hashMapEntryCmp(a: pointer<*>, b: pointer<*>) -> int
     val entryB: pointer<MapEntry> =
         b as pointer<MapEntry>
 
-    return entryA.keyCmp(
-        entryA.key,
-        entryB.key
-    )
+    return entryA.keyEq(entryA.key, entryB.key)
 }
 
 
@@ -81,20 +78,20 @@ struct HashMap
 
     private var entries: pointer<HashSet>
 
-    private var keyCmp: (pointer<*>, pointer<*>) -> int
+    private var keyEq: (pointer<*>, pointer<*>) -> bool
 
     private var keyHashCode: (pointer<*>) -> int
 
 
-    constructor(cmp: (pointer<*>, pointer<*>) -> int, hashCode: (pointer<*>) -> int)
+    constructor(cmp: (pointer<*>, pointer<*>) -> bool, hashCode: (pointer<*>) -> int)
     {
         this.length = 0
-        this.keyCmp = cmp
+        this.keyEq = cmp
         this.keyHashCode = hashCode
 
         this.entries = new HashSet(
             sizeof(MapEntry),
-            hashMapEntryCmp,
+            hashMapEntryEq,
             hashMapEntryHashCode
         )
     }
@@ -104,7 +101,7 @@ struct HashMap
     {
         entry.key = key
         entry.value = value
-        entry.keyCmp = this.keyCmp
+        entry.keyEq = this.keyEq
         entry.keyHashCode = this.keyHashCode
     }
 
@@ -115,7 +112,7 @@ struct HashMap
         {
             val entry: pointer<MapEntry> = this.entries.get(i) as pointer<MapEntry>
 
-            if entry != null && this.keyCmp(entry.key, key) == 0:
+            if entry != null && this.keyEq(entry.key, key):
                 return entry
         }
 
@@ -212,7 +209,7 @@ struct HashMap
     {
         this.entries = new HashSet(
             sizeof(MapEntry),
-            hashMapEntryCmp,
+            hashMapEntryEq,
             hashMapEntryHashCode
         )
 

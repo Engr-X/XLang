@@ -3,9 +3,7 @@ package xlang.compiler.parser
 
 
 import xlang.Operation
-import xlang.compiler.type.Type
 import xlang.compiler.lexer.Tokenizer
-import xlang.compiler.parser.expression.Assignment
 import xlang.compiler.parser.expression.Atom
 import xlang.compiler.parser.expression.Expression
 import xlang.compiler.parser.expression.ExpressionDesugar
@@ -57,6 +55,7 @@ import xlang.compiler.parser.statement.WhileStatement
 import xlang.compiler.parser.stmtexpr.Block
 import xlang.compiler.parser.stmtexpr.IfElseExpression
 import xlang.compiler.parser.stmtexpr.IfExpression
+import xlang.compiler.type.Type
 import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.lexer.TokenPosition
@@ -198,31 +197,6 @@ private fun makeExprFromPostfixWith(
 
     val expression: pointer<Expression> = getContainerValue(results, 0) as pointer<Expression>
     val result: pointer<Expression> = build(op, expression)
-
-    if result == null:
-        return null
-
-    return result.addExtraToken(opToken)
-}
-
-private fun makeExprFromAssignWithBuilder(
-    results: pointer<ArrayList>,
-    build: (pointer<Operation>, pointer<Expression>, pointer<Expression>) -> pointer<Expression>) -> pointer<*>
-{
-    val opToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
-    val op: pointer<Operation> = toOperation(opToken, Operation.INFIX_TYPE)
-
-    if op == null:
-        return null
-
-    val left: pointer<Expression> = getContainerValue(results, 0) as pointer<Expression>
-    val right: pointer<Expression> = getContainerValue(results, 2) as pointer<Expression>
-    val value: pointer<Expression> = build(op, left, right)
-
-    if value == null:
-        return null
-
-    val result: pointer<Expression> = ExpressionDesugar.fromAssignWith(op, left, value, null)
 
     if result == null:
         return null
@@ -456,62 +430,6 @@ private fun makeExprFromLogicalNiff(results: pointer<ArrayList>) -> pointer<*> =
 
 private fun makeExprFromAssign(results: pointer<ArrayList>) -> pointer<*> =
     makeExprFromAssignWith(results, null)
-
-
-private fun makeExprFromPowAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_POW)
-
-
-private fun makeExprFromTimesAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_TIMES)
-
-
-private fun makeExprFromDivAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_DIV)
-
-
-private fun makeExprFromRemAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_REM)
-
-
-private fun makeExprFromPlusAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_PLUS)
-
-
-private fun makeExprFromMinusAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_MINUS)
-
-
-private fun makeExprFromShlAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_SHL)
-
-
-private fun makeExprFromShrAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_SHR)
-
-
-private fun makeExprFromUshlAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_SHL)
-
-
-private fun makeExprFromUshrAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_USHR)
-
-
-private fun makeExprFromBitwiseAndAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_BITWISE_AND)
-
-
-private fun makeExprFromBitwiseNandAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWithBuilder(results, ExpressionDesugar.makeBitwiseNand)
-
-
-private fun makeExprFromBitwiseOrAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWith(results, OP_BITWISE_OR)
-
-
-private fun makeExprFromBitwiseNorAssign(results: pointer<ArrayList>) -> pointer<*> =
-    makeExprFromAssignWithBuilder(results, ExpressionDesugar.makeBitwiseNor)
 
 
 private fun makeAtom(results: pointer<ArrayList>) -> pointer<*>
@@ -1344,7 +1262,7 @@ private inline fun makeModifier(results: pointer<ArrayList>) -> pointer<*>
 private inline fun makeModifierListMaybe(results: pointer<ArrayList>) -> pointer<*>
 {
     val parsedModifiers: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
-    val modifiers: pointer<HashSet> = new HashSet(sizeof(Modifier), Modifier.compareModifier, Modifier.hashcode)
+    val modifiers: pointer<HashSet> = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
 
     for (var i = 0; i < parsedModifiers.length; i++):
         modifiers.add(getContainerValue(parsedModifiers, i) as pointer<Modifier>)
@@ -2187,20 +2105,20 @@ private val EXPRESSION_RULE55: pointer<Rule> = new Rule(new PatternList().pushRe
 private val EXPRESSION_RULE56: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.DOUBLE_ARROW).pushRef(EXPRESSION_PARSER), makeExprFromLogicalIff, Rule.CONTINUATION_ROLE, OP_LOGICAL_IFF)
 private val EXPRESSION_RULE57: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.BANG_DOUBLE_ARROW).pushRef(EXPRESSION_PARSER), makeExprFromLogicalNiff, Rule.CONTINUATION_ROLE, OP_LOGICAL_NIFF)
 private val EXPRESSION_RULE58: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromAssign, Rule.CONTINUATION_ROLE, OP_ASSIGN)
-private val EXPRESSION_RULE59: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.DOUBLE_STAR_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromPowAssign, Rule.CONTINUATION_ROLE, OP_POW_ASSIGN)
-private val EXPRESSION_RULE60: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.STAR_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromTimesAssign, Rule.CONTINUATION_ROLE, OP_TIMES_ASSIGN)
-private val EXPRESSION_RULE61: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.SLASH_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromDivAssign, Rule.CONTINUATION_ROLE, OP_DIV_ASSIGN)
-private val EXPRESSION_RULE62: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.PERCENT_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromRemAssign, Rule.CONTINUATION_ROLE, OP_REM_ASSIGN)
-private val EXPRESSION_RULE63: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.PLUS_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromPlusAssign, Rule.CONTINUATION_ROLE, OP_PLUS_ASSIGN)
-private val EXPRESSION_RULE64: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.MINUS_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromMinusAssign, Rule.CONTINUATION_ROLE, OP_MINUS_ASSIGN)
-private val EXPRESSION_RULE65: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.DOUBLE_LESS_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromShlAssign, Rule.CONTINUATION_ROLE, OP_SHL_ASSIGN)
-private val EXPRESSION_RULE66: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.DOUBLE_GREATER_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromShrAssign, Rule.CONTINUATION_ROLE, OP_SHR_ASSIGN)
-private val EXPRESSION_RULE67: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.TRIPLE_LESS_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromUshlAssign, Rule.CONTINUATION_ROLE, OP_USHL_ASSIGN)
-private val EXPRESSION_RULE68: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.TRIPLE_GREATER_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromUshrAssign, Rule.CONTINUATION_ROLE, OP_USHR_ASSIGN)
-private val EXPRESSION_RULE69: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.AMPERSAND_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromBitwiseAndAssign, Rule.CONTINUATION_ROLE, OP_BITWISE_AND_ASSIGN)
-private val EXPRESSION_RULE70: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.BANG_AMPERSAND_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromBitwiseNandAssign, Rule.CONTINUATION_ROLE, OP_BITWISE_NAND_ASSIGN)
-private val EXPRESSION_RULE71: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.PIPE_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromBitwiseOrAssign, Rule.CONTINUATION_ROLE, OP_BITWISE_OR_ASSIGN)
-private val EXPRESSION_RULE72: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.BANG_PIPE_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromBitwiseNorAssign, Rule.CONTINUATION_ROLE, OP_BITWISE_NOR_ASSIGN)
+private val EXPRESSION_RULE59: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.DOUBLE_STAR_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_POW_ASSIGN)
+private val EXPRESSION_RULE60: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.STAR_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_TIMES_ASSIGN)
+private val EXPRESSION_RULE61: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.SLASH_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_DIV_ASSIGN)
+private val EXPRESSION_RULE62: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.PERCENT_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_REM_ASSIGN)
+private val EXPRESSION_RULE63: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.PLUS_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_PLUS_ASSIGN)
+private val EXPRESSION_RULE64: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.MINUS_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_MINUS_ASSIGN)
+private val EXPRESSION_RULE65: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.DOUBLE_LESS_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_SHL_ASSIGN)
+private val EXPRESSION_RULE66: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.DOUBLE_GREATER_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_SHR_ASSIGN)
+private val EXPRESSION_RULE67: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.TRIPLE_LESS_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_USHL_ASSIGN)
+private val EXPRESSION_RULE68: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.TRIPLE_GREATER_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_USHR_ASSIGN)
+private val EXPRESSION_RULE69: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.AMPERSAND_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_BITWISE_AND_ASSIGN)
+private val EXPRESSION_RULE70: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.BANG_AMPERSAND_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_BITWISE_NAND_ASSIGN)
+private val EXPRESSION_RULE71: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.PIPE_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_BITWISE_OR_ASSIGN)
+private val EXPRESSION_RULE72: pointer<Rule> = new Rule(new PatternList().pushRef(EXPRESSION_PARSER).pushRegex(Tokenizer.BANG_PIPE_EQUAL).pushRef(EXPRESSION_PARSER), makeExprFromInfix, Rule.CONTINUATION_ROLE, OP_BITWISE_NOR_ASSIGN)
 
 private val ATOM_RULE0: pointer<Rule> = new Rule(new PatternList().pushRegex(Tokenizer.KW_NULL), makeAtom, Rule.STARTER_ROLE, 0)
 private val ATOM_RULE1: pointer<Rule> = new Rule(new PatternList().pushRegex(Tokenizer.KW_TRUE), makeAtom, Rule.STARTER_ROLE, 0)

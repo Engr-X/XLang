@@ -20,7 +20,7 @@
  *
  */
 
-package xlang.compiler.normalizer
+package xlang.compiler.semantic.normalizer
 
 import xlang.compiler.parser.program.ImportDeclaration
 import xlang.compiler.parser.program.Member
@@ -303,6 +303,21 @@ struct NormalizedProgram
 
 
     /**
+     * Stores the nested program elements contained within this normalized program.
+     *
+     * <p>This list contains elements that belong to the current program scope but
+     * are represented as nested structures after normalization. These elements may
+     * include nested declarations, scopes, or other program units produced during
+     * the normalization process.</p>
+     *
+     * <p>The exact contents of this list depend on the structure of the normalized
+     * program and are intended to preserve hierarchical relationships that cannot
+     * be represented directly by the top-level program body.</p>
+     */
+    private var nested: pointer<ArrayList>
+
+
+    /**
      * Creates a normalized program from the specified top-level program
      * components.
      *
@@ -372,6 +387,25 @@ struct NormalizedProgram
         this.functionRegistry = new MemberRegistry(functionMembers)
         this.variableRegistry = new MemberRegistry(variableMembers)
         this.constructorRegistry = new MemberRegistry(constructorMembers)
+    }
+
+
+    /**
+     * Adds a nested normalized program to this program.
+     *
+     * <p>The given program is appended to the collection of nested programs
+     * associated with the current {@code NormalizedProgram}. If
+     * {@code nestedProgram} is {@code null}, the call is ignored and the
+     * collection remains unchanged.</p>
+     *
+     * @param nestedProgram     the nested normalized program to add
+     */
+    fun addNestedProgram(nestedProgram: pointer<NormalizedProgram>)
+    {
+        if nestedProgram == null:
+            return
+
+        this.nested.push(nestedProgram)
     }
 
 
