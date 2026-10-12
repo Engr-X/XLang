@@ -21,15 +21,12 @@ val rulesSpace: blob[sizeof(pointer<NormalizeRule>) * 12]
 val rulePtr: pointer<pointer<NormalizeRule>> = rulesSpace as pointer<pointer<NormalizeRule>>
 
 
-private fun tokenKindCmp(left: pointer<*>, right: pointer<*>) -> int
+private fun tokenKindEq(left: pointer<*>, right: pointer<*>) -> bool
 {
     val lhs: int = (left as pointer<int>).deref
     val rhs: int = (right as pointer<int>).deref
 
-    if lhs == rhs:
-        return 0
-
-    return (if lhs < rhs: -1 else: 1)
+    return lhs == rhs
 }
 
 private fun tokenKindHash(value: pointer<*>) -> int  = (value as pointer<int>).deref
@@ -89,7 +86,7 @@ private fun addCommonBanKinds(set: pointer<HashSet>)
 
 private fun initBanAfter() -> pointer<HashSet>
 {
-    val result: pointer<HashSet> = new HashSet(sizeof(int), tokenKindCmp, tokenKindHash)
+    val result: pointer<HashSet> = new HashSet(sizeof(int), tokenKindEq, tokenKindHash)
 
     addCommonBanKinds(result)
 
@@ -98,7 +95,7 @@ private fun initBanAfter() -> pointer<HashSet>
 
 private fun initBanBefore() -> pointer<HashSet>
 {
-    val result: pointer<HashSet> = new HashSet(sizeof(int), tokenKindCmp, tokenKindHash)
+    val result: pointer<HashSet> = new HashSet(sizeof(int), tokenKindEq, tokenKindHash)
 
     addCommonBanKinds(result)
     addBanKind(result, Tokenizer.DOUBLE_PLUS)

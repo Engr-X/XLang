@@ -51,29 +51,29 @@ import xlang.util.string.StringBuilder
 struct Modifier
 {
     /**
-     * Compares two modifier values by keyword.
+     * Compares two modifier values for equality by keyword.
      *
-     * <p>This comparator is used by modifier sets so that duplicate declaration
-     * modifiers collapse to a single stored entry.
+     * <p>This equality function is used by modifier sets so that duplicate
+     * declaration modifiers collapse to a single stored entry.
      *
      * @param left              stored modifier slot
      * @param right             modifier value being compared
      *
-     * @return                  {@code 0} when the two modifiers have the same
-     *                          keyword; non-zero otherwise
+     * @return                  {@code true} when the two modifiers have the same
+     *                          keyword; {@code false} otherwise
      */
-    static fun compareModifier(left: pointer<*>, right: pointer<*>) -> int
+    static fun equalModifier(left: pointer<*>, right: pointer<*>) -> bool
     {
         val lhs: pointer<Modifier> = left as pointer<Modifier>
         val rhs: pointer<Modifier> = right as pointer<Modifier>
 
         if lhs == rhs:
-            return 0
+            return true
 
         if lhs == null || rhs == null:
-            return 1
+            return false
 
-        return if String.streq(lhs.keyword, rhs.keyword): 0 else: 1
+        return String.streq(lhs.keyword, rhs.keyword)
     }
 
 
@@ -81,10 +81,10 @@ struct Modifier
      * Computes a hash code for a modifier using its keyword.
      *
      * <p>This hash function is intended to be used together with
-     * {@code compareModifier()} by hash-based modifier collections.
+     * {@code equalModifier()} by hash-based modifier collections.
      *
      * <p>Only the modifier keyword participates in the hash calculation, matching
-     * the equality semantics defined by {@code compareModifier()}.
+     * the equality semantics defined by {@code equalModifier()}.
      * 
      * <p>If {@code item} or its modifier keyword is {@code null}, zero is returned.
      *
@@ -368,7 +368,7 @@ struct ModifierListMaybe
      * declaration modifiers without retaining a {@code null} list pointer.
      */
     constructor():
-        this.list = new HashSet(sizeof(Modifier), Modifier.compareModifier, Modifier.hashcode)
+        this.list = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
 
 
     /**
@@ -386,7 +386,7 @@ struct ModifierListMaybe
      */
     constructor(list: pointer<HashSet>):
         this.list = if list == null:
-                new HashSet(sizeof(Modifier), Modifier.compareModifier, Modifier.hashcode)
+                new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
             else:
                 list
 

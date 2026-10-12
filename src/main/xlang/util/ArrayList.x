@@ -72,7 +72,6 @@ struct ArrayList
      */
     private static val LIST_LOAD_FACTOR: double = 0.75
 
-
     /*
      * Default comparator used before callers provide one.
      *
@@ -81,6 +80,15 @@ struct ArrayList
      * match an element.
      */
     static fun noComparator(left: pointer<*>, right: pointer<*>) -> int = 1
+
+    /*
+     * Default equality function used before callers provide one.
+     *
+     * It always returns false, so contains(), indexOf(), and remove()
+     * are safe to call without a configured equality function, but they
+     * will never match an element.
+     */
+    static fun noEquality(left: pointer<*>, right: pointer<*>) -> bool = false
 
     /*
      * Number of initialized elements currently stored in the list.
@@ -121,7 +129,6 @@ struct ArrayList
      */
     private var capacity: int
 
-
     /*
      * Comparator used by search and removal helpers.
      *
@@ -129,7 +136,16 @@ struct ArrayList
      * second argument is the caller-provided item. A return value of 0 means the
      * two values should be treated as equal.
      */
-    private var cmp: (pointer<*>, pointer<*>) -> int
+    private var cmpFun: (pointer<*>, pointer<*>) -> int
+
+    /*
+     * Equality function used by search and removal helpers.
+     *
+     * The first argument is the stored element slot inside this list. The
+     * second argument is the caller-provided item. A return value of true means
+     * the two values should be treated as equal.
+     */
+    private var eqFun: (pointer<*>, pointer<*>) -> bool
 
 
     /**
@@ -152,7 +168,8 @@ struct ArrayList
         this.capacity = LIST_INITIAL_CAPACITY
         this.loadFactor = LIST_LOAD_FACTOR
         this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
-        this.cmp = ArrayList.noComparator
+        this.cmpFun = ArrayList.noComparator
+        this.eqFun = ArrayList.noEquality
     }
 
 
@@ -184,7 +201,8 @@ struct ArrayList
         this.capacity = initialCapacity
         this.loadFactor = loadFactor
         this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
-        this.cmp = ArrayList.noComparator
+        this.cmpFun = ArrayList.noComparator
+        this.eqFun = ArrayList.noEquality
     }
 
 
@@ -199,27 +217,28 @@ struct ArrayList
      * - tsize must be greater than 0.
      * - initialCapacity must be greater than 0.
      * - loadFactor must be greater than 0.
-     * - cmp must be a valid comparator function.
+     * - cmpFun must be a valid comparator function.
      *
      * Postconditions:
      * - length == 0.
      * - capacity == initialCapacity.
      * - data points to initialCapacity * tsize bytes of storage.
-     * - cmp is used as the list comparator.
+     * - cmpFun is used as the list comparator.
      *
      * @param tsize             size in bytes of one element
      * @param initialCapacity   number of element slots to allocate initially
      * @param loadFactor        resize threshold as a ratio of capacity
-     * @param cmp               comparator used by search, removal and sorting
+     * @param cmpFun               comparator used by search, removal and sorting
      */
-    constructor(tsize: int, initialCapacity: int, loadFactor: double, cmp: (pointer<*>, pointer<*>) -> int)
+    constructor(tsize: int, initialCapacity: int, loadFactor: double, cmpFun: (pointer<*>, pointer<*>) -> int)
     {
         this.length = 0
         this.tsize = tsize
         this.capacity = initialCapacity
         this.loadFactor = loadFactor
         this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
-        this.cmp = cmp
+        this.cmpFun = cmpFun
+        this.eqFun = ArrayList.noEquality
     }
 
 
@@ -230,8 +249,21 @@ struct ArrayList
      * caller-provided item as the second argument. It must return 0 when the two
      * values should be treated as equal.
      */
-    fun setComparator(cmp: (pointer<*>, pointer<*>) -> int):
-        this.cmp = cmp
+    fun setComparator(cmpFun: (pointer<*>, pointer<*>) -> int):
+        this.cmpFun = cmpFun
+
+
+    /**
+     * Sets the default equality function used by contains(), indexOf(), and remove().
+     *
+     * The equality function receives the stored slot as the first argument and the
+     * caller-provided item as the second argument. It must return true when the
+    * two values should be treated as equal.
+     *
+     * @param eqFun             The equality function to use for element comparisons.
+    */
+    fun setEquality(eqFun: (pointer<*>, pointer<*>) -> bool):
+        this.eqFun = eqFun
 
 
     /**
@@ -658,8 +690,8 @@ struct ArrayList
      * Returns the index of the first element equal to item.
      *
      * Equality is decided by this list's comparator. The comparator is called as
-     * cmp(slot, item), where slot is the address of the stored element slot and
-     * item is the caller-provided search value. A cmp result of 0 means equal.
+     * cmpFun(slot, item), where slot is the address of the stored element slot and
+     * item is the caller-provided search value. A cmpFun result of 0 means equal.
      *
      * @return                  first matching index, or -1 when no element matches
      */
@@ -668,7 +700,7 @@ struct ArrayList
         for (var i = 0; i < this.length; i++):
         {
             val slot: pointer<byte> = this.data + i * this.tsize
-            if this.cmp(slot, item) == 0:
+            if this.eqFun(slot, item):
                 return i
         }
 
@@ -770,7 +802,7 @@ struct ArrayList
             val rightItem: pointer<byte> = this.data + rightIndex * elementSize
             val destItem: pointer<byte> = buffer + destIndex * elementSize
 
-            if this.cmp(leftItem, rightItem) <= 0:
+            if this.cmpFun(leftItem, rightItem) <= 0:
             {
                 System.memcopy(destItem, leftItem, elementSize)
                 leftIndex++
@@ -821,7 +853,7 @@ struct ArrayList
      * Preconditions:
      * - buffer must point to at least length * tsize writable bytes.
      * - left and right must describe a valid half-open range.
-     * - this.cmp must define the desired ordering.
+     * - this.cmpFun must define the desired ordering.
      *
      * Postconditions:
      * - Slots in [left, right) are sorted.
@@ -896,7 +928,8 @@ struct ArrayList
             return null
 
         val size: int = toIndex - fromIndex
-        val sublist: pointer<ArrayList> = new ArrayList(this.tsize, size + 1, this.loadFactor, this.cmp)
+        val sublist: pointer<ArrayList> = new ArrayList(this.tsize, size + 1, this.loadFactor, this.cmpFun)
+        sublist.setEquality(this.eqFun)
 
         if size > 0:
         {

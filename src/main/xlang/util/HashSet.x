@@ -42,31 +42,37 @@ struct HashSet
 
     private var buckets: pointer<ArrayList>
 
-    private var cmp: (pointer<*>, pointer<*>) -> int
+    private var eqFun: (pointer<*>, pointer<*>) -> bool
 
-    private var hashCode: (pointer<*>) -> int
+    private var hashCodeFun: (pointer<*>) -> int
 
 
-    constructor(tsize: int, bucketCount: int, loadFactor: double, cmp: (pointer<*>, pointer<*>) -> int, hashCode: (pointer<*>) -> int)
+    constructor(
+        tsize: int, bucketCount: int, loadFactor: double,
+        eqFun: (pointer<*>, pointer<*>) -> bool, hashCodeFun: (pointer<*>) -> int
+    )
     {
         this.length = 0
         this.tsize = tsize
         this.bucketCount = bucketCount
         this.loadFactor = loadFactor
-        this.cmp = cmp
-        this.hashCode = hashCode
+        this.eqFun = eqFun
+        this.hashCodeFun = hashCodeFun
         this.buckets = this.createBuckets(this.bucketCount)
     }
 
 
-    constructor(tsize: int, cmp: (pointer<*>, pointer<*>) -> int, hashCode: (pointer<*>) -> int)
+    constructor(
+        tsize: int, 
+        eqFun: (pointer<*>, pointer<*>) -> bool, hashCodeFun: (pointer<*>) -> int
+    )
     {
         this.length = 0
         this.tsize = tsize
         this.bucketCount = DEFAULT_CAPACITY
         this.loadFactor = DEFAULT_LOAD_FACTOR
-        this.cmp = cmp
-        this.hashCode = hashCode
+        this.eqFun = eqFun
+        this.hashCodeFun = hashCodeFun
         this.buckets = this.createBuckets(this.bucketCount)
     }
 
@@ -79,7 +85,7 @@ struct HashSet
         {
             val bucket: pointer<ArrayList> = new ArrayList(this.tsize)
 
-            bucket.setComparator(this.cmp)
+            bucket.setEquality(this.eqFun)
             result.push(bucket.ref)
         }
 
@@ -101,7 +107,7 @@ struct HashSet
 
     private fun getBucketIndex(item: pointer<*>) -> int
     {
-        var index: int = this.hashCode(item) % this.bucketCount
+        var index: int = this.hashCodeFun(item) % this.bucketCount
 
         if index < 0:
             index += this.bucketCount
@@ -173,8 +179,7 @@ struct HashSet
         if bucket == null:
             return false
 
-        val index: int =
-            bucket.indexOf(item)
+        val index: int = bucket.indexOf(item)
 
         if index < 0:
             return false
@@ -258,7 +263,7 @@ struct HashSet
         val result: pointer<ArrayList> =
             new ArrayList(this.tsize)
 
-        result.setComparator(this.cmp)
+        result.setEquality(this.eqFun)
 
         for (var i: int = 0; i < this.bucketCount; i++):
         {

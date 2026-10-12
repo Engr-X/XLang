@@ -31,6 +31,7 @@ import xlang.compiler.type.Type
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.Parser
 import xlang.compiler.parser.expression.Expression
+import xlang.compiler.parser.program.QualifiedName
 import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.lexer.TokenPosition
@@ -397,45 +398,6 @@ struct TypeParser
     }
 
 
-    private fun normalTypeFromToken(token: pointer<Token>) -> pointer<NormalType>
-    {
-        if token == null:
-            return null
-
-        if token.kind == Tokenizer.KW_VOID:
-            return NormalType.voidType()
-
-        if token.kind == Tokenizer.KW_BOOL:
-            return NormalType.boolType()
-
-        if token.kind == Tokenizer.KW_CHAR:
-            return NormalType.charType()
-
-        if token.kind == Tokenizer.KW_BYTE:
-            return NormalType.byteType()
-
-        if token.kind == Tokenizer.KW_SHORT:
-            return NormalType.shortType()
-
-        if token.kind == Tokenizer.KW_INT:
-            return NormalType.intType()
-
-        if token.kind == Tokenizer.KW_LONG:
-            return NormalType.longType()
-
-        if token.kind == Tokenizer.KW_FLOAT:
-            return NormalType.floatType()
-
-        if token.kind == Tokenizer.KW_DOUBLE:
-            return NormalType.doubleType()
-
-        if token.kind == Tokenizer.KW_POINTER:
-            return NormalType.resolved("xlang.primary", "pointer", 8)
-
-        return NormalType.unresolved(token.text, 0)
-    }
-
-
     /**
      * Parses a normal or generic type.
      *
@@ -480,7 +442,7 @@ struct TypeParser
         {
             if this.depth >= 1:
             {
-                val parsedType: pointer<NormalType> = NormalType.voidType().addToken(token)
+                val parsedType: pointer<NormalType> = NormalType.unresolved("void").addToken(token)
                 this.result = new ParseContainer(this.id, parsedType)
                 return 1
             }
@@ -528,25 +490,52 @@ struct TypeParser
                 Diagnostic.CANNOT_PARSE_TYPE_MSG)
             return -1
         }
+        var parsedType: pointer<NormalType> = null
+        var nameLength: int = 1
 
+        if token.kind == Tokenizer.TK_IDENTIFIER:
+        {
+            nameLength = Parser.QUALIFIED_NAME_PARSER.parse(tokens, index)
 
+            if Parser.QUALIFIED_NAME_PARSER.haveError(nameLength):
+                return this.failCannotParseType(tokens, index)
+
+            val qualifiedNameResult: pointer<ParseContainer> = Parser.QUALIFIED_NAME_PARSER.getResult()
+
+            if qualifiedNameResult == null:
+                return this.failCannotParseType(tokens, index)
+
+            val qualifiedName: pointer<QualifiedName> = qualifiedNameResult.getValue() as pointer<QualifiedName>
+
+            if qualifiedName == null:
+                return this.failCannotParseType(tokens, index)
+
+            parsedType = NormalType.unresolved(qualifiedName.toPackageDecl().getQualifiedName())
+            val nameTokens: pointer<ArrayList> = qualifiedName.getAllTokens()
+
+            for (var i = 0; i < nameTokens.length; i++):
+                parsedType.addToken(nameTokens.get(i) as pointer<Token>)
+        }
+        else:
+            parsedType = NormalType.unresolved(token.text).addToken(token)
+
+        if parsedType == null:
+            return this.failCannotParseType(tokens, index)
 
         var nextToken: pointer<Token> = null
 
-        if index + 1 < tokens.length():
-            nextToken = tokens.get(index + 1)
+        if index + nameLength < tokens.length():
+            nextToken = tokens.get(index + nameLength)
 
         if nextToken == null || nextToken.kind != Tokenizer.LESS:
         {
-            val parsedType: pointer<NormalType> = this.normalTypeFromToken(token).addToken(token)
             this.result = new ParseContainer(this.id, parsedType)
-            return 1
+            return nameLength
         }
 
-
-        val parsedType: pointer<NormalType> = this.normalTypeFromToken(token).addToken(token).addToken(nextToken)
+        parsedType.addToken(nextToken)
         this.depth++
-        var consumed: int = 2
+        var consumed: int = nameLength + 1
 
         while index + consumed < tokens.length():
         {

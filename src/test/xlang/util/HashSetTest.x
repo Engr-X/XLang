@@ -50,18 +50,11 @@ fun genTest() -> pointer<TestGroup>
 }
 
 
-private fun intCmp(left: pointer<*>, right: pointer<*>) -> int
+private fun intEq(left: pointer<*>, right: pointer<*>) -> bool
 {
     val lhs: int = (left as pointer<int>).deref
     val rhs: int = (right as pointer<int>).deref
-
-    if lhs == rhs:
-        return 0
-
-    return if lhs < rhs:
-        -1
-    else:
-        1
+    return lhs == rhs
 }
 
 
@@ -76,7 +69,7 @@ private fun intHash(value: pointer<*>) -> int
 
 private fun basicTest() -> int
 {
-    val set: pointer<HashSet> = new HashSet(sizeof(int), intCmp, intHash)
+    val set: pointer<HashSet> = new HashSet(sizeof(int), intEq, intHash)
     val valueSpace: blob[sizeof(int)]
     val value: pointer<int> = valueSpace as pointer<int>
 
@@ -114,7 +107,7 @@ private fun basicTest() -> int
 
 private fun chainAddTest() -> int
 {
-    val set: pointer<HashSet> = new HashSet(sizeof(int), intCmp, intHash)
+    val set: pointer<HashSet> = new HashSet(sizeof(int), intEq, intHash)
     val valueSpace: blob[sizeof(int) * 3]
     val values: pointer<int> = valueSpace as pointer<int>
 
@@ -142,7 +135,7 @@ private fun chainAddTest() -> int
 
 private fun removeTest() -> int
 {
-    val set: pointer<HashSet> = new HashSet(sizeof(int), 2, 0.75, intCmp, intHash)
+    val set: pointer<HashSet> = new HashSet(sizeof(int), 2, 0.75, intEq, intHash)
     val valueSpace: blob[sizeof(int)]
     val value: pointer<int> = valueSpace as pointer<int>
 
@@ -188,7 +181,7 @@ private fun removeTest() -> int
 
 private fun toArrayTest() -> int
 {
-    val set: pointer<HashSet> = new HashSet(sizeof(int), intCmp, intHash)
+    val set: pointer<HashSet> = new HashSet(sizeof(int), intEq, intHash)
     val valueSpace: blob[sizeof(int)]
     val value: pointer<int> = valueSpace as pointer<int>
 

@@ -49,17 +49,20 @@ fun genTest() -> pointer<TestGroup>
     val parenthesizedTypeTC: pointer<TestCase> = new TestCase("parenthesizedType", parenthesizedTypeTest)
     val parenthesizedFunctionTC: pointer<TestCase> = new TestCase("parenthesizedFunction", parenthesizedFunctionTest)
     val blobExpressionTC: pointer<TestCase> = new TestCase("blobExpression", blobExpressionTest)
-    val voidPrimaryTypeTC: pointer<TestCase> = new TestCase("voidPrimaryType", voidPrimaryTypeTest)
-    val boolPrimaryTypeTC: pointer<TestCase> = new TestCase("boolPrimaryType", boolPrimaryTypeTest)
-    val charPrimaryTypeTC: pointer<TestCase> = new TestCase("charPrimaryType", charPrimaryTypeTest)
-    val bytePrimaryTypeTC: pointer<TestCase> = new TestCase("bytePrimaryType", bytePrimaryTypeTest)
-    val shortPrimaryTypeTC: pointer<TestCase> = new TestCase("shortPrimaryType", shortPrimaryTypeTest)
-    val intPrimaryTypeTC: pointer<TestCase> = new TestCase("intPrimaryType", intPrimaryTypeTest)
-    val longPrimaryTypeTC: pointer<TestCase> = new TestCase("longPrimaryType", longPrimaryTypeTest)
-    val floatPrimaryTypeTC: pointer<TestCase> = new TestCase("floatPrimaryType", floatPrimaryTypeTest)
-    val doublePrimaryTypeTC: pointer<TestCase> = new TestCase("doublePrimaryType", doublePrimaryTypeTest)
-    val pointerPrimaryTypeTC: pointer<TestCase> = new TestCase("pointerPrimaryType", pointerPrimaryTypeTest)
+    val voidPrimaryTypeTC: pointer<TestCase> = new TestCase("voidUnresolvedType", voidPrimaryTypeTest)
+    val boolPrimaryTypeTC: pointer<TestCase> = new TestCase("boolUnresolvedType", boolPrimaryTypeTest)
+    val charPrimaryTypeTC: pointer<TestCase> = new TestCase("charUnresolvedType", charPrimaryTypeTest)
+    val bytePrimaryTypeTC: pointer<TestCase> = new TestCase("byteUnresolvedType", bytePrimaryTypeTest)
+    val shortPrimaryTypeTC: pointer<TestCase> = new TestCase("shortUnresolvedType", shortPrimaryTypeTest)
+    val intPrimaryTypeTC: pointer<TestCase> = new TestCase("intUnresolvedType", intPrimaryTypeTest)
+    val longPrimaryTypeTC: pointer<TestCase> = new TestCase("longUnresolvedType", longPrimaryTypeTest)
+    val floatPrimaryTypeTC: pointer<TestCase> = new TestCase("floatUnresolvedType", floatPrimaryTypeTest)
+    val doublePrimaryTypeTC: pointer<TestCase> = new TestCase("doubleUnresolvedType", doublePrimaryTypeTest)
+    val pointerPrimaryTypeTC: pointer<TestCase> = new TestCase("pointerUnresolvedType", pointerPrimaryTypeTest)
     val unresolvedIdentifierTypeTC: pointer<TestCase> = new TestCase("unresolvedIdentifierType", unresolvedIdentifierTypeTest)
+    val qualifiedNameTypeTC: pointer<TestCase> = new TestCase("qualifiedNameType", qualifiedNameTypeTest)
+    val qualifiedGenericTypeTC: pointer<TestCase> = new TestCase("qualifiedGenericType", qualifiedGenericTypeTest)
+    val deepQualifiedGenericTypeTC: pointer<TestCase> = new TestCase("deepQualifiedGenericType", deepQualifiedGenericTypeTest)
     val pointerBlobTypeTC: pointer<TestCase> = new TestCase("pointerBlobType", pointerBlobTypeTest)
     val nestedPointerBlobTypeTC: pointer<TestCase> = new TestCase("nestedPointerBlobType", nestedPointerBlobTypeTest)
     val emptyFunctionTC: pointer<TestCase> = new TestCase("emptyFunction", emptyFunctionTest)
@@ -84,6 +87,9 @@ fun genTest() -> pointer<TestGroup>
     val doublePrimaryTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, doublePrimaryTypeTC, null)
     val pointerPrimaryTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, pointerPrimaryTypeTC, null)
     val unresolvedIdentifierTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, unresolvedIdentifierTypeTC, null)
+    val qualifiedNameTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, qualifiedNameTypeTC, null)
+    val qualifiedGenericTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, qualifiedGenericTypeTC, null)
+    val deepQualifiedGenericTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, deepQualifiedGenericTypeTC, null)
     val pointerBlobTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, pointerBlobTypeTC, null)
     val nestedPointerBlobTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, nestedPointerBlobTypeTC, null)
     val emptyFunctionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, emptyFunctionTC, null)
@@ -108,6 +114,9 @@ fun genTest() -> pointer<TestGroup>
     result.addTestUnion(doublePrimaryTypeUnion)
     result.addTestUnion(pointerPrimaryTypeUnion)
     result.addTestUnion(unresolvedIdentifierTypeUnion)
+    result.addTestUnion(qualifiedNameTypeUnion)
+    result.addTestUnion(qualifiedGenericTypeUnion)
+    result.addTestUnion(deepQualifiedGenericTypeUnion)
     result.addTestUnion(pointerBlobTypeUnion)
     result.addTestUnion(nestedPointerBlobTypeUnion)
     result.addTestUnion(emptyFunctionUnion)
@@ -137,33 +146,7 @@ private fun parseTypeValue(input: pointer<char>, expectedConsumed: int) -> point
 }
 
 
-private fun packagePartEquals(parts: pointer<ArrayList>, index: int, expected: pointer<char>) -> bool
-{
-    if parts == null || index < 0 || index >= parts.length:
-        return false
-
-    val slot: pointer<pointer<char>> = parts.get(index) as pointer<pointer<char>>
-
-    return slot != null && String.streq(slot.deref, expected)
-}
-
-
-private fun isPrimaryPackage(normalType: pointer<NormalType>) -> bool
-{
-    if normalType == null || normalType.isPackageUnresolved():
-        return false
-
-    val packageName: pointer<ArrayList> = normalType.getPackageName()
-
-    return packageName != null &&
-        packageName.length == 2 &&
-        packagePartEquals(packageName, 0, "xlang") &&
-        packagePartEquals(packageName, 1, "primary") &&
-        String.streq(normalType.getPackageNameText(), "xlang.primary")
-}
-
-
-private fun checkPrimaryType(input: pointer<char>, typeName: pointer<char>, memSize: int) -> int
+private fun checkUnresolvedType(input: pointer<char>) -> int
 {
     val parsedType: pointer<Type> = parseTypeValue(input, 1)
 
@@ -178,13 +161,13 @@ private fun checkPrimaryType(input: pointer<char>, typeName: pointer<char>, memS
     if normalType == null:
         return 3
 
-    if !isPrimaryPackage(normalType):
+    if normalType.isResolved():
         return 4
 
-    if !String.streq(normalType.getTypeName(), typeName):
+    if normalType.getTypeName() != null:
         return 5
 
-    if normalType.getMemSize() != memSize:
+    if normalType.getMemSize() != 0:
         return 6
 
     if normalType.length != 0:
@@ -194,34 +177,34 @@ private fun checkPrimaryType(input: pointer<char>, typeName: pointer<char>, memS
 }
 
 
-private fun voidPrimaryTypeTest() -> int = checkPrimaryType("void", "void", 0)
+private fun voidPrimaryTypeTest() -> int = checkUnresolvedType("void")
 
 
-private fun boolPrimaryTypeTest() -> int = checkPrimaryType("bool", "bool", 1)
+private fun boolPrimaryTypeTest() -> int = checkUnresolvedType("bool")
 
 
-private fun charPrimaryTypeTest() -> int = checkPrimaryType("char", "char", 8)
+private fun charPrimaryTypeTest() -> int = checkUnresolvedType("char")
 
 
-private fun bytePrimaryTypeTest() -> int = checkPrimaryType("byte", "byte", 1)
+private fun bytePrimaryTypeTest() -> int = checkUnresolvedType("byte")
 
 
-private fun shortPrimaryTypeTest() -> int = checkPrimaryType("short", "short", 2)
+private fun shortPrimaryTypeTest() -> int = checkUnresolvedType("short")
 
 
-private fun intPrimaryTypeTest() -> int = checkPrimaryType("int", "int", 4)
+private fun intPrimaryTypeTest() -> int = checkUnresolvedType("int")
 
 
-private fun longPrimaryTypeTest() -> int = checkPrimaryType("long", "long", 8)
+private fun longPrimaryTypeTest() -> int = checkUnresolvedType("long")
 
 
-private fun floatPrimaryTypeTest() -> int = checkPrimaryType("float", "float", 4)
+private fun floatPrimaryTypeTest() -> int = checkUnresolvedType("float")
 
 
-private fun doublePrimaryTypeTest() -> int = checkPrimaryType("double", "double", 8)
+private fun doublePrimaryTypeTest() -> int = checkUnresolvedType("double")
 
 
-private fun pointerPrimaryTypeTest() -> int = checkPrimaryType("pointer", "pointer", 8)
+private fun pointerPrimaryTypeTest() -> int = checkUnresolvedType("pointer")
 
 
 private fun unresolvedIdentifierTypeTest() -> int
@@ -236,17 +219,162 @@ private fun unresolvedIdentifierTypeTest() -> int
     if normalType == null:
         return 2
 
-    if !normalType.isPackageUnresolved():
+    if normalType.isResolved():
         return 3
 
     if normalType.getPackageNameText() != null:
         return 4
 
-    if !String.streq(normalType.getTypeName(), "ArrayList"):
+    if normalType.getTypeName() != null:
         return 5
 
     if normalType.getMemSize() != 0:
         return 6
+
+    return 0
+}
+
+
+private fun qualifiedNameTypeTest() -> int
+{
+    val parsedType: pointer<Type> = parseTypeValue("com.util.ArrayList", 5)
+
+    if parsedType == null || parsedType.getKind() != Type.NORMAL_KIND:
+        return 1
+
+    val normalType: pointer<NormalType> = parsedType.getHost() as pointer<NormalType>
+
+    if normalType == null || normalType.isResolved():
+        return 2
+
+    val typeTokens: pointer<ArrayList> = normalType.getAllTokens()
+
+    if typeTokens == null || typeTokens.length != 5:
+        return 3
+
+    if !tokenTextAt(typeTokens, 0, "com") || !tokenTextAt(typeTokens, 1, ".") ||
+        !tokenTextAt(typeTokens, 2, "util") || !tokenTextAt(typeTokens, 3, ".") ||
+        !tokenTextAt(typeTokens, 4, "ArrayList"):
+        return 4
+
+    return 0
+}
+
+
+private fun qualifiedGenericTypeTest() -> int
+{
+    val parsedType: pointer<Type> = parseTypeValue(
+        "xlang.util.HashMap<xlang.Thread, pointer<Pair<int, double>>>",
+        20)
+
+    if parsedType == null || parsedType.getKind() != Type.NORMAL_KIND:
+        return 1
+
+    val hashMapType: pointer<NormalType> = parsedType.getHost() as pointer<NormalType>
+
+    if hashMapType == null || hashMapType.isResolved() || hashMapType.length != 2:
+        return 2
+
+    val threadArgument: pointer<Type> = hashMapType.getTypeArgument(0)
+    val pointerArgument: pointer<Type> = hashMapType.getTypeArgument(1)
+
+    if threadArgument == null || threadArgument.getKind() != Type.NORMAL_KIND:
+        return 3
+
+    val threadType: pointer<NormalType> = threadArgument.getHost() as pointer<NormalType>
+
+    if threadType == null || threadType.isResolved() || threadType.length != 0:
+        return 4
+
+    if pointerArgument == null || pointerArgument.getKind() != Type.NORMAL_KIND:
+        return 5
+
+    val pointerType: pointer<NormalType> = pointerArgument.getHost() as pointer<NormalType>
+
+    if pointerType == null || pointerType.isResolved() || pointerType.length != 1:
+        return 6
+
+    val pairArgument: pointer<Type> = pointerType.getTypeArgument(0)
+
+    if pairArgument == null || pairArgument.getKind() != Type.NORMAL_KIND:
+        return 7
+
+    val pairType: pointer<NormalType> = pairArgument.getHost() as pointer<NormalType>
+
+    if pairType == null || pairType.isResolved() || pairType.length != 2:
+        return 8
+
+    val intArgument: pointer<Type> = pairType.getTypeArgument(0)
+    val doubleArgument: pointer<Type> = pairType.getTypeArgument(1)
+
+    if intArgument == null || intArgument.getKind() != Type.NORMAL_KIND ||
+        doubleArgument == null || doubleArgument.getKind() != Type.NORMAL_KIND:
+        return 9
+
+    val intType: pointer<NormalType> = intArgument.getHost() as pointer<NormalType>
+    val doubleType: pointer<NormalType> = doubleArgument.getHost() as pointer<NormalType>
+
+    if intType == null || intType.isResolved() || doubleType == null || doubleType.isResolved():
+        return 10
+
+    return 0
+}
+
+
+private fun deepQualifiedGenericTypeTest() -> int
+{
+    val parsedType: pointer<Type> = parseTypeValue(
+        "xlang.util.HashMap<pointer<xlang.Thread, pointer<Pair<int, double>>>>",
+        23)
+
+    if parsedType == null || parsedType.getKind() != Type.NORMAL_KIND:
+        return 1
+
+    val hashMapType: pointer<NormalType> = parsedType.getHost() as pointer<NormalType>
+
+    if hashMapType == null || hashMapType.isResolved() || hashMapType.length != 1:
+        return 2
+
+    val outerPointerArgument: pointer<Type> = hashMapType.getTypeArgument(0)
+
+    if outerPointerArgument == null || outerPointerArgument.getKind() != Type.NORMAL_KIND:
+        return 3
+
+    val outerPointer: pointer<NormalType> = outerPointerArgument.getHost() as pointer<NormalType>
+
+    if outerPointer == null || outerPointer.isResolved() || outerPointer.length != 2:
+        return 4
+
+    val threadArgument: pointer<Type> = outerPointer.getTypeArgument(0)
+    val innerPointerArgument: pointer<Type> = outerPointer.getTypeArgument(1)
+
+    if threadArgument == null || threadArgument.getKind() != Type.NORMAL_KIND ||
+        innerPointerArgument == null || innerPointerArgument.getKind() != Type.NORMAL_KIND:
+        return 5
+
+    val threadType: pointer<NormalType> = threadArgument.getHost() as pointer<NormalType>
+    val innerPointer: pointer<NormalType> = innerPointerArgument.getHost() as pointer<NormalType>
+
+    if threadType == null || threadType.isResolved() || threadType.length != 0 ||
+        innerPointer == null || innerPointer.isResolved() || innerPointer.length != 1:
+        return 6
+
+    val pairArgument: pointer<Type> = innerPointer.getTypeArgument(0)
+
+    if pairArgument == null || pairArgument.getKind() != Type.NORMAL_KIND:
+        return 7
+
+    val pairType: pointer<NormalType> = pairArgument.getHost() as pointer<NormalType>
+
+    if pairType == null || pairType.isResolved() || pairType.length != 2:
+        return 8
+
+    val intArgument: pointer<Type> = pairType.getTypeArgument(0)
+    val doubleArgument: pointer<Type> = pairType.getTypeArgument(1)
+
+    if intArgument == null || intArgument.getKind() != Type.NORMAL_KIND ||
+        doubleArgument == null || doubleArgument.getKind() != Type.NORMAL_KIND:
+        return 9
 
     return 0
 }
@@ -264,9 +392,7 @@ private fun pointerBlobTypeTest() -> int
     if pointerType == null:
         return 2
 
-    if !isPrimaryPackage(pointerType) ||
-        !String.streq(pointerType.getTypeName(), "pointer") ||
-        pointerType.getMemSize() != 8:
+    if pointerType.isResolved() || pointerType.getMemSize() != 0:
         return 3
 
     if pointerType.length != 1:
@@ -296,8 +422,7 @@ private fun nestedPointerBlobTypeTest() -> int
     val outerPointer: pointer<NormalType> = parsedType.getHost() as pointer<NormalType>
 
     if outerPointer == null ||
-        !isPrimaryPackage(outerPointer) ||
-        !String.streq(outerPointer.getTypeName(), "pointer") ||
+        outerPointer.isResolved() ||
         outerPointer.length != 1:
         return 2
 
@@ -309,8 +434,7 @@ private fun nestedPointerBlobTypeTest() -> int
     val innerPointer: pointer<NormalType> = innerPointerType.getHost() as pointer<NormalType>
 
     if innerPointer == null ||
-        !isPrimaryPackage(innerPointer) ||
-        !String.streq(innerPointer.getTypeName(), "pointer") ||
+        innerPointer.isResolved() ||
         innerPointer.length != 1:
         return 4
 

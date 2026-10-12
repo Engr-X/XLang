@@ -131,26 +131,17 @@ struct NormalType
 
 
     /**
-    * Creates an unresolved normal type with the specified type name
-    * and memory size.
-    *
-    * The package name of the resulting type is left unset by assigning
-    * {@code null}. This indicates that the package information has not yet
-    * been resolved and may be determined during a later resolution phase.
-    *
-    * This method is useful when a type reference is encountered before
-    * sufficient context is available to determine its fully qualified name.
-    *
-    * @param typeName           the name of the unresolved type
-    * @param memSize            the memory size associated with the type
-    *
-    * @return                   a newly created unresolved {@link NormalType}
-    */
-    static fun unresolved(typeName: pointer<char>, memSize: int) -> pointer<NormalType>
-    {
-        val packageName: pointer<ArrayList> = null
-        return new NormalType(packageName, typeName, memSize)
-    }
+     * Creates a new {@code NormalType} from a raw qualified name.
+     *
+     * <p>The supplied name is preserved in its unresolved form and is not
+     * immediately separated into package and type components. Name resolution
+     * is expected to be performed at a later stage.</p>
+     *
+     * @param qname             the raw qualified name of the type
+     *
+     * @return                  a newly created unresolved {@code NormalType}
+     */
+    static fun unresolved(qname: pointer<ArrayList>) -> pointer<NormalType> = new NormalType(qname)
 
 
     /**
@@ -165,7 +156,7 @@ struct NormalType
     * @return                   a newly created unresolved {@link NormalType} with a memory size of {@code 0}
     */
     static fun unresolved(typeName: pointer<char>) -> pointer<NormalType> =
-        NormalType.unresolved(typeName, 0)
+        NormalType.unresolved(new QualifiedName(typeName).toPackageDecl().getQualifiedName())
 
 
     /**
@@ -287,6 +278,19 @@ struct NormalType
 
 
     /**
+     * Stores the raw qualified name of this type before name resolution.
+     *
+     * <p>The elements in this list represent the original qualified name
+     * supplied when the type was created. The name has not yet been separated
+     * or resolved into its final {@code packageName} and {@code typeName}
+     * components.</p>
+     *
+     * <p>This value is retained until the type information can be resolved
+     * during a later parsing or semantic analysis stage.</p>
+     */
+    private val rawQName: pointer<ArrayList>
+
+    /**
      * Points to the null-terminated simple type name.
      *
      * Examples include `int`, `Token` and `ArrayList`.
@@ -332,6 +336,32 @@ struct NormalType
 
 
     /**
+     * Creates a type from a raw qualified name.
+     *
+     * <p>The supplied qualified name is stored in {@code rawQName} and is not
+     * resolved immediately. The concrete {@code packageName} and
+     * {@code typeName} fields remain unset until name resolution is performed
+     * at a later stage.</p>
+     *
+     * <p>The type argument list and token list are initialized as empty
+      * collections, while the size and length information are initialized to
+     * zero.</p>
+     *
+     * @param qname the raw qualified name associated with this type
+     */
+    private constructor(qname: pointer<ArrayList>)
+    {
+        this.rawQName = qname
+        this.typeName = null
+        this.packageName = null
+        this.typeArguments = new ArrayList(sizeof(Type))
+        this.tokens = new ArrayList(sizeof(Token))
+        this.memSize = 0
+        this.length = 0
+    }
+
+
+    /**
      * Initializes a type with package-name components.
      *
      * typeName is duplicated. packageName storage is cloned, while component
@@ -343,6 +373,7 @@ struct NormalType
      */
     private constructor(packageName: pointer<ArrayList>, typeName: pointer<char>, memSize: int)
     {
+        this.rawQName = null
         this.typeName = typeName
         this.packageName = packageName
         this.typeArguments = new ArrayList(sizeof(Type))
@@ -353,11 +384,20 @@ struct NormalType
 
 
     /**
-     * Checks whether the package of this type has not been resolved.
+     * Checks whether this type has been fully resolved.
      *
-     * @return true if the package name is not available; otherwise, false
+     * <p>A type is considered fully resolved only when its raw qualified name
+     * has been resolved and its memory size has been determined. Therefore,
+     * {@code rawQName} must be {@code null} and {@code memSize} must be greater
+     * or equal to zero.</p>
+     *
+     * <p>If either the name is still unresolved or the memory size has not yet
+     * been computed, this method returns {@code false}.</p>
+     *
+     * @return              {@code true} if both name resolution and memory size resolution
+     *                       have been completed; {@code false} otherwise
      */
-    fun isPackageUnresolved() -> bool = this.packageName == null
+    fun isResolved() -> bool = this.rawQName == null && this.memSize >= 0
 
 
     /**
@@ -545,42 +585,6 @@ struct NormalType
      */
     fun canResolve(importDecl: pointer<ImportDeclaration>) -> bool
     {
-        if importDecl == null || importDecl.getKind() != ImportDeclaration.NAMESPACE_TYPE ||
-            this.typeName == null || !this.isPackageUnresolved():
-            return false
-
-        val namespaceImport: pointer<NamespaceImport> = importDecl.getHost() as pointer<NamespaceImport>
-
-        if namespaceImport == null || namespaceImport.isAll():
-            return false
-
-        val qualifiedName: pointer<QualifiedName> = namespaceImport.getQualifiedName()
-
-        if qualifiedName == null:
-            return false
-
-        val path: pointer<ArrayList> = qualifiedName.toPackageDecl().getQualifiedName()
-
-        if path == null || path.length <= 0:
-            return false
-
-        val classNameSlot: pointer<pointer<char>> = path.get(path.length - 1) as pointer<pointer<char>>
-
-        if classNameSlot == null || classNameSlot.deref == null:
-            return false
-
-        val classNames: pointer<ArrayList> = String.split(classNameSlot.deref, Type.CLASS_SEPERAtOR)
-
-        if classNames == null || classNames.length <= 0:
-            return false
-
-        val simpleNameSlot: pointer<pointer<char>> = classNames.get(classNames.length - 1) as pointer<pointer<char>>
-
-        if simpleNameSlot == null || !String.streq(simpleNameSlot.deref, this.typeName):
-            return false
-
-        this.packageName = path.sublist(0, path.length - 1)
-        this.typeName = classNameSlot.deref
         return true
     }
 
@@ -601,88 +605,7 @@ struct NormalType
      */
     fun resolve(imports: pointer<ArrayList>) -> pointer<ArrayList>
     {
-        val diagnostics: pointer<ArrayList> = new ArrayList(sizeof(Diagnostic))
-
-        if imports == null || this.typeName == null || !this.isPackageUnresolved():
-            return diagnostics
-
-        val unresolvedName: pointer<char> = this.typeName
-        var matchedCount: int = 0
-        val matchedPaths: pointer<ArrayList> = new ArrayList(sizeof(pointer<ArrayList>))
-        val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-
-        for (var i = 0; i < imports.length; i++):
-        {
-            val importDecl: pointer<ImportDeclaration> = imports.get(i) as pointer<ImportDeclaration>
-
-            if importDecl == null || importDecl.getKind() != ImportDeclaration.NAMESPACE_TYPE:
-                continue
-
-            val namespaceImport: pointer<NamespaceImport> = importDecl.getHost() as pointer<NamespaceImport>
-
-            if namespaceImport == null || !namespaceImport.isSingle():
-                continue
-
-            val candidate: pointer<NormalType> = NormalType.unresolved(unresolvedName)
-
-            if !candidate.canResolve(importDecl):
-                continue
-
-            val qualifiedName: pointer<QualifiedName> = namespaceImport.getQualifiedName()
-
-            if qualifiedName == null:
-                continue
-
-            val path: pointer<ArrayList> = qualifiedName.toPackageDecl().getQualifiedName()
-
-            if path == null || path.length <= 0:
-                continue
-
-            var alreadyMatched: bool = false
-
-            for (var j = 0; j < matchedPaths.length; j++):
-            {
-                val matchedPathSlot: pointer<pointer<ArrayList>> = matchedPaths.get(j) as pointer<pointer<ArrayList>>
-
-                if matchedPathSlot != null && String.stringListCmp(matchedPathSlot.deref, path) == 0:
-                    alreadyMatched = true
-            }
-
-            if alreadyMatched:
-                continue
-
-            if matchedCount == 0:
-            {
-                this.packageName = candidate.packageName
-                this.typeName = candidate.typeName
-            }
-
-            matchedPaths.push(path.ref)
-            matchedCount++
-
-            val tokens: pointer<ArrayList> = qualifiedName.getAllTokens()
-
-            if tokens != null && tokens.length > 0:
-            {
-                val token: pointer<Token> = tokens.get(tokens.length - 1) as pointer<Token>
-
-                if token != null && token.pos != null:
-                    locations.push(new SourceLocation(
-                        null,
-                        token.pos.offset,
-                        token.pos.line,
-                        token.pos.column,
-                        token.pos.length))
-            }
-        }
-
-        if matchedCount > 1:
-            diagnostics.push(Diagnostic.makeError(
-                Diagnostic.CANNOT_PARSE,
-                locations,
-                "ambiguous import"))
-
-        return diagnostics
+        return new ArrayList(sizeof(Diagnostic))
     }
 
 
@@ -811,13 +734,13 @@ struct NormalType
         if other == null:
             return false
 
-        if this.isPackageUnresolved() || other.isPackageUnresolved():
+        if !this.isResolved() || !other.isResolved():
             return false
 
         if !String.streq(this.typeName, other.typeName):
             return false
 
-        return String.stringListCmp(this.packageName, other.packageName) == 0
+        return String.stringListEq(this.packageName, other.packageName)
     }
 
 
@@ -858,7 +781,10 @@ struct NormalType
      */
     fun clone() -> pointer<NormalType>
     {
-        val result: pointer<NormalType> = new NormalType(this.packageName, this.typeName, this.memSize)
+        val result: pointer<NormalType> = if this.rawQName == null:
+                new NormalType(this.packageName, this.typeName, this.memSize)
+            else:
+                new NormalType(this.rawQName.clone())
 
         for (var i: int = 0; i < this.tokens.length; i++):
         {

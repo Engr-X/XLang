@@ -93,6 +93,10 @@ private fun intCmp(left: pointer<*>, right: pointer<*>) -> int
 }
 
 
+private fun intEq(left: pointer<*>, right: pointer<*>) -> bool =
+    (left as pointer<int>).deref == (right as pointer<int>).deref
+
+
 private fun pushGetTest() -> int
 {
     val list: pointer<ArrayList> = new ArrayList(sizeof(int))
@@ -332,7 +336,7 @@ private fun indexOfTest() -> int
     val valueSpace: blob[sizeof(int)]
     val value: pointer<int> = valueSpace as pointer<int>
 
-    list.setComparator(intCmp)
+    list.setEquality(intEq)
 
     value.deref = 11
     list.push(value)
@@ -368,7 +372,7 @@ private fun removeTest() -> int
     val valueSpace: blob[sizeof(int)]
     val value: pointer<int> = valueSpace as pointer<int>
 
-    list.setComparator(intCmp)
+    list.setEquality(intEq)
 
     value.deref = 7
     list.push(value)
@@ -446,7 +450,7 @@ private fun comparatorTest() -> int
     if list.length != 3:
         return 3
 
-    list.setComparator(intCmp)
+    list.setEquality(intEq)
 
     if list.indexOf(value) != 1:
         return 4
@@ -481,6 +485,7 @@ private fun comparatorTest() -> int
         return 11
 
     val seeded: pointer<ArrayList> = new ArrayList(sizeof(int), 2, 0.75, intCmp)
+    seeded.setEquality(intEq)
 
     value.deref = 12
     seeded.push(value)

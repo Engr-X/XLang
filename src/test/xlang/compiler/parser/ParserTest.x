@@ -89,6 +89,8 @@ fun genTest() -> pointer<TestGroup>
     val selectiveImportsTC: pointer<TestCase> =
         new TestCase("selectiveImports", selectiveImportsTest)
     val focusedAllSourceProgramsTG: pointer<TestGroup> = genAllSourceProgramsTestGroup()
+    val focusedCompoundOperatorExpressionTC: pointer<TestCase> =
+        new TestCase("compoundOperatorExpression", compoundOperatorExpressionTest)
     val annotationSeparatedValuesUnion: pointer<TestUnion> =
         new TestUnion(TestCase.TYPE, annotationSeparatedValuesTC, null)
     val preprocessSeparatedValuesUnion: pointer<TestUnion> =
@@ -99,11 +101,14 @@ fun genTest() -> pointer<TestGroup>
         new TestUnion(TestCase.TYPE, selectiveImportsTC, null)
     val focusedAllSourceProgramsUnion: pointer<TestUnion> =
         new TestUnion(TestGroup.TYPE, null, focusedAllSourceProgramsTG)
+    val focusedCompoundOperatorExpressionUnion: pointer<TestUnion> =
+        new TestUnion(TestCase.TYPE, focusedCompoundOperatorExpressionTC, null)
 
     result.addTestUnion(annotationSeparatedValuesUnion)
     result.addTestUnion(preprocessSeparatedValuesUnion)
     result.addTestUnion(namespaceImportsUnion)
     result.addTestUnion(selectiveImportsUnion)
+    result.addTestUnion(focusedCompoundOperatorExpressionUnion)
     result.addTestUnion(focusedAllSourceProgramsUnion)
     return result
 
@@ -2328,46 +2333,46 @@ private fun compoundOperatorExpressionTest() -> int
     if !expressionTextEquals("x !|| y", "not(logicalOr(x, y))"):
         return 14
 
-    if !expressionTextEquals("x **= y", "(x = pow(x, y))"):
+    if !expressionTextEquals("x **= y", "powAssign(x, y)"):
         return 15
 
-    if !expressionTextEquals("x *= y", "(x = times(x, y))"):
+    if !expressionTextEquals("x *= y", "timesAssign(x, y)"):
         return 16
 
-    if !expressionTextEquals("x /= y", "(x = div(x, y))"):
+    if !expressionTextEquals("x /= y", "divAssign(x, y)"):
         return 17
 
-    if !expressionTextEquals("x %= y", "(x = rem(x, y))"):
+    if !expressionTextEquals("x %= y", "remAssign(x, y)"):
         return 18
 
-    if !expressionTextEquals("x += y", "(x = plus(x, y))"):
+    if !expressionTextEquals("x += y", "plusAssign(x, y)"):
         return 19
 
-    if !expressionTextEquals("x -= y", "(x = minus(x, y))"):
+    if !expressionTextEquals("x -= y", "minusAssign(x, y)"):
         return 20
 
-    if !expressionTextEquals("x <<= y", "(x = shl(x, y))"):
+    if !expressionTextEquals("x <<= y", "shlAssign(x, y)"):
         return 21
 
-    if !expressionTextEquals("x >>= y", "(x = shr(x, y))"):
+    if !expressionTextEquals("x >>= y", "shrAssign(x, y)"):
         return 22
 
-    if !expressionTextEquals("x <<<= y", "(x = shl(x, y))"):
+    if !expressionTextEquals("x <<<= y", "ushlAssign(x, y)"):
         return 23
 
-    if !expressionTextEquals("x >>>= y", "(x = ushr(x, y))"):
+    if !expressionTextEquals("x >>>= y", "ushrAssign(x, y)"):
         return 24
 
-    if !expressionTextEquals("x &= y", "(x = bitwiseAnd(x, y))"):
+    if !expressionTextEquals("x &= y", "bitwiseAndAssign(x, y)"):
         return 25
 
-    if !expressionTextEquals("x !&= y", "(x = inv(bitwiseAnd(x, y)))"):
+    if !expressionTextEquals("x !&= y", "bitwiseNandAssign(x, y)"):
         return 26
 
-    if !expressionTextEquals("x |= y", "(x = bitwiseOr(x, y))"):
+    if !expressionTextEquals("x |= y", "bitwiseOrAssign(x, y)"):
         return 27
 
-    if !expressionTextEquals("x !|= y", "(x = inv(bitwiseOr(x, y)))"):
+    if !expressionTextEquals("x !|= y", "bitwiseNorAssign(x, y)"):
         return 28
 
     return 0
