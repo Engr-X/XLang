@@ -344,10 +344,10 @@ struct NormalizeRule
     /**
      * Appends a token-kind pattern without a text requirement.
      *
-     * The new pattern accepts tokens of the specified kind. Token.AnyKind
+     * The new pattern accepts tokens of the specified kind. Token.ANY_KIND
      * may be used to accept any kind.
      *
-     * @param kind              the required token kind or Token.AnyKind
+     * @param kind              the required token kind or Token.ANY_KIND
      *
      * @return                  this rule for chained calls
      */
@@ -364,7 +364,7 @@ struct NormalizeRule
      * PatternList creates the concrete pattern atom and owns any copied
      * regex string used for matching.
      *
-     * @param kind              the required token kind or Token.AnyKind
+     * @param kind              the required token kind or Token.ANY_KIND
      * @param regex             the optional regular expression
      *
      * @return                  this rule for chained calls
@@ -770,10 +770,8 @@ struct NormalizeFSM
      *
      * @note                    This function is intended to be called from a rule action.
      */
-    fun deleteToken()
-    {
+    fun deleteToken():
         this.receiver.deleteAt(this.currentIndex)
-    }
 
     
     /**
@@ -791,10 +789,8 @@ struct NormalizeFSM
      *
      * @note                    This function is intended to be called from a rule action.
      */
-    fun insertToken(token: pointer<Token>)
-    {
+    fun insertToken(token: pointer<Token>):
         this.receiver.insertAt(this.currentIndex, token)
-    }
 
 
     /**
@@ -813,10 +809,8 @@ struct NormalizeFSM
      *
      * @note                    An offset of zero is equivalent to insertToken(token).
      */
-    fun insertToken(offset: int, token: pointer<Token>)
-    {
+    fun insertToken(offset: int, token: pointer<Token>):
         this.receiver.insertAt(this.currentIndex + offset, token)
-    }
 
 
     /**

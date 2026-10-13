@@ -380,18 +380,15 @@ struct TypeParser
             errorIndex = tokens.length() - 1
 
         val errorToken: pointer<Token> = tokens.get(errorIndex)
-        val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-        val location: pointer<SourceLocation> = new SourceLocation(
-            null,
-            errorToken.pos.offset,
-            errorToken.pos.line,
-            errorToken.pos.column,
-            errorToken.pos.length)
-
-        locations.push(location)
+    
         this.error = Diagnostic.makeError(
             Diagnostic.CANNOT_PARSE_TYPE,
-            locations,
+            new SourceLocation(
+                null,
+                errorToken.pos.offset,
+                errorToken.pos.line,
+                errorToken.pos.column,
+                errorToken.pos.length),
             Diagnostic.CANNOT_PARSE_TYPE_MSG)
 
         return -1
@@ -447,18 +444,14 @@ struct TypeParser
                 return 1
             }
 
-            val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-            val location: pointer<SourceLocation> = new SourceLocation(
-                null,
-                token.pos.offset,
-                token.pos.line,
-                token.pos.column,
-                token.pos.length)
-
-            locations.push(location)
             this.error = Diagnostic.makeError(
                 Diagnostic.CANNOT_PARSE_TYPE,
-                locations,
+                new SourceLocation(
+                    null,
+                    token.pos.offset,
+                    token.pos.line,
+                    token.pos.column,
+                    token.pos.length),
                 Diagnostic.CANNOT_PARSE_TYPE_MSG)
             return -1
         }
@@ -475,18 +468,14 @@ struct TypeParser
             token.kind != Tokenizer.KW_SHORT &&
             token.kind != Tokenizer.KW_VOID:
         {
-            val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-            val location: pointer<SourceLocation> = new SourceLocation(
-                null,
-                token.pos.offset,
-                token.pos.line,
-                token.pos.column,
-                token.pos.length)
-
-            locations.push(location)
             this.error = Diagnostic.makeError(
                 Diagnostic.CANNOT_PARSE_TYPE,
-                locations,
+                new SourceLocation(
+                    null,
+                    token.pos.offset,
+                    token.pos.line,
+                    token.pos.column,
+                    token.pos.length),
                 Diagnostic.CANNOT_PARSE_TYPE_MSG)
             return -1
         }
@@ -592,19 +581,16 @@ struct TypeParser
         if errorIndex >= tokens.length():
             errorIndex = tokens.length() - 1
 
-        val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
         val errorToken: pointer<Token> = tokens.get(errorIndex)
-        val location: pointer<SourceLocation> = new SourceLocation(
-            null,
-            errorToken.pos.offset,
-            errorToken.pos.line,
-            errorToken.pos.column,
-            errorToken.pos.length)
 
-        locations.push(location)
         this.error = Diagnostic.makeError(
             Diagnostic.CANNOT_PARSE_TYPE,
-            locations,
+            new SourceLocation(
+                null,
+                errorToken.pos.offset,
+                errorToken.pos.line,
+                errorToken.pos.column,
+                errorToken.pos.length),
             Diagnostic.CANNOT_PARSE_TYPE_MSG)
 
         return -1

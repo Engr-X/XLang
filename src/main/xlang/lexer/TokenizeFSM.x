@@ -23,6 +23,9 @@
 
 package xlang.lexer
 
+import xlang.Diagnostic
+import xlang.Diagnostics
+import xlang.SourceLocation
 import xlang.System
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
@@ -173,6 +176,13 @@ struct TokenizeFSM
      */
     private var input: pointer<LexInput>
 
+    /**
+     * Stores diagnostics produced while this tokenizer FSM processes input.
+     *
+     * Entries are kept in the order in which they are reported.
+     */
+    private var diagnostics: pointer<Diagnostics>
+
 
     /**
      * Initializes a tokenizer FSM for a source-code buffer.
@@ -199,7 +209,30 @@ struct TokenizeFSM
         this.cursorPos = new LexPosition(0, 1, 1)
         this.inputPos = new LexPosition(0, 1, 1)
         this.input = new LexInput(this.inputPos, 0 as char, null as pointer<char>, 0)
+        this.diagnostics = new Diagnostics()
     }
+
+
+    /**
+     * Appends a diagnostic produced during tokenization.
+     *
+     * The supplied diagnostic is stored directly and is not cloned.
+     *
+     * @param diagnostic        the diagnostic to append
+     */
+    fun push(diagnostic: pointer<Diagnostic>):
+        this.diagnostics.push(diagnostic)
+
+
+    /**
+     * Returns the diagnostics collected by this tokenizer FSM.
+     *
+     * The returned pointer refers to the internal mutable collection and is
+     * not copied or cloned.
+     *
+     * @return                  the internal diagnostic collection
+     */
+    fun getDiagnostics() -> pointer<Diagnostics> = this.diagnostics
 
 
     /**
@@ -327,18 +360,20 @@ struct TokenizeFSM
      *
      * @param rules             the ordered array of tokenize-rule pointers
      * @param rulesLength       the number of accessible entries in the rule array
+     * @param diagnostics       the collection that receives unmatched-input errors
      *
      * @return                  the value returned by the first matching rule action, or null if no active rule matches
      *
      * @note                    This function does not automatically create an EOF token when
      *                          the cursor reaches the end of the source text.
+     *
      * @warning                 The rule array, each accessed rule, its pattern and its action
      *                          must all be valid.
      * @warning                 An incorrect rulesLength may cause out-of-bounds memory access.
      * @warning                 If the cursor offset is outside the source buffer, calculating
      *                          currentPtr or matching a pattern may cause undefined behavior.
      */
-    fun apply(rules: pointer<pointer<TokenizeRule>>, rulesLength: int) -> pointer<Token>
+    fun apply(rules: pointer<pointer<TokenizeRule>>, rulesLength: int, diagnostics: pointer<Diagnostics>) -> pointer<Token>
     {
         val currentPtr: pointer<char> = this.code + this.cursorPos.offset
 
@@ -365,11 +400,25 @@ struct TokenizeFSM
                     this.input.textLength = matchLength
 
                     val result: pointer<Token> = rule.action(this.input, this)
+                    diagnostics.merge(this.diagnostics)
                     return result
                 }
             }
         }
 
+        // cannot match any of them
+        val error: pointer<Diagnostic> = Diagnostic.makeError(
+            Diagnostic.UNRECOGNIZED_CHARACTER,
+            new SourceLocation(
+                null,
+                this.cursorPos.offset,
+                this.cursorPos.line,
+                this.cursorPos.column,
+                1),
+            Diagnostic.UNRECOGNIZED_CHARACTER_MSG
+        )
+
+        diagnostics.push(error)
         return null
     }
 }

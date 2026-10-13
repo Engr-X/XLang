@@ -24,6 +24,7 @@
 package xlang.compiler.semantic.normalizer
 
 import xlang.Diagnostic
+import xlang.Diagnostics
 import xlang.SourceLocation
 import xlang.compiler.parser.program.Field
 import xlang.compiler.parser.program.Function
@@ -37,6 +38,7 @@ import xlang.compiler.parser.program.Struct
 import xlang.compiler.parser.program.StructConstructor
 import xlang.compiler.setting.CompilerSettings
 import xlang.lexer.Token
+import xlang.parser.ASTFile
 import xlang.util.ArrayList
 
 
@@ -130,20 +132,17 @@ struct SplitterMembers
 }
 
 
-private fun splitProgram(program: pointer<Program>, dest: pointer<ArrayList>) -> pointer<ArrayList>
+private fun splitProgram(program: pointer<Program>, diagnostics: pointer<Diagnostics>) -> pointer<ArrayList>
 {
-    // null check
-
     val packageName: pointer<ArrayList> = program.getPackageDeclaration().getQualifiedName()
     val imports: pointer<ArrayList> = program.getImportDeclarations()
     val preprocessSettings: pointer<ArrayList> = program.getPreprocessSettings()
     val config: pointer<CompilerSettings> = new CompilerSettings(null).setAll(preprocessSettings)
     val outerClassName: pointer<char> = config.getOuterClass()
-
     val splitMembers: pointer<SplitterMembers> = new SplitterMembers(program)
 
     // check have constructors here
-    val result: pointer<ArrayList> = new ArrayList(sizeof(Diagnostic))
+    val result: pointer<ArrayList> = new ArrayList(sizeof(NormalizedProgram))
 
     for (var i = 0; i < splitMembers.constructors.length; i++):
     {
@@ -168,11 +167,14 @@ private fun splitProgram(program: pointer<Program>, dest: pointer<ArrayList>) ->
             }
         }
 
-        result.push(Diagnostic.makeError(
-            Diagnostic.CANNOT_PARSE,
+        diagnostics.push(Diagnostic.makeError(
+            Diagnostic.CONSTRUCTOR_AT_PROGRAM_LEVEL,
             locations,
-            "constructor cannot be declared at program level"))
+            Diagnostic.CONSTRUCTOR_AT_PROGRAM_LEVEL_MSG))
     }
+
+    if diagnostics.haveError():
+        return result
 
 
     // generate struct programs
@@ -193,7 +195,7 @@ private fun splitProgram(program: pointer<Program>, dest: pointer<ArrayList>) ->
             newImports.clone(),
             structItem)
 
-        dest.push(normalizedProgram)
+        result.push(normalizedProgram)
     }
 
     // generate outer class for program-level fields and functions
@@ -227,27 +229,27 @@ private fun splitProgram(program: pointer<Program>, dest: pointer<ArrayList>) ->
         imports,
         outerClass)
 
-    dest.push(normalizedOuterClass)
+    result.push(normalizedOuterClass)
 
     return result
 }
 
 
-fun splitPrograms(program: pointer<ArrayList>, dest: pointer<ArrayList>) -> pointer<ArrayList>
+fun splitPrograms(program: pointer<ArrayList>, diagnostics: pointer<Diagnostics>) -> pointer<ArrayList>
 {
     val result: pointer<ArrayList> = new ArrayList(sizeof(Diagnostic))
 
-    if program == null:
-        return result
+    if program == null || diagnostics == null:
+        return result 
 
     for (var i = 0; i < program.length; i++):
     {
-        val item: pointer<Program> = program.get(i) as pointer<Program>
+        val file: pointer<ASTFile> = program.get(i) as pointer<ASTFile>
 
-        if item == null:
+        if file == null || file.program == null:
             continue
 
-        result.pushAll(splitProgram(item, dest))
+        result.pushAll(splitProgram(file.program as pointer<Program>, diagnostics))
     }
 
     return result

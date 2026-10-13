@@ -51,18 +51,18 @@ fun genTest() -> pointer<TestGroup>
     val result: pointer<TestGroup> = new TestGroup("xlang.lexer.NormalizeFSM")
     val receiverApplyTC: pointer<TestCase> = new TestCase("receiverApply", receiverApplyTest)
     val ruleWindowTC: pointer<TestCase> = new TestCase("ruleWindow", ruleWindowTest)
-    val anyKindTC: pointer<TestCase> = new TestCase("anyKind", anyKindTest)
+    val ANY_KINDTC: pointer<TestCase> = new TestCase("ANY_KIND", ANY_KINDTest)
     val currentIndexTC: pointer<TestCase> = new TestCase("currentIndex", currentIndexTest)
     val actionFallthroughTC: pointer<TestCase> = new TestCase("actionFallthrough", actionFallthroughTest)
     val receiverApplyUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, receiverApplyTC, null)
     val ruleWindowUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, ruleWindowTC, null)
-    val anyKindUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, anyKindTC, null)
+    val ANY_KINDUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, ANY_KINDTC, null)
     val currentIndexUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, currentIndexTC, null)
     val actionFallthroughUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, actionFallthroughTC, null)
 
     result.addTestUnion(receiverApplyUnion)
     result.addTestUnion(ruleWindowUnion)
-    result.addTestUnion(anyKindUnion)
+    result.addTestUnion(ANY_KINDUnion)
     result.addTestUnion(currentIndexUnion)
     result.addTestUnion(actionFallthroughUnion)
 
@@ -346,7 +346,7 @@ private fun ruleWindowTest() -> int
 }
 
 
-private fun anyKindTest() -> int
+private fun ANY_KINDTest() -> int
 {
     val list: pointer<TokenList> = makeABCList()
     val exactRule: pointer<NormalizeRule> = new NormalizeRule(
@@ -364,7 +364,7 @@ private fun anyKindTest() -> int
     if exactRule.match(list, 1):
         return 1
 
-    anyRule.addPattern(Token.AnyKind, "b")
+    anyRule.addPattern(Token.ANY_KIND, "b")
     anyRule.setPivot(0)
 
     if !anyRule.match(list, 1):
