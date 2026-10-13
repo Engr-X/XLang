@@ -434,42 +434,6 @@ def genTokenizerInitFun(
     return "\n".join(lines) + "\n\n\n"
 
 
-def genTokenzeFun(tabs: int) -> str:
-    indent = " " * (tabs * 4)
-    body_indent = " " * ((tabs + 1) * 4)
-    nested_indent = " " * ((tabs + 2) * 4)
-    loop_indent = " " * ((tabs + 2) * 4)
-    loop_body_indent = " " * ((tabs + 3) * 4)
-    lines: list[str] = [
-        f"{indent}fun tokenize(code: pointer<char>) -> pointer<TokenList>",
-        f"{indent}{{",
-        f"{body_indent}if !tokenizerIsInit:",
-        f"{nested_indent}tokenizerInit()",
-        "",
-        f"{body_indent}val tokenList: pointer<TokenList> = new TokenList()",
-        f"{body_indent}val lexState: pointer<TokenizeFSM> = new TokenizeFSM(code)",
-        "",
-        f"{body_indent}while true:",
-        f"{body_indent}{{",
-        f"{loop_indent}val token: pointer<Token> = lexState.apply(rulePtr, ruleLength)",
-        "",
-        f"{loop_indent}if token == null:",
-        f"{loop_body_indent}continue",
-        "",
-        f"{loop_indent}tokenList.push(token)",
-        "",
-        f"{loop_indent}if token.kind < 0 || token.isEOF():",
-        f"{loop_body_indent}break",
-        f"{body_indent}}}",
-        "",
-        f"{body_indent}return tokenList",
-    ]
-
-    lines.append(f"{indent}}}")
-
-    return "\n".join(lines) + "\n\n\n"
-
-
 def codegen(rules: JsonObject, dest: Path) -> str:
     ensure_type(rules, TOKENIZER_RULES_TYPE, "tokenizer config")
 
@@ -494,7 +458,6 @@ def codegen(rules: JsonObject, dest: Path) -> str:
         genOthers(rules.get("others", [])),
         genSymbolEatFunctions(symbol_defs),
         genTokenizerInitFun(expanded_rules, rules.get("init", []), token_defs, 0),
-        genTokenzeFun(0),
     ]
 
     return "".join(section for section in sections if section != "")

@@ -256,14 +256,9 @@ struct PackageTree
     }
 
 
-    fun registerAll(programs: pointer<ArrayList>)
+    fun registerAll(classifiedPrograms: pointer<HashMap>)
     {
-        val classified: pointer<HashMap> = Classifier.classify(programs)
-
-        if classified == null:
-            return
-
-        val entries: pointer<ArrayList> = classified.getEntries()
+        val entries: pointer<ArrayList> = classifiedPrograms.getEntries()
 
         for (var i = 0; i < entries.length; i++):
         {

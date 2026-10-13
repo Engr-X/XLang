@@ -23,6 +23,7 @@
 #file.outerClass("TokenNormalizerTest")
 package xlang.compiler.lexer
 
+import xlang.Diagnostics
 import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.test.TestCase
@@ -82,7 +83,7 @@ private fun canonicalizeTest() -> int
 
 private fun canonicalizeLeadingLineTerminatorTest() -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize("\n\nfoo")
+    val raw: pointer<TokenList> = Tokenizer.tokenize("\n\nfoo", new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.canonicalize(raw)
 
     if tokens.length() != 3:
@@ -112,7 +113,7 @@ private fun canonicalizeLeadingLineTerminatorTest() -> int
 
 private fun canonicalizeStatementSeparatorTest() -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize("foo\n\n;bar;\n;baz;;qux;;")
+    val raw: pointer<TokenList> = Tokenizer.tokenize("foo\n\n;bar;\n;baz;;qux;;", new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.canonicalize(raw)
 
     if tokens.length() != 9:
@@ -169,7 +170,7 @@ private fun canonicalizeStatementSeparatorTest() -> int
 
 private fun checkPairSemicolon(input: pointer<char>, leftKind: int, rightKind: int) -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize(input)
+    val raw: pointer<TokenList> = Tokenizer.tokenize(input, new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.canonicalize(raw)
 
     if tokens.length() != 9:
@@ -306,7 +307,7 @@ private fun normalizeTest() -> int
 
 private fun checkRightBraceLineTerminator(input: pointer<char>) -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize(input)
+    val raw: pointer<TokenList> = Tokenizer.tokenize(input, new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.normalize(raw)
 
     if tokens.length() != 7:
@@ -365,7 +366,7 @@ private fun normalizeRightBraceKeepTrailingLineTerminatorTest() -> int =
 
 private fun checkGenericTypeMemberLineTerminator(input: pointer<char>, nextKind: int) -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize(input)
+    val raw: pointer<TokenList> = Tokenizer.tokenize(input, new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.normalize(raw)
 
     if tokens.length() != 14:
@@ -445,7 +446,7 @@ private fun normalizeGenericTypeBeforeValLineTerminatorTest() -> int =
 
 private fun normalizeRightParenBeforeStaticFunLineTerminatorTest() -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize("value = make()\nstatic fun next()")
+    val raw: pointer<TokenList> = Tokenizer.tokenize("value = make()\nstatic fun next()", new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.normalize(raw)
 
     if tokens.length() < 8:
@@ -477,7 +478,7 @@ private fun normalizeRightParenBeforeStaticFunLineTerminatorTest() -> int
 
 private fun normalizeRightParenBeforeRightBraceLineTerminatorTest() -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize("value = make()\n}")
+    val raw: pointer<TokenList> = Tokenizer.tokenize("value = make()\n}", new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.normalize(raw)
 
     if tokens.length() < 7:
@@ -504,7 +505,7 @@ private fun normalizeRightParenBeforeRightBraceLineTerminatorTest() -> int
 
 private fun normalizeRightBracketKeepsLineTerminatorTest() -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize("val first: blob[4]\nval second: int")
+    val raw: pointer<TokenList> = Tokenizer.tokenize("val first: blob[4]\nval second: int", new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.normalize(raw)
 
     if tokens.length() < 9:
@@ -531,7 +532,7 @@ private fun normalizeRightBracketKeepsLineTerminatorTest() -> int
 
 private fun normalizePostfixIncrementKeepsLineTerminatorTest() -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize("cursor.line++\ncursor.column = 0")
+    val raw: pointer<TokenList> = Tokenizer.tokenize("cursor.line++\ncursor.column = 0", new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.normalize(raw)
 
     if tokens.length() < 6:
@@ -558,7 +559,7 @@ private fun normalizePostfixIncrementKeepsLineTerminatorTest() -> int
 
 private fun normalizePostfixDecrementKeepsLineTerminatorTest() -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize("i--\nitems.removeAt(i)")
+    val raw: pointer<TokenList> = Tokenizer.tokenize("i--\nitems.removeAt(i)", new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.normalize(raw)
 
     if tokens.length() < 4:
@@ -585,7 +586,7 @@ private fun normalizePostfixDecrementKeepsLineTerminatorTest() -> int
 
 private fun normalizeDotStarKeepsLineTerminatorTest() -> int
 {
-    val raw: pointer<TokenList> = Tokenizer.tokenize("Math.*\nnext")
+    val raw: pointer<TokenList> = Tokenizer.tokenize("Math.*\nnext", new Diagnostics())
     val tokens: pointer<TokenList> = TokenNormalizer.normalize(raw)
 
     if tokens.length() < 5:

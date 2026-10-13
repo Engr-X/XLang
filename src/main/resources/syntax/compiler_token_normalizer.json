@@ -15,13 +15,13 @@
         { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.LEFT_BRACKET" }], "pivot_index": "0", "action": "enterBracket" },
         { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.RIGHT_BRACKET" }], "pivot_index": "0", "action": "exitBracket" },
         { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "pivot_index": "0", "action": "deleteLineTerminatorInPair" },
-        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.AnyKind" }, { "kind": "Tokenizer.RIGHT_BRACE" }, { "kind": "Token.AnyKind" }], "pivot_index": "0", "action": "insertLineTerminatorAroundRightBrace" },
-        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.AnyKind" }, { "kind": "Tokenizer.KW_ELIF" }], "pivot_index": "1", "action": "insertLineTerminatorBeforeElif" },
-        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.AnyKind" }, { "kind": "Tokenizer.KW_ELSE" }], "pivot_index": "1", "action": "insertLineTerminatorBeforeElse" },
-        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.AnyKind" }], "pivot_index": "0", "action": "deleteLineTerminatorBeforeBanToken" },
-        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.DOT" }, { "kind": "Tokenizer.STAR" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.AnyKind" }], "pivot_index": "2", "action": "keepLineTerminator" },
-        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.KW_IMPORT" }, { "kind": "Tokenizer.STAR" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.AnyKind" }], "pivot_index": "2", "action": "keepLineTerminator" },
-        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.AnyKind" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.AnyKind" }], "pivot_index": "1", "action": "deleteLineTerminatorAfterBanToken" }
+        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.ANY_KIND" }, { "kind": "Tokenizer.RIGHT_BRACE" }, { "kind": "Token.ANY_KIND" }], "pivot_index": "0", "action": "insertLineTerminatorAroundRightBrace" },
+        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.ANY_KIND" }, { "kind": "Tokenizer.KW_ELIF" }], "pivot_index": "1", "action": "insertLineTerminatorBeforeElif" },
+        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.ANY_KIND" }, { "kind": "Tokenizer.KW_ELSE" }], "pivot_index": "1", "action": "insertLineTerminatorBeforeElse" },
+        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.ANY_KIND" }], "pivot_index": "0", "action": "deleteLineTerminatorBeforeBanToken" },
+        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.DOT" }, { "kind": "Tokenizer.STAR" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.ANY_KIND" }], "pivot_index": "2", "action": "keepLineTerminator" },
+        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Tokenizer.KW_IMPORT" }, { "kind": "Tokenizer.STAR" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.ANY_KIND" }], "pivot_index": "2", "action": "keepLineTerminator" },
+        { "state": "NormalizeFSM.DEFAULT", "patterns": [{ "kind": "Token.ANY_KIND" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }, { "kind": "Token.ANY_KIND" }], "pivot_index": "1", "action": "deleteLineTerminatorAfterBanToken" }
     ],
     "others": [
         [   "private fun tokenKindEq(left: pointer<*>, right: pointer<*>) -> bool",

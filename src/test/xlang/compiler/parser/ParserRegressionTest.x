@@ -23,6 +23,7 @@
 package xlang.compiler.parser
 
 import xlang.System
+import xlang.Diagnostics
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.expression.Expression
 import xlang.compiler.parser.expression.ExpressionTuple
@@ -414,14 +415,14 @@ private fun arrayListSublistFunctionTest() -> int
 
 private fun parseExpressionText(text: pointer<char>) -> pointer<Expression>
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(text)
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(text, new Diagnostics())
     return Parser.parseExpression(tokens)
 }
 
 
 private fun parseExpressionTupleText(text: pointer<char>) -> pointer<ExpressionTuple>
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(text)
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(text, new Diagnostics())
     val tuple: pointer<ExpressionTuple> = Parser.parseExpressionTuple(tokens)
 
     if tuple == null:
@@ -438,14 +439,14 @@ private fun parseExpressionTupleText(text: pointer<char>) -> pointer<ExpressionT
 
 private fun parseStatementText(text: pointer<char>) -> pointer<Statement>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
     return Parser.parseStatement(tokens)
 }
 
 
 private fun parseFunctionText(text: pointer<char>) -> pointer<Function>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
     return Parser.parseFunction(tokens)
 }
 

@@ -269,18 +269,15 @@ struct RecursiveParser
             errorIndex = token.length() - 1
 
         val errorToken: pointer<Token> = token.get(errorIndex)
-        val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-        val location: pointer<SourceLocation> = new SourceLocation(
-            null,
-            errorToken.pos.offset,
-            errorToken.pos.line,
-            errorToken.pos.column,
-            errorToken.pos.length)
 
-        locations.push(location)
         this.error = Diagnostic.makeError(
             Diagnostic.UNEXPECTED_TOKEN,
-            locations,
+            new SourceLocation(
+                null,
+                errorToken.pos.offset,
+                errorToken.pos.line,
+                errorToken.pos.column,
+                errorToken.pos.length),
             Diagnostic.UNEXPECTED_TOKEN_MSG)
 
         return maxMatchLength

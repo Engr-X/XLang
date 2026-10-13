@@ -116,43 +116,51 @@ struct Diagnostic
     static val INTERNAL_ERROR_LEVEL: int = 3
 
 
+    // Diagnostic code for a character that cannot be recognized by any tokenizer rule.
+    static val UNRECOGNIZED_CHARACTER: int = 1
 
     // Diagnostic code for an invalid bracket pair table.
-    static val INVALID_BRACKET_PAIR_TABLE: int = 1
+    static val INVALID_BRACKET_PAIR_TABLE: int = 2
 
     // Diagnostic code for a closing bracket without a matching opener.
-    static val UNEXPECTED_CLOSE_BRACKET: int = 2
+    static val UNEXPECTED_CLOSE_BRACKET: int = 3
 
     // Diagnostic code for a closing bracket that does not match the current opener.
-    static val MISMATCHED_CLOSE_BRACKET: int = 3
+    static val MISMATCHED_CLOSE_BRACKET: int = 4
 
     // Diagnostic code for an opening bracket that is never closed.
-    static val UNCLOSED_OPEN_BRACKET: int = 4
+    static val UNCLOSED_OPEN_BRACKET: int = 5
 
     // Diagnostic code for a token that does not match the expected parser rule.
-    static val UNEXPECTED_TOKEN: int = 5
+    static val UNEXPECTED_TOKEN: int = 6
 
     // Diagnostic code for a null parser input.
-    static val NULL_INPUT: int = 6
+    static val NULL_INPUT: int = 7
 
     // Diagnostic code for an empty parser input.
-    static val EMPTY_INPUT: int = 7
+    static val EMPTY_INPUT: int = 8
 
     // Diagnostic code for a parser result-construction failure.
-    static val CANNOT_CONSTRUCT_AST: int = 8
+    static val CANNOT_CONSTRUCT_AST: int = 9
 
     // Diagnostic code for an invalid parser pattern atom.
-    static val INVALID_PATTERN_ATOM: int = 9
+    static val INVALID_PATTERN_ATOM: int = 10
 
     // Diagnostic code for multiple parser rules matching at the highest priority.
-    static val AMBIGUOUS_PARSER_RULE: int = 10
+    static val AMBIGUOUS_PARSER_RULE: int = 11
 
     // Diagnostic code for a parser rule that cannot be parsed.
-    static val CANNOT_PARSE: int = 11
+    static val CANNOT_PARSE: int = 12
 
     // Diagnostic code for a token sequence that cannot start a type.
-    static val CANNOT_PARSE_TYPE: int = 12
-    
+    static val CANNOT_PARSE_TYPE: int = 13
+
+    // Error code for a constructor declared at program level.
+    static val CONSTRUCTOR_AT_PROGRAM_LEVEL: int = 15
+
+
+    // Message for an unrecognized character encountered during tokenization.
+    static val UNRECOGNIZED_CHARACTER_MSG: pointer<char> = "unrecognized character"
 
     // Message for an invalid bracket pair table.
     static val INVALID_BRACKET_PAIR_TABLE_MSG: pointer<char> = "invalid bracket pair table"
@@ -190,6 +198,9 @@ struct Diagnostic
     // Message for a token sequence that cannot be parsed as a type.
     static val CANNOT_PARSE_TYPE_MSG: pointer<char> = "cannot parse type"
 
+    // Message for a constructor declared at program level.
+    static val CONSTRUCTOR_AT_PROGRAM_LEVEL_MSG: pointer<char> = "constructor cannot be declared at program level"
+
 
     /**
     * Creates a normal diagnostic result.
@@ -214,6 +225,26 @@ struct Diagnostic
         
 
     /**
+     * Creates an error diagnostic associated with a single source location.
+     *
+     * <p>This method wraps the provided source location in a list and delegates
+     * to the error diagnostic factory that accepts multiple source locations.
+     *
+     * @param code              The diagnostic error code.
+     * @param location          The source location where the error occurred.
+     * @param message           The human-readable error message.
+     *
+     * @return                  A pointer to the newly created error diagnostic.
+     */
+    static fun makeError(code: int, location: pointer<SourceLocation>, message: pointer<char>) -> pointer<Diagnostic>
+    {
+        val locationList: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
+        locationList.push(location)
+        return new Diagnostic(ERROR_LEVEL, code, locationList, message)
+    }
+
+
+    /**
     * Creates an error diagnostic with an existing source location.
     *
     * The returned Diagnostic uses ERROR_LEVEL as its severity level.
@@ -227,7 +258,7 @@ struct Diagnostic
     * for managing the lifetime of the returned Diagnostic.
     *
     * @param code               the machine-readable diagnostic code.
-    * @param location           the optional source location list, or null if unavailable.
+    * @param locations          the optional source location list, or null if unavailable.
     * @param message            the human-readable diagnostic message.
     *
     * @return                   a newly allocated error diagnostic.
@@ -237,21 +268,41 @@ struct Diagnostic
     * @warning                  Passing an invalid message or location pointer may cause
     *                           undefined behavior, depending on the Diagnostic constructor.
     */
-    static fun makeError(code: int, location: pointer<ArrayList>, message: pointer<char>) -> pointer<Diagnostic> =
-        new Diagnostic(ERROR_LEVEL, code, location, message)
+    static fun makeError(code: int, locations: pointer<ArrayList>, message: pointer<char>) -> pointer<Diagnostic> =
+        new Diagnostic(ERROR_LEVEL, code, locations, message)
+
+
+    /**
+     * Creates a warning diagnostic associated with a single source location.
+     *
+     * <p>This method wraps the provided source location in a list and creates
+     * a warning diagnostic with the specified code and message.
+     *
+     * @param code              The diagnostic warning code.
+     * @param location          The source location where the warning occurred.
+     * @param message           The human-readable warning message.
+     *
+     * @return                  A pointer to the newly created warning diagnostic.
+     */
+    static fun makeWarning(code: int, location: pointer<SourceLocation>, message: pointer<char>) -> pointer<Diagnostic>
+    {
+        val locationList: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
+        locationList.push(location)
+        return new Diagnostic(WARNING_LEVEL, code, locationList, message)
+    }
 
 
     /**
      * Creates a warning diagnostic with an existing source location.
      *
      * @param code              the machine-readable diagnostic code
-     * @param location          the optional source location list
+     * @param locations         the optional source location list
      * @param message           the human-readable diagnostic message
      *
      * @return                  a newly allocated warning diagnostic
      */
-    static fun makeWarning(code: int, location: pointer<ArrayList>, message: pointer<char>) -> pointer<Diagnostic> =
-        new Diagnostic(WARNING_LEVEL, code, location, message)
+    static fun makeWarning(code: int, locations: pointer<ArrayList>, message: pointer<char>) -> pointer<Diagnostic> =
+        new Diagnostic(WARNING_LEVEL, code, locations, message)
 
 
     /**

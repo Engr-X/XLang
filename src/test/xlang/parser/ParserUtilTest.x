@@ -25,6 +25,7 @@
 package xlang.parser
 
 import xlang.Diagnostic
+import xlang.Diagnostics
 import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.TokenList
 import xlang.parser.ParserUtil
@@ -50,7 +51,7 @@ fun genTest() -> pointer<TestGroup>
 
 private fun checkInvalidBrackets(input: pointer<char>) -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(input)
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(input, new Diagnostics())
     val diagnostic: pointer<Diagnostic> = ParserUtil.checkBrackets(tokens)
 
     if diagnostic == null:
@@ -62,7 +63,7 @@ private fun checkInvalidBrackets(input: pointer<char>) -> int
 
 private fun checkBracketsTest() -> int
 {
-    val validTokens: pointer<TokenList> = Tokenizer.tokenize("{ a(b[c]) }")
+    val validTokens: pointer<TokenList> = Tokenizer.tokenize("{ a(b[c]) }", new Diagnostics())
     val validDiagnostic: pointer<Diagnostic> = ParserUtil.checkBrackets(validTokens)
 
     if validDiagnostic != null:
