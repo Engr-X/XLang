@@ -7,13 +7,13 @@ import Control.Monad (when, unless, void)
 import Control.Monad.State.Strict (State, get, modify, put, runState)
 import Data.Map.Strict (Map)
 import Data.Char (toLower)
-import Data.List (find, foldl', intercalate, nub, nubBy)
-import Data.Maybe (listToMaybe, mapMaybe, isNothing, fromMaybe)
+import Data.List (elemIndex, find, foldl', intercalate, nub, nubBy)
+import Data.Maybe (isJust, listToMaybe, mapMaybe, isNothing, fromMaybe)
 import Data.Foldable (for_)
 import Parse.SyntaxTree (AccessModified(..), Block(..), Class(..), Command(..), Decl, DeclFlag(..), DeclFlags, Expression(..), Operator(..), Program, Statement(..), pattern Function, pattern FunctionT, SwitchCase(..), exprTokens, stmtTokens, prettyClass, prettyExpr, prettyOp, normalizeProgram, normalizeClass, blobConstSizeMaybe, blobSizeExprMaybe)
 import Semantic.NameEnv (CheckState(..), CtrlState(..), ImportEnv, QName, Scope(..), VarId, defineDeclaredVar, defineLocalVar, getPackageName, lookupVarId)
 import Semantic.ContextCheck (Ctx)
-import Semantic.OpInfer (augAssignOp, binaryOpCastTypeMaybe, iCast, inferBinaryOpMaybe, inferUnaryOp, isBasicType, isIntegerType, isPointerType, widenedArgs)
+import Semantic.OpInfer (augAssignOp, binaryOpCastTypeMaybe, iCast, inferBinaryOpMaybe, inferUnaryOp, isBasicType, isIntegerType, isPointerType, widenedClass)
 import Semantic.TypeEnv (FullVarTable(..), FullFunctionTable(..), FunSig(..), FunTable, TypedImportEnv(..), VarTable, defaultTypedImportEnv)
 import Util.Exception (ErrorKind, Warning(..), staticCastError)
 import Util.Type (Path, Position)
@@ -404,14 +404,33 @@ inferIfExprType path pos tThen tElse =
         if tThenN == tElseN then
             pure tThenN
         else
-            case binaryOpCastTypeMaybe Add tThenN tElseN of
+            case commonPointerLikeIfType tThenN tElseN of
                 Just castT -> do
                     mapM_ addWarn (iCast path pos tThenN castT)
                     mapM_ addWarn (iCast path pos tElseN castT)
                     pure castT
-                Nothing -> do
-                    checkTypeCompat path pos tThenN tElseN
-                    pure tThenN
+                Nothing ->
+                    case binaryOpCastTypeMaybe Add tThenN tElseN of
+                        Just castT -> do
+                            mapM_ addWarn (iCast path pos tThenN castT)
+                            mapM_ addWarn (iCast path pos tElseN castT)
+                            pure castT
+                        Nothing -> do
+                            checkTypeCompat path pos tThenN tElseN
+                            pure tThenN
+
+
+commonPointerLikeIfType :: Class -> Class -> Maybe Class
+commonPointerLikeIfType a b = case (a, b) of
+    (Pointer Void, Pointer _) -> Just b
+    (Pointer _, Pointer Void) -> Just a
+    (Pointer t1, Pointer t2)
+        | t1 == t2 -> Just a
+        | otherwise -> Just (Pointer Void)
+    (Blob _, Pointer _) -> Just (Pointer Void)
+    (Pointer _, Blob _) -> Just (Pointer Void)
+    (Blob _, Blob _) -> Just (Pointer Void)
+    _ -> Nothing
 
 
 -- | Create a new lexical scope for the duration of an action, then restore depth/scope.
@@ -873,7 +892,10 @@ inferExpr path packages envs e@(Unary op innerE _) = do
             let resT = inferUnaryOp op t0 in do
                 mapM_ addWarn (iCast path pos t0 resT)
                 pure resT
-        else error "TODO: unary on non-basic type"
+        else do
+            addErr $ UE.Syntax $ UE.makeError path pos $
+                "unsupported operand type for '" ++ prettyOp op ++ "': " ++ prettyClass t0
+            pure ErrorClass
 
 
 inferExpr path packages envs e@(Binary Assign lhs rhs _) = do
@@ -1037,19 +1059,28 @@ inferExpr path packages envs e@(Call callee args) = do
     let TypeCtx{tcFunScopes = fScopes} = c
     let callPos = map Lex.tokenPos (exprTokens e)
 
-    argTs0 <- mapM (inferExpr path packages envs) args
-    let argInfos = zip argTs0 (map (map Lex.tokenPos . exprTokens) args)
+    argInfos <- mapM inferCallArg args
 
     case parsePointerIntrinsicCall callee of
         Just (baseName, baseTok, intrinsicName)
             | shouldTreatAsPointerIntrinsic c packages envs baseName baseTok ->
                 inferPointerIntrinsicCall callPos baseName baseTok intrinsicName argInfos
         _ -> do
-            mPtrRet <- inferFunctionPointerCall c callPos callee argInfos
+            mPtrRet <- inferFunctionPointerCall c callPos callee args argInfos
             case mPtrRet of
                 Just retTy -> pure retTy
-                Nothing -> lowerRegularCall c callPos fScopes callee argInfos
+                Nothing -> lowerRegularCall c callPos fScopes callee args argInfos
   where
+        inferCallArg :: Expression -> TypeM (Class, [Position])
+        inferCallArg arg = do
+            ctx <- get
+            let argPos = map Lex.tokenPos (exprTokens arg)
+            case functionRefArgEntries ctx arg of
+                Just _ -> pure (ErrorClass, argPos)
+                Nothing -> do
+                    argTy <- inferExpr path packages envs arg
+                    pure (argTy, argPos)
+
         parsePointerIntrinsicCall :: Expression -> Maybe (String, Lex.Token, String)
         parsePointerIntrinsicCall expr = case expr of
             Qualified [baseName, rawIntrinsic] (baseTok : _) ->
@@ -1118,24 +1149,22 @@ inferExpr path packages envs e@(Call callee args) = do
             TypeCtx ->
             [Position] ->
             Expression ->
+            [Expression] ->
             [(Class, [Position])] ->
             TypeM (Maybe Class)
-        inferFunctionPointerCall ctx callPos0 calleeExpr argInfos = do
+        inferFunctionPointerCall ctx callPos0 calleeExpr rawArgs argInfos = do
             if hasSyntheticCalleeToken calleeExpr || isNamedFunctionCallee ctx calleeExpr || isMemberCallee calleeExpr || isMemberQualifiedCallee ctx calleeExpr
                 then pure Nothing
                 else do
                     calleeTy <- inferExpr path packages envs calleeExpr
                     case normalizeTypeAlias (normalizeClass calleeTy) of
                         FuncPtr retTy paramTs -> do
-                            if length paramTs /= length argInfos
-                                then do
-                                    addErr $ UE.Syntax $ UE.makeError path callPos0 $
-                                        "type mismatch: expected (" ++ intercalate ", " (map prettyClass paramTs) ++
-                                        "), got (" ++ intercalate ", " (map (prettyClass . fst) argInfos) ++ ")"
+                            res <- matchInSigs [FunSig paramTs retTy] callPos0 rawArgs argInfos
+                            case res of
+                                Left err -> do
+                                    addErr err
                                     pure (Just ErrorClass)
-                                else do
-                                    let zipped = zip paramTs argInfos
-                                    mapM_ (\(expectT, (actualT, pos)) -> checkTypeCompat path pos expectT actualT) zipped
+                                Right _ ->
                                     pure (Just retTy)
                         _ -> do
                             addErr $ UE.Syntax $ UE.makeError path callPos0 $
@@ -1211,8 +1240,8 @@ inferExpr path packages envs e@(Call callee args) = do
             addMember :: Expression -> (String, Lex.Token) -> Expression
             addMember receiver (method, tok) = Member receiver method tok
 
-        lowerRegularCall :: TypeCtx -> [Position] -> [FunTable] -> Expression -> [(Class, [Position])] -> TypeM Class
-        lowerRegularCall ctx callPos0 fScopes0 expr argInfos = case expr of
+        lowerRegularCall :: TypeCtx -> [Position] -> [FunTable] -> Expression -> [Expression] -> [(Class, [Position])] -> TypeM Class
+        lowerRegularCall ctx callPos0 fScopes0 expr rawArgs argInfos = case expr of
             Variable name tok -> do
                 let qLocal = [name]
                 let qImports = generatedFunctionImportKeys packages name
@@ -1223,7 +1252,7 @@ inferExpr path packages envs e@(Call callee args) = do
                                     (maybe [] (\(sigs, _, full) -> [(qImport, full, sigs)]) . Map.lookup qImport . tFuncs)
                                     envs)
                             qImports
-                resolveScopedCall qLocal name fScopes0 importEntries [Lex.tokenPos tok] callPos0 argInfos
+                resolveScopedCall qLocal name fScopes0 importEntries [Lex.tokenPos tok] callPos0 rawArgs argInfos
 
             Qualified names toks -> case names of
                 ("this":fname:_) -> case tcClassStack ctx of
@@ -1231,7 +1260,7 @@ inferExpr path packages envs e@(Call callee args) = do
                     (ClassDef _ _ classFuns : _) -> do
                         let sigs = Map.findWithDefault (error "this error should be catched in COntextCheck") [fname] classFuns
                         let namePoses = map Lex.tokenPos toks
-                        applyMatches callPos0 namePoses fname argInfos (FunLocal defaultDecl [fname]) sigs
+                        applyMatches callPos0 namePoses fname rawArgs argInfos (FunLocal defaultDecl [fname]) sigs
 
                 _ -> do
                     let importEntries =
@@ -1242,11 +1271,11 @@ inferExpr path packages envs e@(Call callee args) = do
                     case importEntries of
                         [] -> case qualifiedCallAsMember names toks of
                             Just memberExpr ->
-                                lowerRegularCall ctx callPos0 fScopes0 memberExpr argInfos
+                                lowerRegularCall ctx callPos0 fScopes0 memberExpr rawArgs argInfos
                             Nothing ->
-                                resolveImportedCall names (intercalate "." names) importEntries namePoses callPos0 argInfos
+                                resolveImportedCall names (intercalate "." names) importEntries namePoses callPos0 rawArgs argInfos
                         _ ->
-                            resolveImportedCall names (intercalate "." names) importEntries namePoses callPos0 argInfos
+                            resolveImportedCall names (intercalate "." names) importEntries namePoses callPos0 rawArgs argInfos
 
             Member receiver method _ -> do
                 receiverTy <- inferExpr path packages envs receiver
@@ -1254,6 +1283,7 @@ inferExpr path packages envs e@(Call callee args) = do
                     namePoses = map Lex.tokenPos (exprTokens expr)
                     receiverArgTy = memberReceiverArgType receiverTy
                     argInfosWithReceiver = (receiverArgTy, receiverPos) : argInfos
+                    rawArgsWithReceiver = receiver : rawArgs
                 case memberMethodQNames receiverTy method of
                     [] -> errClass $ UE.Syntax $ UE.makeError path namePoses $
                         "member call expects struct receiver, got " ++ prettyClass receiverTy
@@ -1264,7 +1294,7 @@ inferExpr path packages envs e@(Call callee args) = do
                         case entries of
                             [] -> errClass $ UE.Syntax $ UE.makeError path namePoses (UE.undefinedIdentity method)
                             _ -> do
-                                res <- matchInSigs (map snd entries) callPos0 argInfosWithReceiver
+                                res <- matchInSigs (map snd entries) callPos0 rawArgsWithReceiver argInfosWithReceiver
                                 case res of
                                     Left err -> errClass err
                                     Right sig -> do
@@ -1321,14 +1351,15 @@ inferExpr path packages envs e@(Call callee args) = do
             [Position] ->
             [Position] ->
             String ->
+            [Expression] ->
             [(Class, [Position])] ->
             (FunSig -> FullFunctionTable) ->
             [FunSig] ->
             TypeM Class
-        applyMatches callPos _ funName _ _ [] =
+        applyMatches callPos _ funName _ _ _ [] =
             errClass $ UE.Syntax $ UE.makeError path callPos (UE.undefinedIdentity funName)
-        applyMatches callPos namePoses _ argInfos mkEntry sigs@(_ : _) = do
-            res <- matchInSigs sigs callPos argInfos
+        applyMatches callPos namePoses _ rawArgs argInfos mkEntry sigs@(_ : _) = do
+            res <- matchInSigs sigs callPos rawArgs argInfos
             case res of
                 Left err -> errClass err
                 Right sig -> do
@@ -1343,16 +1374,17 @@ inferExpr path packages envs e@(Call callee args) = do
             [(QName, QName, [FunSig])] ->
             [Position] ->
             [Position] ->
+            [Expression] ->
             [(Class, [Position])] ->
             TypeM Class
-        resolveImportedCall usedName funName importEntries namePos callPos argInfos =
+        resolveImportedCall usedName funName importEntries namePos callPos rawArgs argInfos =
             let importEntries' = dedupImportEntries importEntries
                 importSigs = concatMap third importEntries'
                 findImportNames sig = fmap (\(used, full, _) -> (used, full)) (find (elem sig . third) importEntries')
             in case importSigs of
                 [] -> errClass $ UE.Syntax $ UE.makeError path callPos (UE.undefinedIdentity funName)
                 _ -> do
-                    res <- matchInSigs importSigs callPos argInfos
+                    res <- matchInSigs importSigs callPos rawArgs argInfos
                     case res of
                         Right sig -> do
                             let (usedQn, fullQn) = fromMaybe (usedName, usedName) (findImportNames sig)
@@ -1367,9 +1399,10 @@ inferExpr path packages envs e@(Call callee args) = do
             [(QName, QName, [FunSig])] ->
             [Position] ->
             [Position] ->
+            [Expression] ->
             [(Class, [Position])] ->
             TypeM Class
-        resolveScopedCall qname funName scopes importEntries namePos callPos argInfos =
+        resolveScopedCall qname funName scopes importEntries namePos callPos rawArgs argInfos =
             go scopes Nothing
           where
             importEntries' = dedupImportEntries importEntries
@@ -1380,7 +1413,7 @@ inferExpr path packages envs e@(Call callee args) = do
                     Just err -> errClass err
                     Nothing -> errClass $ UE.Syntax $ UE.makeError path callPos (UE.undefinedIdentity funName)
                 _ -> do
-                    res <- matchInSigs importSigs callPos argInfos
+                    res <- matchInSigs importSigs callPos rawArgs argInfos
                     case res of
                         Right sig -> do
                             let (usedQn, fullQn) = fromMaybe (qname, qname) (findImportNames sig)
@@ -1392,7 +1425,7 @@ inferExpr path packages envs e@(Call callee args) = do
                 if null sigs then
                     go rest lastErr
                 else do
-                    res <- matchInSigs sigs callPos argInfos
+                    res <- matchInSigs sigs callPos rawArgs argInfos
                     case res of
                         Right sig -> do
                             recordFunUse namePos (FunLocal defaultDecl (qualifyLocal funName) sig)
@@ -1404,14 +1437,152 @@ inferExpr path packages envs e@(Call callee args) = do
         matchInSigs ::
             [FunSig] ->
             [Position] ->
+            [Expression] ->
             [(Class, [Position])] ->
             TypeM (Either ErrorKind FunSig)
-        matchInSigs sigs callPos argInfos =
-            case widenedArgs path callPos argInfos sigs of
-                Left err -> pure (Left err)
-                Right (sig, warns) -> do
-                    addWarns warns
-                    pure (Right sig)
+        matchInSigs sigs callPos rawArgs argInfos = do
+            candidateResults <- mapM (buildCandidate rawArgs argInfos) sigs
+            let candidates = [candidate | Just candidate <- candidateResults]
+                best = [candidate | candidate <- candidates, not (any (`dominates` candidate) candidates)]
+                expectedS = intercalate " | " [
+                        concat ["(", intercalate ", " (map prettyClass (funParams sig)), ")"]
+                        | sig <- sigs]
+                actualS = concat ["(", intercalate ", " (map (prettyClass . normalizeTypeAlias . fst) argInfos), ")"]
+            case candidates of
+                [] ->
+                    pure $ Left $ UE.Syntax $ UE.makeError path callPos (UE.typeMismatchMsg expectedS actualS)
+                _ -> case best of
+                    [(sig, _, warns, records)] -> do
+                        addWarns warns
+                        mapM_ (uncurry recordFunUse) records
+                        pure (Right sig)
+                    _ ->
+                        pure $ Left $ UE.Syntax $ UE.makeError path callPos UE.ambiguousCallMsg
+
+        buildCandidate ::
+            [Expression] ->
+            [(Class, [Position])] ->
+            FunSig ->
+            TypeM (Maybe (FunSig, [Int], [Warning], [([Position], FullFunctionTable)]))
+        buildCandidate rawArgs argInfos sig =
+            let ps = map (normalizeTypeAlias . normalizeClass) (funParams sig)
+            in if length ps /= length argInfos || length rawArgs /= length argInfos
+                then pure Nothing
+                else do
+                    resolved <- mapM (uncurry resolveArgForParam) (zip ps (zip rawArgs argInfos))
+                    let argTs = map fst3 resolved
+                    case traverse (uncurry dist) (zip argTs ps) of
+                        Nothing -> pure Nothing
+                        Just dists -> do
+                            let warns = concat [
+                                    iCast path pos argT paramT
+                                    | ((argT, pos, _), paramT, d) <- zip3 resolved ps dists,
+                                      d > 0]
+                                records = concatMap thd3 resolved
+                            pure (Just (sig, dists, warns, records))
+
+        resolveArgForParam ::
+            Class ->
+            (Expression, (Class, [Position])) ->
+            TypeM (Class, [Position], [([Position], FullFunctionTable)])
+        resolveArgForParam paramT (arg, (argT, argPos)) =
+            case normalizeTypeAlias (normalizeClass paramT) of
+                expected@(FuncPtr _ _) -> do
+                    ctx <- get
+                    case resolveFunctionRefArg ctx expected arg of
+                        Just (actualT, records) ->
+                            pure (actualT, argPos, records)
+                        Nothing ->
+                            pure (normalizeTypeAlias (normalizeClass argT), argPos, [])
+                _ ->
+                    pure (normalizeTypeAlias (normalizeClass argT), argPos, [])
+
+        resolveFunctionRefArg ::
+            TypeCtx ->
+            Class ->
+            Expression ->
+            Maybe (Class, [([Position], FullFunctionTable)])
+        resolveFunctionRefArg ctx expected arg = do
+            (namePos, entries) <- functionRefArgEntries ctx arg
+            let matches = nubBy (\(_, sigA) (_, sigB) -> sigA == sigB) $
+                    filter (matchesFuncPtr expected . snd) entries
+            case matches of
+                [(entry, _)] -> Just (expected, [(namePos, entry)])
+                _ -> Nothing
+
+        functionRefArgEntries ::
+            TypeCtx ->
+            Expression ->
+            Maybe ([Position], [(FullFunctionTable, FunSig)])
+        functionRefArgEntries ctx arg = case arg of
+            Variable name tok ->
+                let pos = Lex.tokenPos tok
+                    qLocal = [name]
+                    qImports = generatedFunctionImportKeys packages name
+                    hasVar =
+                        isJust (getVarId pos (tcCtx ctx)) ||
+                        isJust (lookupVarId name (CC.st (tcCtx ctx))) ||
+                        isJust (getImportedVarType (packages ++ [name]) envs) ||
+                        isJust (getImportedVarType [name] envs)
+                    localEntries = [(FunLocal defaultDecl qLocal sig, sig) | sig <- lookupFun qLocal (tcFunScopes ctx)]
+                    importEntries =
+                        concatMap
+                            (\qImport ->
+                                concatMap
+                                    (maybe [] (\(sigs, _, full) -> [(FunImported defaultDeclFlags qImport full sig, sig) | sig <- sigs]) . Map.lookup qImport . tFuncs)
+                                    envs)
+                            qImports
+                    entries = localEntries ++ importEntries
+                in if hasVar || null entries then Nothing else Just ([pos], entries)
+            Qualified names toks -> case parsePointerSuffixQualified names toks of
+                Just _ -> Nothing
+                Nothing ->
+                    let namePos = map Lex.tokenPos toks
+                        headName = case names of
+                            [] -> ""
+                            (x:_) -> x
+                        hasVar =
+                            (case namePos of
+                                (p:_) -> isJust (getVarId p (tcCtx ctx))
+                                [] -> False) ||
+                            (not (null headName) && isJust (lookupVarId headName (CC.st (tcCtx ctx)))) ||
+                            isJust (getImportedVarType names envs)
+                        localEntries = [(FunLocal defaultDecl names sig, sig) | sig <- lookupFun names (tcFunScopes ctx)]
+                        importEntries =
+                            concatMap
+                                (maybe [] (\(sigs, _, full) -> [(FunImported defaultDeclFlags names full sig, sig) | sig <- sigs]) . Map.lookup names . tFuncs)
+                                envs
+                        entries = localEntries ++ importEntries
+                    in if hasVar || null entries then Nothing else Just (namePos, entries)
+            _ -> Nothing
+
+        matchesFuncPtr :: Class -> FunSig -> Bool
+        matchesFuncPtr expected sig = case normalizeTypeAlias (normalizeClass expected) of
+            FuncPtr retTy paramTs ->
+                normalizeTypeAlias (normalizeClass (funReturn sig)) == normalizeTypeAlias (normalizeClass retTy) &&
+                map (normalizeTypeAlias . normalizeClass) (funParams sig) == map (normalizeTypeAlias . normalizeClass) paramTs
+            _ -> False
+
+        dist :: Class -> Class -> Maybe Int
+        dist argT paramT =
+            case (argT, paramT) of
+                (Pointer Void, Pointer _) ->
+                    if paramT == Pointer Void then Just 0 else Just 1
+                _ ->
+                    elemIndex paramT (widenedClass argT)
+
+        dominates ::
+            (FunSig, [Int], [Warning], [([Position], FullFunctionTable)]) ->
+            (FunSig, [Int], [Warning], [([Position], FullFunctionTable)]) ->
+            Bool
+        dominates (_, d1, _, _) (_, d2, _, _) =
+            and (zipWith (<=) d1 d2) && or (zipWith (<) d1 d2)
+
+        fst3 :: (a, b, c) -> a
+        fst3 (a, _, _) = a
+
+        thd3 :: (a, b, c) -> c
+        thd3 (_, _, c) = c
 
         isAmbiguous :: ErrorKind -> Bool
         isAmbiguous (UE.Syntax be) = UE.why be == UE.ambiguousCallMsg

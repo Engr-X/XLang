@@ -23,7 +23,7 @@
  *
  */
 
-@file.class("Math")
+#file.outerClass("Math")
 package xlang
 
 /**

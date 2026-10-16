@@ -23,7 +23,7 @@
  *
  */
 
-@file.class("System")
+#file.outerClass("System")
 package xlang
 
 

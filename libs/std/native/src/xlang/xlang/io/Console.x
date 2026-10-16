@@ -23,7 +23,7 @@
  *
  */
 
-@file.class("Console")
+#file.outerClass("Console")
 package xlang.io
 
 /**

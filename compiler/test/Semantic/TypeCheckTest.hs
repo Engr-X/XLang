@@ -592,7 +592,10 @@ inferExprTests = testGroup "Semantic.TypeCheck.inferExpr" $ map mkCase [
     ("36", "token == null", stWithVars ["token"], mkVarTable (stWithVars ["token"]) [("token", Class ["Token"] [])], [Map.empty], [], [], Bool, Nothing, Just 0, noExtraTc),
     ("37", "token != null", stWithVars ["token"], mkVarTable (stWithVars ["token"]) [("token", Pointer (Class ["Token"] []))], [Map.empty], [], [], Bool, Nothing, Just 0, noExtraTc),
     ("38", "\"HelloWorld\"", stEmpty, Map.empty, [Map.empty], [], [], Pointer Char, Nothing, Just 0, noExtraTc),
-    ("39", "f(\"HelloWorld\")", stWithVarsFuncs [] ["f"], Map.empty, [Map.fromList [(["f"], [FunSig [Pointer Char] Int32T])]], [], [], Int32T, Nothing, Just 0, noExtraTc)]
+    ("39", "f(\"HelloWorld\")", stWithVarsFuncs [] ["f"], Map.empty, [Map.fromList [(["f"], [FunSig [Pointer Char] Int32T])]], [], [], Int32T, Nothing, Just 0, noExtraTc),
+    ("40", "if true: null else: p", stWithVars ["p"], mkVarTable (stWithVars ["p"]) [("p", Pointer Int32T)], [Map.empty], [], [], Pointer Int32T, Nothing, Just 0, noExtraTc),
+    ("41", "if true: p else: null", stWithVars ["p"], mkVarTable (stWithVars ["p"]) [("p", Pointer Int32T)], [Map.empty], [], [], Pointer Int32T, Nothing, Just 0, noExtraTc),
+    ("42", "if true: pa else: pb", stWithVars ["pa", "pb"], mkVarTable (stWithVars ["pa", "pb"]) [("pa", Pointer Int32T), ("pb", Pointer Char)], [Map.empty], [], [], Pointer Void, Nothing, Just 0, noExtraTc)]
     where
         mkCase (name, src, st0, vts, fScopes, typedEnvs, importEnvs, expectedT, errMsg, warnCount, extra) =
             testCase name $ do
@@ -1132,6 +1135,13 @@ inferProgmTests = testGroup "Semantic.TypeCheck.inferProgm" $ map mkCase [
         "fun apply<T, U>(x: U, y: T, f: (U, T) -> U) -> U = f(x, y);",
         "val z = apply(1, 2, add);"
     ], Nothing, noExtraTc),
+
+    ("43a", unlines [
+        "fun add(a: int, b: int) -> int = a + b;",
+        "fun add(a: long, b: long) -> long = a + b;",
+        "fun apply(f: (int, int) -> int) -> int = f(1, 2);",
+        "val z = apply(add);"
+    ], Nothing, assertVarType "z" Int32T),
 
     ("44", unlines [
         "val p: pointer<int> = null;"

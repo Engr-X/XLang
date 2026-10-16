@@ -23,7 +23,7 @@
  *
  */
 
-@file.class("FList")
+#file.outerClass("FList")
 package xlang.functional
 
 import xlang.System

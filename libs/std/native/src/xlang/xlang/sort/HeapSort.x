@@ -23,7 +23,7 @@
  *
  */
 
-@file.class("HeapSort")
+#file.outerClass("HeapSort")
 package xlang.sort
 
 import xlang.System

@@ -83,16 +83,11 @@ methodAnnotationsFromTokens = mapMaybe tokenToAnnotation
     tokenToAnnotation _ = Nothing
 
 
-nativeSpecifierAnnotation :: ([Token], String) -> Annotation
-nativeSpecifierAnnotation (specToks, target) =
-    ("native", annTok, [StringConst target strTok])
-  where
-    annTok = case specToks of
-        [] -> Lex.dummyToken
-        (t:_) -> t
-    strTok = case reverse specToks of
-        (Lex.StrConst _ tPos : _) -> Lex.StrConst target tPos
-        _ -> annTok
+nativeTargetFromTokens :: [Token] -> String
+nativeTargetFromTokens toks =
+    case mapMaybe nativeAnnotationTarget toks of
+        ((_, target):_) -> target
+        [] -> ""
 
 
 parseAnnotationArgExprs :: [Token] -> [Expression]
