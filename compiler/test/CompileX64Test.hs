@@ -1,4 +1,4 @@
-﻿module CompileX64Test where
+module CompileX64Test where
 
 import CompileX64 (TargetPlatform(..), X64CompilerChoice(..), compileX64WithAssembler)
 import Control.Exception (catch, SomeException)
@@ -291,7 +291,7 @@ valueRefSource = unlines [
     "    var x: int",
     "    var y: int",
     "",
-    "    fun __init__(x: int, y: int)",
+    "    constructor(x: int, y: int)",
     "    {",
     "        this.x = x",
     "        this.y = y",
@@ -316,7 +316,7 @@ valueRefSource = unlines [
 
 minimalSystemSource :: String
 minimalSystemSource = unlines [
-    "@file.class(\"System\")",
+    "#file.outerClass(\"System\")",
     "package xlang",
     "",
     "@native(\"xlang_malloc\")",
@@ -334,7 +334,7 @@ heapDerefSource = unlines [
     "    var x: int",
     "    var y: int",
     "",
-    "    fun __init__(x: int, y: int)",
+    "    constructor(x: int, y: int)",
     "    {",
     "        this.x = x",
     "        this.y = y",

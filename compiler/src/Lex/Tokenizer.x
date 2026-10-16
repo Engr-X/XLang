@@ -65,7 +65,6 @@ tokens :-
 
 -- enter line comment states (only in default state)
 <0> "//"                { beginLineComment }
-<0> "#"                 { beginLineComment }
 
 -- enter block comment state (only in default state)
 <0> "/*"                { beginBlockComment }
@@ -172,6 +171,7 @@ tokens :-
 <0> "/"                 { eatSymbol Divide }
 <0> "%"                 { eatSymbol Modulo }
 
+<0> "#"                 { eatSymbol At }
 <0> "@"                 { eatSymbol At }
 <0> "$"                 { eatSymbol Dollar }
 <0> "("                 { eatSymbol LParen }
@@ -773,13 +773,12 @@ fileTokenize p = do
 foldAnnotations :: [Token] -> [Token]
 foldAnnotations toks = case toks of
     (atTok@(Symbol At pAt) : nameTok@(Ident name _) : rest) ->
-        if lowName == "native" || startsWithDot rest
+        if name == "native" || startsWithDot rest
             then atTok : nameTok : foldAnnotations rest
             else case consumeAnnArgs rest of
                 Just (args, rest') -> Annotation name args pAt : foldAnnotations rest'
                 Nothing -> atTok : nameTok : foldAnnotations rest
         where
-            lowName = map DC.toLower name
             startsWithDot ts = case ts of
                 (Symbol Dot _ : _) -> True
                 _ -> False

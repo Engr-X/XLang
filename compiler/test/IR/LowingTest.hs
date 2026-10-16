@@ -10,6 +10,7 @@ import Parse.SyntaxTree (Class (..))
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import qualified Parse.SyntaxTree as AST
 import qualified Util.Exception as UE
 
 
@@ -129,9 +130,60 @@ nestedFunctionLoweringTests = testGroup "IR.Lowing.nestedFunction" [
         isGenerated (IRFunction _ name _ _ _ _) = '$' `elem` name
 
 
+forContinueLoopStateTests :: TestTree
+forContinueLoopStateTests = testGroup "IR.Lowing.forContinueLoopState" [
+    testCase "continue initializes the state consumed by the for step" $ do
+        let src = unlines [
+                "fun main() -> int {",
+                "    var selected: int = -1",
+                "    for (var i: int = 0; i < 3; i++): {",
+                "        if i == 0:",
+                "            continue",
+                "        selected = i",
+                "    }",
+                "    return selected",
+                "}"
+                ]
+
+        case codeToIRSingleWithRoot "." "Main.x" src of
+            Left errs -> assertFailure ("unexpected errors: " ++ show errs)
+            Right (IRProgm _ [IRClass _ _ _ _ _ _ funs _ _ _], _) ->
+                case find (\(IRFunction _ name _ _ _ _) -> name == "main") funs of
+                    Nothing -> assertFailure "missing function main"
+                    Just (IRFunction _ _ _ _ (blocks, _) _) -> do
+                        let stepIds = [
+                                bid |
+                                IRBlock (bid, instrs) <- blocks,
+                                any isIncrement instrs]
+                        case stepIds of
+                            [stepId] -> do
+                                let predecessors = filter (jumpsTo stepId) blocks
+                                assertBool "missing explicit continue edge into the for step" (not (null predecessors))
+                                assertBool
+                                    "every path entering the for step must initialize its loop state"
+                                    (all ((>= 2) . assignmentCount) predecessors)
+                            _ -> assertFailure ("expected one for-step block, got: " ++ show stepIds)
+            Right (ir, _) -> assertFailure ("unexpected ir shape: " ++ show ir)
+    ]
+    where
+        isIncrement :: IRInstr -> Bool
+        isIncrement instr = case instr of
+            IBinary _ AST.Add _ (Int32C 1) -> True
+            _ -> False
+
+        jumpsTo :: Int -> IRBlock -> Bool
+        jumpsTo target (IRBlock (_, instrs)) = case reverse instrs of
+            (Jump actual : _) -> actual == target
+            _ -> False
+
+        assignmentCount :: IRBlock -> Int
+        assignmentCount (IRBlock (_, instrs)) = length [() | IAssign {} <- instrs]
+
+
 tests :: TestTree
 tests = testGroup "IR.Lowing" [
     topLevelValFinalTests,
     templateInstantiationLoweringTests,
-    nestedFunctionLoweringTests]
+    nestedFunctionLoweringTests,
+    forContinueLoopStateTests]
 

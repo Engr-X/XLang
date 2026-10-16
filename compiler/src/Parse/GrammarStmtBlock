@@ -177,10 +177,6 @@ FunctionBlock :: { Block }
     | '=' Expr Sep                  { Multiple [Command (Return (Just $2)) $1] }
     ;
 
-NativeSpecifier :: { ([Token], String) }
-    : '@' KW_NATIVE '(' string ')'  { ([$1, $2, $3, $4, $5], strVal $4) }
-    ;
-
 CFunctionBlock :: { String }
     : '{' nativebody '}'            { nativeBodyVal $2 }
     | '{' nativebody Sep '}'        { nativeBodyVal $2 }
@@ -209,31 +205,8 @@ FunModifierSeqOpt :: { [Token] }
     | FunModifierSeq Sep            { $1 }
     ;
 
-NativeFunModifier :: { Token }
-    : KW_PRIVATE                    { $1 }
-    | KW_PROTECTED                  { $1 }
-    | KW_PUBLIC                     { $1 }
-    | KW_STATIC                     { $1 }
-    | KW_INLINE                     { $1 }
-    | KW_NATIVE                     { $1 }
-    | annotation                    { $1 }
-    ;
-
 NativeFunModifierSeq :: { [Token] }
-    : NativeFunModifier                     { [$1] }
-    | NativeFunModifierSeq NativeFunModifier { $1 ++ [$2] }
-    | NativeFunModifierSeq Sep NativeFunModifier { $1 ++ [$3] }
-    ;
-
-NativeFunModifierSeqOpt :: { [Token] }
-    : {- empty -}                   { [] }
-    | NativeFunModifierSeq          { $1 }
-    | NativeFunModifierSeq Sep      { $1 }
-    ;
-
-NativeSepOpt :: { () }
-    : {- empty -}                   { () }
-    | NativeSepOpt Sep              { () }
+    : FunModifierSeqOpt KW_NATIVE FunModifierSeqOpt { $1 ++ [$2] ++ $3 }
     ;
 
 VarKind :: { (Bool, Token) }
@@ -278,19 +251,19 @@ VarDeclStmt :: { Statement }
     ;
 
 FunctionStmt :: { Statement }
-    : NativeSpecifier NativeSepOpt NativeFunModifierSeqOpt KW_FUNC QName FunctionParams '->' Clazz Sep
-        { NativeMethod (methodDeclsFromTokens ($3 ++ snd $8)) (nativeSpecifierAnnotation $1 : methodAnnotationsFromTokens $3) (fst $8, fst $1 ++ $3 ++ snd $8) (qnameToExpr $5) $6 (snd $1) }
+    : NativeFunModifierSeq KW_FUNC QName FunctionParams '->' Clazz Sep
+        { NativeMethod (methodDeclsFromTokens ($1 ++ snd $6)) (methodAnnotationsFromTokens $1) (fst $6, $1 ++ snd $6) (qnameToExpr $3) $4 (nativeTargetFromTokens $1) }
 
-    | NativeSpecifier NativeSepOpt NativeFunModifierSeqOpt KW_FUNC QName FunctionParams '->' Clazz CFunctionBlock
-        { NativeMethod (methodDeclsFromTokens ($3 ++ snd $8)) (nativeSpecifierAnnotation $1 : methodAnnotationsFromTokens $3) (fst $8, fst $1 ++ $3 ++ snd $8) (qnameToExpr $5) $6 (snd $1) }
+    | NativeFunModifierSeq KW_FUNC QName FunctionParams '->' Clazz CFunctionBlock
+        { NativeMethod (methodDeclsFromTokens ($1 ++ snd $6)) (methodAnnotationsFromTokens $1) (fst $6, $1 ++ snd $6) (qnameToExpr $3) $4 (nativeTargetFromTokens $1) }
 
     | FunModifierSeqOpt KW_FUNC QName UntypedFunctionParams FunctionBlock
         { mkUntypedSugarFunction ($1 ++ [$2]) $3 $4 $5 }
 
-    | FunModifierSeqOpt KW_FUNC KW_INIT FunctionParams FunctionBlock
+    | FunModifierSeqOpt KW_CONSTRUCTOR FunctionParams FunctionBlock
         {
-            let nameExpr = Variable "__init__" $3
-            in InstanceMethod (methodDeclsFromTokens ($1 ++ [$2, $3])) (methodAnnotationsFromTokens $1) (Void, $1 ++ [$2, $3]) nameExpr $4 $5
+            let nameExpr = Variable "__init__" $2
+            in InstanceMethod (methodDeclsFromTokens ($1 ++ [$2])) (methodAnnotationsFromTokens $1) (Void, $1 ++ [$2]) nameExpr $3 $4
         }
 
     | FunModifierSeqOpt KW_FUNC QName FunctionParams FunctionBlock

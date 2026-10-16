@@ -6,14 +6,14 @@ Decl :: { Declaration }
     | KW_CLASSNAME string Sep   { JavaName (strVal $2) $2 }
     | '@' identity '.' identity '(' string ')' Sep
         { let scope = identText $2; key = identText $4 in
-            if scope == "file" && (key == "class" || key == "JvmClass" || key == "jvmclass" || key == "filename")
+            if scope == "file" && (key == "outerClass")
                 then JavaName (strVal $6) $6
                 else error "Decl: unsupported file annotation"
         }
     | '@' identity '.' identity Sep
         { let scope = identText $2 in
             if scope == "file"
-                then error "Decl: @file.<name> requires a string argument"
+                then error "Decl: #file.<name> requires a string argument"
                 else error "Decl: unsupported annotation"
         }
     ;

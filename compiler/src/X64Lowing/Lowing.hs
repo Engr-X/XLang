@@ -1463,10 +1463,16 @@ moveDst64 (X64.Movsd dst _ _) = dst
 moveDst64 _ = error "moveDst64: unexpected move instruction"
 
 
-normalizeFloatCmpOrder64 :: X64.Atom -> X64.Atom -> (X64.Atom, X64.Atom)
-normalizeFloatCmpOrder64 lhs@(X64.Reg _ _) rhs = (lhs, rhs)
-normalizeFloatCmpOrder64 lhs rhs@(X64.Reg _ _) = (rhs, lhs)
-normalizeFloatCmpOrder64 _ _ = error "genIfCmp64: float/double compare requires at least one register operand"
+loadFloatCmpLhsToReg64 :: X64.Bits -> X64.Atom -> X64LowerM ([X64.Instruction], X64.Atom)
+loadFloatCmpLhsToReg64 _ lhs@(X64.Reg _ _) = return ([], lhs)
+loadFloatCmpLhsToReg64 bits lhs = do
+    fRet <- getFRetRegM64
+    let dst = X64.Reg fRet X64.NN
+    case bits of
+        X64.B32 -> return ([X64.Movss dst lhs X64.B32], dst)
+        X64.B64 -> return ([X64.Movsd dst lhs X64.B64], dst)
+        _ ->
+            error $ "loadFloatCmpLhsToReg64: unsupported float compare width: " ++ show bits
 
 
 genIfCmp64 ::
@@ -1495,11 +1501,13 @@ genIfCmp64 intJump floatJumps atom1 atom2 (thenBlock, elseBlock) = do
                             intJump thenBlock,
                             X64.Jump (Right elseBlock)]
                 AST.Float32T ->
-                    let (lhsF, rhsF) = normalizeFloatCmpOrder64 xAtom1 rhsReady
-                    in return $ concat [pref, [X64.Ucomiss lhsF rhsF X64.B32], floatJumps thenBlock elseBlock]
+                    do
+                        (prefLhs, lhsF) <- loadFloatCmpLhsToReg64 X64.B32 xAtom1
+                        return $ concat [pref, prefLhs, [X64.Ucomiss lhsF rhsReady X64.B32], floatJumps thenBlock elseBlock]
                 AST.Float64T ->
-                    let (lhsD, rhsD) = normalizeFloatCmpOrder64 xAtom1 rhsReady
-                    in return $ concat [pref, [X64.Ucomisd lhsD rhsD X64.B64], floatJumps thenBlock elseBlock]
+                    do
+                        (prefLhs, lhsD) <- loadFloatCmpLhsToReg64 X64.B64 xAtom1
+                        return $ concat [pref, prefLhs, [X64.Ucomisd lhsD rhsReady X64.B64], floatJumps thenBlock elseBlock]
                 _ ->
                     error $ "genIfCmp64: unsupported compare type: " ++ show class1
 
@@ -3340,9 +3348,9 @@ mkStaticInitFlagAtom64 ownerQName = do
 -- Entry segment for .clinit:
 --   push rbp
 --   mov  rbp, rsp
---   sub  rsp, frameSize
 --   cmp  DWORD PTR owner..isInit[rip], 1
 --   je   <ret-block>
+--   sub  rsp, frameSize
 --   mov  DWORD PTR owner..isInit[rip], 1
 x64ClinitEntry64 :: [String] -> Int -> X64LowerM ([X64.Instruction], [ExternRef])
 x64ClinitEntry64 ownerQName retLabel = do
@@ -3358,7 +3366,7 @@ x64ClinitEntry64 ownerQName retLabel = do
             X64.Cmp flagAtom (X64.Imm 1) X64.B32,
             X64.Je (Right retLabel),
             X64.Mov flagAtom (X64.Imm 1) X64.B32]
-        instrs = concat [prologue, alloc, guard]
+        instrs = concat [prologue, guard, alloc]
     return (instrs, instrExternRefs64 instrs)
 
 

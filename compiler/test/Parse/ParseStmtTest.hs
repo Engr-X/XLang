@@ -577,8 +577,8 @@ functionPointerTypeSyntaxTests = testGroup "function_pointer_type_syntax"
 
 initAsIdentifierSyntaxTests :: TestTree
 initAsIdentifierSyntaxTests = testGroup "init_as_identifier_syntax"
-    [ testCase "__init__ is parsed as struct constructor keyword" $
-        case replLexparseStmt "struct S { fun __init__(a: int) {} }" of
+    [ testCase "constructor is parsed as struct constructor syntax" $
+        case replLexparseStmt "struct S { constructor(a: int) {} }" of
             Right (Struct _ _ _ [InstanceMethod _ _ (Void, _) (Variable "__init__" _) [(Int32T, "a", _)] (Multiple [])]) ->
                 pure ()
             other -> assertFailure ("expected struct constructor named __init__, got: " ++ show other)

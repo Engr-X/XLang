@@ -258,6 +258,23 @@ ifImmCompareTests = testGroup "X64Lowing.IfImm" [
         _ -> False
 
 
+floatCompareTests :: TestTree
+floatCompareTests = testGroup "X64Lowing.FloatCompare" [
+    testCase "Ifgt keeps stack lhs on left side of ucomisd" $ do
+        let lhs = Var ("lhs", 0, 0)
+            rhs = Var ("rhs", 1, 0)
+            ir = Ifgt lhs rhs (1, 2)
+            fun = mkFun (Map.fromList [(lhs, Float64T), (rhs, Float64T)])
+            st = runX64LowerState64 fun 32 X64.winCC64
+            instrs = evalState (x64StmtCode64 ir) st
+            movsdLoads = [(dst, src) | X64.Movsd dst src X64.B64 <- instrs]
+            ucomisds = [(left, right) | X64.Ucomisd left right X64.B64 <- instrs]
+        case (movsdLoads, ucomisds) of
+            ((rhsReg, _) : (lhsReg, _) : _, [(cmpLeft, cmpRight)]) -> do
+                cmpLeft @?= lhsReg
+                cmpRight @?= rhsReg
+            _ -> assertFailure ("unexpected float compare lowering: " ++ show instrs)
+  ]
 firstBlockLabelTests :: TestTree
 firstBlockLabelTests = testGroup "X64Lowing.FirstBlockLabel" [
     testCase "branch target to first block keeps .L<first> materialized" $ do
@@ -379,6 +396,7 @@ tests = testGroup "X64Lowing.LowingTest" [
     , logicalNotTests
     , indirectCallRegTests
     , ifImmCompareTests
+    , floatCompareTests
     , firstBlockLabelTests
     , cLinkMirrorTests
     , structReturnCallTests

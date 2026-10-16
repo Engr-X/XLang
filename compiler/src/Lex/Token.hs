@@ -57,7 +57,7 @@ data Symbol
     | MinusMinus       -- "--"
 
     -- Other symbols
-    | At               -- "@"
+    | At               -- "#"
     | Dollar           -- "$"
     | LParen           -- "("
     | RParen           -- ")"
@@ -93,13 +93,13 @@ data Token =
     | EOF Position
     | TokenPass  Position
     | Ident String Position
-    | Annotation String [Token] Position -- @name(...) / @name
+    | Annotation String [Token] Position -- #name(...) / #name
     | Symbol Symbol Position
     | NumberConst String Position
 
     | CharConst Char Position -- contain ''
     | StrConst String Position -- contain ""
-    | NativeBody String Position -- raw body for @native(...)
+    | NativeBody String Position -- raw body for #native(...)
     deriving (Eq, Show)
 
 

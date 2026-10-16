@@ -1,4 +1,4 @@
-﻿{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -3440,6 +3440,9 @@ rewriteExpr metas mThis env n ex = case ex of
                                 | Set.member name (smStaticFields sm) ->
                                     let g = structGlobalName s name
                                     in (n, Variable g (renameIdentToken g tok))
+                                | Set.member name (smStaticMethods sm) ->
+                                    let g = structGlobalName s name
+                                    in (n, Variable g (renameIdentToken g tok))
                             _ -> rewriteGlobalStatic
                     Nothing ->
                         rewriteGlobalStatic
@@ -4788,7 +4791,7 @@ jvmClassAnnotation :: Token -> Maybe (String, Token)
 jvmClassAnnotation tok = case tok of
     Lex.Annotation name [strTok@(Lex.StrConst value _)] _
         | let low = map toLower name
-        , low `elem` ["jvmclass", "class", "filename"] -> Just (value, strTok)
+        , low `elem` ["outerclass"] -> Just (value, strTok)
         | otherwise -> Nothing
     _ -> Nothing
 

@@ -752,8 +752,7 @@ expandTypedImportEnvBySpecs currentPkg specs env =
                 let (isHidden, _) = splitHiddenQName keyQn,
                 let full = fullFromEntry entry,
                 let (_, payload) = splitHiddenQName keyQn,
-                alias <- aliasesForEntry full (HashSet.member (fullFromEntry entry) topLevels)
-                    ++ generatedStructFunctionAliases payload full,
+                alias <- funAliasesForEntry payload full (HashSet.member (fullFromEntry entry) topLevels),
                 let aliasKey = if isHidden then toHiddenQName alias else alias]
             mergeFunEntry :: ([FunSig], [Position], QName) -> ([FunSig], [Position], QName) -> ([FunSig], [Position], QName)
             mergeFunEntry (newSigs, newPos, newFull) (oldSigs, oldPos, oldFull) =
@@ -767,6 +766,33 @@ expandTypedImportEnvBySpecs currentPkg specs env =
     generatedStructFunctionAliases keyQn fullQn
         | any ('$' `elem`) keyQn || any ('$' `elem`) fullQn = [keyQn]
         | otherwise = []
+
+    funAliasesForEntry :: QName -> QName -> Bool -> [QName]
+    funAliasesForEntry payload full isTopLevel =
+        case splitGeneratedStructFunctionFull full of
+            Just (owner, member)
+                | not (any ('$' `elem`) payload) && not (endsWithQName [owner, member] payload) ->
+                    generatedStructFunctionAliases payload full
+            _ ->
+                aliasesForEntry full isTopLevel ++ generatedStructFunctionAliases payload full
+
+    splitGeneratedStructFunctionFull :: QName -> Maybe (String, String)
+    splitGeneratedStructFunctionFull full = case reverse full of
+        (generated : owner : _) ->
+            case splitGeneratedStructMemberName generated of
+                Just (generatedOwner, member) | generatedOwner == owner -> Just (owner, member)
+                _ -> Nothing
+        _ -> Nothing
+
+    splitGeneratedStructMemberName :: String -> Maybe (String, String)
+    splitGeneratedStructMemberName name =
+        let (owner, rest) = break (== '$') name
+        in case rest of
+            ('$' : member) | not (null owner) && not (null member) -> Just (owner, member)
+            _ -> Nothing
+
+    endsWithQName :: QName -> QName -> Bool
+    endsWithQName suffix qname = reverse suffix `isPrefixOf` reverse qname
 
     expandTemplateMap :: Map QName ([Statement], [Position], QName) -> Map QName ([Statement], [Position], QName)
     expandTemplateMap mp =
