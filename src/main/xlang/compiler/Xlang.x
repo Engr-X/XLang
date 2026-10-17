@@ -23,9 +23,9 @@
  */
 
 #file.outerClass("Xlang")
+
 package xlang.compiler
 
-import xlang.Diagnostics
 import xlang.System
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.expression.Expression
@@ -72,16 +72,7 @@ fun parseExpressionLoop()
         if length == 0:
             continue
 
-        val diagnostics: pointer<Diagnostics> = new Diagnostics()
-        val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, diagnostics)
-
-        if diagnostics.haveError():
-        {
-            diagnostics.print()
-            continue
-        }
-
-
+        val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input)
         val expression: pointer<Expression> = Parser.parseExpression(tokens)
 
         if expression == null:
@@ -142,16 +133,7 @@ fun parseStatementLoop()
         input[length] = '\n'
         input[length + 1] = 0
 
-        val diagnostics: pointer<Diagnostics> = new Diagnostics()
-        val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, diagnostics)
-        
-        if diagnostics.haveError():
-        {
-            diagnostics.print()
-            continue
-        }
-
-
+        val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input)
         val statement: pointer<Statement> = Parser.parseStatement(tokens)
 
         if statement == null:

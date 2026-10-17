@@ -2,8 +2,6 @@
 package xlang.compiler.parser
 
 
-import xlang.Diagnostic
-import xlang.Diagnostics
 import xlang.Operation
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.expression.Atom
@@ -71,7 +69,6 @@ import xlang.parser.util.PatternAtom
 import xlang.parser.util.PatternList
 import xlang.parser.util.Rule
 import xlang.util.ArrayList
-import xlang.util.File
 import xlang.util.HashSet
 
 
@@ -1706,36 +1703,20 @@ private inline fun makeProgram(results: pointer<ArrayList>) -> pointer<*>
         .setImportDeclarations(imports.toImportDeclarations())
 }
 
-private inline fun parse(input: pointer<TokenList>, errors: pointer<Diagnostics>) -> pointer<Program>
+private inline fun parse(input: pointer<TokenList>) -> pointer<Program>
 {
     PROGRAM_PARSER.doParse(input)
-    errors.push(PROGRAM_PARSER.getError())
-
-    if errors.haveError():
-        return null
 
     val result: pointer<ParseContainer> = PROGRAM_PARSER.getResult()
     return result.getValue() as pointer<Program>
 }
 
-fun parseProgram(input: pointer<TokenizedFile>, errors: pointer<Diagnostics>) -> pointer<ASTFile>
+fun parseProgram(input: pointer<TokenizedFile>) -> pointer<ASTFile>
 {
-    val result: pointer<Program> = parse(input.getTokens(), errors)
-    errors.setFilePath(input.getPath())
-    return result
-}
-
-fun lexparse(inputFile: pointer<File>, errors: pointer<Diagnostics>) -> pointer<ASTFile>
-{
-    if inputFile == null:
-        return null
-
-    val tokenizedFile: pointer<TokenizedFile> = Tokenizer.fullTokenize(inputFile, errors)
-
-    if tokenizedFile == null:
-        return null
-
-    return parseProgram(tokenizedFile, errors)
+    PROGRAM_PARSER.doParse(input.getTokens())
+    val program: pointer<ParseContainer> = PROGRAM_PARSER.getResult()
+    val result: pointer<ASTFile> = new ASTFile(input.getPath(), program.getValue())
+    return result.pushDiagnostic(PROGRAM_PARSER.getError())
 }
 
 

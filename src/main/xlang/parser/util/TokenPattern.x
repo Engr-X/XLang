@@ -35,7 +35,7 @@ import xlang.System
  * Describes one token-matching condition.
  *
  * A pattern atom may restrict a token by its kind, its textual content,
- * or both. Token.ANY_KIND disables kind filtering, while a null regex
+ * or both. Token.AnyKind disables kind filtering, while a null regex
  * disables text filtering.
  *
  * When both conditions are enabled, the token must satisfy both of them.
@@ -51,7 +51,7 @@ struct PatternAtom
     /**
      * Stores the required token kind.
      *
-     * Token.ANY_KIND means that tokens of every kind are accepted.
+     * Token.AnyKind means that tokens of every kind are accepted.
      */
     private var kind: int
 
@@ -93,14 +93,14 @@ struct PatternAtom
      * string is duplicated with String.strdup so later changes to the
      * original string do not affect this pattern.
      *
-     * Token.ANY_KIND may be used to create a regex-only pattern. A null regex
-     * may be used to create a kind-only pattern. Combining Token.ANY_KIND with
+     * Token.AnyKind may be used to create a regex-only pattern. A null regex
+     * may be used to create a kind-only pattern. Combining Token.AnyKind with
      * a null regex creates a pattern that accepts every non-null token.
      *
      * The caller must provide a valid null-terminated regex when regex is
      * non-null.
      *
-     * @param kind              the required token kind, or Token.ANY_KIND.
+     * @param kind              the required token kind, or Token.AnyKind.
      * @param regex             the optional token-text regular expression.
      *
      * @note                    The constructor creates an independent clone of regex.
@@ -133,7 +133,7 @@ struct PatternAtom
      */
     constructor(refParser: pointer<ParserRef>)
     {
-        this.kind = Token.ANY_KIND
+        this.kind = Token.AnyKind
         this.regex = null
         this.compiledRegex = null
         this.refParser = refParser
@@ -153,7 +153,7 @@ struct PatternAtom
      */
     constructor(refsParser: pointer<ParserRefs>)
     {
-        this.kind = Token.ANY_KIND
+        this.kind = Token.AnyKind
         this.regex = null
         this.compiledRegex = null
         this.refParser = null
@@ -169,7 +169,7 @@ struct PatternAtom
      * pattern atom contains a parser reference, the match fails immediately.
      *
      * <p>If a specific token kind is configured, the token must have the same
-     * kind. {@code Token.ANY_KIND} disables token-kind filtering.
+     * kind. {@code Token.AnyKind} disables token-kind filtering.
      *
      * <p>If no regular expression is configured, a matching token kind is
      * sufficient for a successful match.
@@ -190,7 +190,7 @@ struct PatternAtom
 
         val token: pointer<Token> = tokens.get(index)
 
-        if this.kind != Token.ANY_KIND && this.kind != token.kind:
+        if this.kind != Token.AnyKind && this.kind != token.kind:
             return -1
 
         if this.regex == null:
@@ -359,10 +359,10 @@ struct PatternList
      * The appended atom accepts tokens of the specified kind without
      * checking their text.
      *
-     * Token.ANY_KIND may be supplied to create a pattern that accepts every
+     * Token.AnyKind may be supplied to create a pattern that accepts every
      * non-null token.
      *
-     * @param kind              the required token kind, or Token.ANY_KIND.
+     * @param kind              the required token kind, or Token.AnyKind.
      *
      * @return                  this PatternList for chained calls.
      */
@@ -388,7 +388,7 @@ struct PatternList
      *                          undefined behavior, depending on String.strdup.
      */
     inline fun pushRegex(regex: pointer<char>) -> pointer<PatternList> =
-        this.pushRegex(Token.ANY_KIND, regex)
+        this.pushRegex(Token.AnyKind, regex)
 
 
     /**
@@ -398,13 +398,13 @@ struct PatternList
      * constructor duplicates the supplied regular-expression string before
      * the atom is copied into the backing ArrayList.
      *
-     * Token.ANY_KIND disables kind filtering. A null regex disables text
+     * Token.AnyKind disables kind filtering. A null regex disables text
      * filtering.
      *
      * The caller must provide a valid null-terminated regex when regex is
      * non-null.
      *
-     * @param kind              the required token kind, or Token.ANY_KIND.
+     * @param kind              the required token kind, or Token.AnyKind.
      * @param regex             the optional regular expression matched against token.text.
      *
      * @return                  this PatternList for chained calls.

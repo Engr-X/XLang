@@ -24,13 +24,13 @@ endif()
 # ===============================================================
 
 
-set(XLANG_CODEGEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/xlang/codegen")
-set(XLANG_TOKENIZER_CODEGEN "${XLANG_CODEGEN_DIR}/tokenizer_codegen.py")
-set(XLANG_NORMALIZER_CODEGEN "${XLANG_CODEGEN_DIR}/normalizer_codegen.py")
-set(XLANG_PARSER_CODEGEN "${XLANG_CODEGEN_DIR}/parser_codegen.py")
-set(XLANG_CODEGEN_UTILS
-    "${XLANG_CODEGEN_DIR}/__init__.py"
-    "${XLANG_CODEGEN_DIR}/util.py"
+set(XLANG_LEXER_CODEGEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/xlang/lexer/codegen")
+set(XLANG_TOKENIZER_CODEGEN "${XLANG_LEXER_CODEGEN_DIR}/tokenizer_codegen.py")
+set(XLANG_NORMALIZER_CODEGEN "${XLANG_LEXER_CODEGEN_DIR}/normalizer_codegen.py")
+set(XLANG_PARSER_CODEGEN "${XLANG_LEXER_CODEGEN_DIR}/parser_codegen.py")
+set(XLANG_LEXER_CODEGEN_UTILS
+    "${XLANG_LEXER_CODEGEN_DIR}/__init__.py"
+    "${XLANG_LEXER_CODEGEN_DIR}/util.py"
 )
 set(XLANG_COMPILER_TOKENIZER_RULES "${CMAKE_CURRENT_SOURCE_DIR}/resources/syntax/compiler_tokenizer.json")
 set(XLANG_COMPILER_TOKEN_NORMALIZER_RULES "${CMAKE_CURRENT_SOURCE_DIR}/resources/syntax/compiler_token_normalizer.json")
@@ -57,7 +57,7 @@ add_custom_command(
 
     DEPENDS
         "${XLANG_TOKENIZER_CODEGEN}"
-        ${XLANG_CODEGEN_UTILS}
+        ${XLANG_LEXER_CODEGEN_UTILS}
         "${XLANG_COMPILER_TOKENIZER_RULES}"
 
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
@@ -88,7 +88,7 @@ add_custom_command(
     DEPENDS
         "${XLANG_NORMALIZER_CODEGEN}"
         "${XLANG_TOKENIZER_CODEGEN}"
-        ${XLANG_CODEGEN_UTILS}
+        ${XLANG_LEXER_CODEGEN_UTILS}
         "${XLANG_COMPILER_TOKENIZER_RULES}"
         "${XLANG_COMPILER_TOKEN_NORMALIZER_RULES}"
 
@@ -114,7 +114,7 @@ add_custom_command(
 
     DEPENDS
         "${XLANG_PARSER_CODEGEN}"
-        ${XLANG_CODEGEN_UTILS}
+        ${XLANG_LEXER_CODEGEN_UTILS}
         ${XLANG_COMPILER_PARSER_RULES}
 
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
@@ -303,7 +303,7 @@ foreach(src_abs ${XLANG_SOURCES})
     list(APPEND XLANG_OBJ_DIRS "${obj_dir}")
     list(APPEND XLANG_OBJS "${obj_abs}")
 
-    if (src_rel MATCHES "^xlang/Diagnostic(s)?\\.x$" OR src_rel MATCHES "^xlang/Operation\\.x$" OR src_rel MATCHES "^xlang/compiler/" OR src_rel MATCHES "^xlang/lexer/" OR src_rel MATCHES "^xlang/parser/" OR src_rel MATCHES "^xlang/util/")
+    if (src_rel MATCHES "^xlang/Diagnostic\\.x$" OR src_rel MATCHES "^xlang/Operation\\.x$" OR src_rel MATCHES "^xlang/compiler/" OR src_rel MATCHES "^xlang/lexer/" OR src_rel MATCHES "^xlang/parser/" OR src_rel MATCHES "^xlang/util/")
         list(APPEND XLANG_COMPILER_OBJS "${obj_abs}")
     endif()
 endforeach()

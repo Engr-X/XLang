@@ -26,7 +26,6 @@
 #file.outerClass("TokenizeFSMTest")
 package xlang.lexer
 
-import xlang.Diagnostics
 import xlang.lexer.LexInput
 import xlang.lexer.LexPosition
 import xlang.lexer.TokenizeFSM
@@ -110,7 +109,7 @@ private fun eofDefaultTest() -> int
 
     rules[0] = rule0
 
-    val token: pointer<Token> = state.apply(rules, 1, new Diagnostics())
+    val token: pointer<Token> = state.apply(rules, 1)
 
     if token == null:
         return 1
@@ -146,8 +145,7 @@ private fun noMatchTest() -> int
 
     rules[0] = rule0
 
-    val diagnostics: pointer<Diagnostics> = new Diagnostics()
-    val token: pointer<Token> = state.apply(rules, 1, diagnostics)
+    val token: pointer<Token> = state.apply(rules, 1)
 
     if token != null:
         return 1
@@ -159,9 +157,6 @@ private fun noMatchTest() -> int
 
     if cursor.column != 1:
         return 3
-
-    if !diagnostics.haveError():
-        return 4
 
     return 0
 }
@@ -179,7 +174,7 @@ private fun stateFilterTest() -> int
     rules[1] = rule1
     state.setState(OTHER_STATE)
 
-    val token: pointer<Token> = state.apply(rules, 2, new Diagnostics())
+    val token: pointer<Token> = state.apply(rules, 2)
 
     if token == null:
         return 1
@@ -210,7 +205,7 @@ private fun firstRuleTest() -> int
     rules[0] = rule0
     rules[1] = rule1
 
-    val token: pointer<Token> = state.apply(rules, 2, new Diagnostics())
+    val token: pointer<Token> = state.apply(rules, 2)
 
     if token == null:
         return 1
