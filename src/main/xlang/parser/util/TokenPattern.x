@@ -200,9 +200,9 @@ struct PatternAtom
             return -1
 
         return if this.compiledRegex == null:
-            (if String.strRegMatch(this.regex, token.text) > 0: 1 else: -1)
+                (if String.strRegMatch(this.regex, token.text) > 0: 1 else: -1)
             else: 
-            (if Regex.regexMatch(this.compiledRegex, token.text) > 0: 1 else: -1)
+                (if Regex.regexMatch(this.compiledRegex, token.text) > 0: 1 else: -1)
     }
 
 

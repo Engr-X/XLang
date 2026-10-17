@@ -1,2 +1,0 @@
-D:/Coding/compilers/Mingw-15.2.0/bin/ar.exe qc ../libs/libtiny-regex.a "CMakeFiles/tiny-regex.dir/src/regex.c.obj"
-D:/Coding/compilers/Mingw-15.2.0/bin/ranlib.exe ../libs/libtiny-regex.a

@@ -1,3 +1,0 @@
-D:\Coding\compilers\buildTools\CMake\bin\cmake.exe -E rm -f CMakeFiles\xlang_core_shared.dir/objects.a
-D:\Coding\compilers\Mingw-15.2.0\bin\ar.exe qc CMakeFiles\xlang_core_shared.dir/objects.a @CMakeFiles\xlang_core_shared.dir\objects1.rsp
-D:\Coding\compilers\Mingw-15.2.0\bin\gcc.exe -g -Wl,--output-def,D:/Coding/projects/Xlang/xlang/build/xlang/runtime/native/libxlang-core.def -shared -o ..\xlang\runtime\native\libxlang-core.dll -Wl,--out-implib,..\xlang\libs\native\libxlang-core.dll.a -Wl,--major-image-version,0,--minor-image-version,0 -Wl,--whole-archive CMakeFiles\xlang_core_shared.dir/objects.a -Wl,--no-whole-archive @CMakeFiles\xlang_core_shared.dir\linkLibs.rsp
