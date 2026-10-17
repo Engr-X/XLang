@@ -24,7 +24,7 @@ endif()
 # ===============================================================
 
 
-set(XLANG_LEXER_CODEGEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/xlang/lexer/codegen")
+set(XLANG_LEXER_CODEGEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/xlang/codegen")
 set(XLANG_TOKENIZER_CODEGEN "${XLANG_LEXER_CODEGEN_DIR}/tokenizer_codegen.py")
 set(XLANG_NORMALIZER_CODEGEN "${XLANG_LEXER_CODEGEN_DIR}/normalizer_codegen.py")
 set(XLANG_PARSER_CODEGEN "${XLANG_LEXER_CODEGEN_DIR}/parser_codegen.py")
