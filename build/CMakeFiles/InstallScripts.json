@@ -1,0 +1,14 @@
+{
+	"InstallScripts" : 
+	[
+		"D:/Coding/projects/XLang/xlang/build/cmake_install.cmake",
+		"D:/Coding/projects/XLang/xlang/build/3rd-party/cmake_install.cmake",
+		"D:/Coding/projects/XLang/xlang/build/3rd-party/cJSON/cmake_install.cmake",
+		"D:/Coding/projects/XLang/xlang/build/3rd-party/tiny-regex/cmake_install.cmake",
+		"D:/Coding/projects/XLang/xlang/build/runtime/cmake_install.cmake",
+		"D:/Coding/projects/XLang/xlang/build/src/cmake_install.cmake",
+		"D:/Coding/projects/XLang/xlang/build/src/main/cmake_install.cmake",
+		"D:/Coding/projects/XLang/xlang/build/src/test/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

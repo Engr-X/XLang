@@ -1,0 +1,31 @@
+runtime/CMakeFiles/xlang_core_static.dir/src/gc/xlang/runtime/memory/memlist.c.obj: \
+ D:/Coding/projects/XLang/xlang/runtime/src/gc/xlang/runtime/memory/memlist.c \
+ D:/Coding/projects/XLang/xlang/runtime/include/core/xlang/runtime/memory/sysmem.h \
+ D:/Coding/projects/XLang/xlang/runtime/include/core/xlang/xtypedef.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/assert.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/crtdefs.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/corecrt.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/_mingw.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/_mingw_mac.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/_mingw_secapi.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/vadefs.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/sdks/_mingw_ddk.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/stdbool.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/stdint.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/stdint.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/stddef.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/stddef.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/float.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/float.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/limits.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/limits.h \
+ D:/Coding/projects/XLang/xlang/runtime/include/gc/xlang/runtime/memory/memlist.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/stdlib.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/corecrt_wstdlib.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/sec_api/stdlib_s.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/malloc.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mm_malloc.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/errno.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/string.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/sec_api/string_s.h

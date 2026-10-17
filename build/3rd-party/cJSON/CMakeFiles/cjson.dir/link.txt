@@ -1,0 +1,2 @@
+D:/Coding/compilers/Mingw-15.2.0/bin/ar.exe qc ../libs/libcjson.a CMakeFiles/cjson.dir/src/cjson.c.obj CMakeFiles/cjson.dir/src/cJSON_Utils.c.obj
+D:/Coding/compilers/Mingw-15.2.0/bin/ranlib.exe ../libs/libcjson.a

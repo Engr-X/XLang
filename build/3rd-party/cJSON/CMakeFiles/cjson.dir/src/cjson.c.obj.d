@@ -1,0 +1,33 @@
+3rd-party/cJSON/CMakeFiles/cjson.dir/src/cjson.c.obj: \
+ D:/Coding/projects/XLang/xlang/3rd-party/cJSON/src/cjson.c \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/string.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/crtdefs.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/corecrt.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/_mingw.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/_mingw_mac.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/_mingw_secapi.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/vadefs.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/sdks/_mingw_ddk.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/sec_api/string_s.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/stdio.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/corecrt_stdio_config.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/_mingw_off_t.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/swprintf.inl \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/sec_api/stdio_s.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/math.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/stdlib.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/corecrt_wstdlib.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/limits.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/limits.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/sec_api/stdlib_s.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/malloc.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mm_malloc.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/errno.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/ctype.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/corecrt_wctype.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/float.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/float.h \
+ D:/Coding/projects/XLang/xlang/3rd-party/cJSON/include/cJSON.h \
+ D:/Coding/compilers/Mingw-15.2.0/lib/gcc/x86_64-w64-mingw32/15.2.0/include/stddef.h \
+ D:/Coding/compilers/Mingw-15.2.0/x86_64-w64-mingw32/include/stddef.h
