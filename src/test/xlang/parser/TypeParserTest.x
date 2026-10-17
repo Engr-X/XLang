@@ -24,7 +24,6 @@
 #file.outerClass("TypeParserTest")
 package xlang.parser
 
-import xlang.Diagnostics
 import xlang.compiler.type.BlobType
 import xlang.compiler.type.NormalType
 import xlang.compiler.type.Type
@@ -131,7 +130,7 @@ fun genTest() -> pointer<TestGroup>
 
 private fun parseTypeValue(input: pointer<char>, expectedConsumed: int) -> pointer<Type>
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(input, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(input)
     val parser: pointer<TypeParser> = new TypeParser(1)
     val consumed: int = parser.parse(tokens, 0)
 
@@ -466,7 +465,7 @@ private fun tokenTextAt(tokens: pointer<ArrayList>, index: int, text: pointer<ch
 
 private fun parseTypeTokens(input: pointer<char>, expectedConsumed: int) -> pointer<ArrayList>
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(input, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(input)
     val parser: pointer<TypeParser> = new TypeParser(1)
     val consumed: int = parser.parse(tokens, 0)
 
@@ -489,7 +488,7 @@ private fun parseTypeTokens(input: pointer<char>, expectedConsumed: int) -> poin
 
 private fun pointerVoidTest() -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("pointer<*>", new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize("pointer<*>")
     val parser: pointer<TypeParser> = new TypeParser(1)
     val consumed: int = parser.parse(tokens, 0)
 
@@ -725,7 +724,7 @@ private fun mixedFunctionTest() -> int
 
 private fun topLevelStarTest() -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("*", new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize("*")
     val parser: pointer<TypeParser> = new TypeParser(1)
     val consumed: int = parser.parse(tokens, 0)
 

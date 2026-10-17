@@ -25,7 +25,6 @@
 package xlang.parser
 
 import xlang.Diagnostic
-import xlang.Diagnostics
 import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.Token
 import xlang.lexer.TokenList
@@ -71,7 +70,7 @@ private fun resultLifetimeTest() -> int
     val pattern: pointer<PatternList> = new PatternList().pushRegex(Tokenizer.KW_TRUE)
     val rule: pointer<Rule> = new Rule(pattern, makeTokenResult, Rule.STARTER_ROLE, 0)
     val recursiveParser: pointer<RecursiveParser> = new RecursiveParser(1).addRule(rule)
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("true", new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize("true")
 
     if recursiveParser.doParse(tokens) != 1:
         return 1
@@ -101,7 +100,7 @@ private fun constructFailureTest() -> int
     val pattern: pointer<PatternList> = new PatternList().pushRegex(Tokenizer.KW_TRUE)
     val rule: pointer<Rule> = new Rule(pattern, makeNullResult, Rule.STARTER_ROLE, 0)
     val recursiveParser: pointer<RecursiveParser> = new RecursiveParser(1).addRule(rule)
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("true", new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize("true")
     val originalLength: int = tokens.length()
 
     if recursiveParser.doParse(tokens) != -1:

@@ -2,9 +2,6 @@
 package xlang.compiler.lexer
 
 
-import xlang.Diagnostic
-import xlang.Diagnostics
-import xlang.SourceLocation
 import xlang.System
 import xlang.lexer.Lex
 import xlang.lexer.LexPosition
@@ -404,13 +401,13 @@ val rule91: pointer<TokenizeRule> = new TokenizeRule(91, STRING_STATE, ".", eatC
 
 
 private inline fun eatEOF(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token> =
-    Token.fromEOF(input.pos.toTokenPosition(input.textLength))
+    new Token(Token.EOF_KIND, input.pos.toTokenPosition(input.textLength), "")
 
 
 private inline fun skip(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token>
 {
     dest.updateCursor(input.textLength)
-    return Token.fromBlank()
+    return null
 }
 
 
@@ -420,8 +417,12 @@ private inline fun skipNewLine(input: pointer<LexInput>, dest: pointer<TokenizeF
     cursor.line++
     cursor.column = 0
     cursor.offset += input.textLength
-    return Token.fromBlank()
+    return null
 }
+
+
+private inline fun errorToken(input: pointer<LexInput>, errorType: int, dest: pointer<TokenizeFSM>, errorInfo: pointer<char>) -> pointer<Token> =
+    new Token(errorType, input.pos.toTokenPosition(input.textLength), input.text, errorInfo)
 
 
 private fun defaultError(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token>
@@ -429,16 +430,7 @@ private fun defaultError(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -
     val tokenText: pointer<char> = System.allocMemory((String.strlen(input.text) + 16) * sizeof(char)) as pointer<char>
     String.strcpy(tokenText, INVALID_TOKEN_ERROR_MSG)
     String.strcat(tokenText, input.text)
-    dest.push(Diagnostic.makeError(
-        Diagnostic.UNRECOGNIZED_CHARACTER,
-        new SourceLocation(
-            null,
-            input.pos.offset,
-            input.pos.line,
-            input.pos.column,
-            input.textLength),
-        tokenText))
-    return Token.fromBlank()
+    return errorToken(input, -TokenizeFSM.DEFAULT, dest, tokenText)
 }
 
 
@@ -447,16 +439,7 @@ private fun invalidIdentError(input: pointer<LexInput>, dest: pointer<TokenizeFS
     val tokenText: pointer<char> = System.allocMemory((String.strlen(input.text) + 32) * sizeof(char)) as pointer<char>
     String.strcpy(tokenText, INVALID_IDENTITY_NAME_ERROR_MSG)
     String.strcat(tokenText, input.text)
-    dest.push(Diagnostic.makeError(
-        Diagnostic.UNRECOGNIZED_CHARACTER,
-        new SourceLocation(
-            null,
-            input.pos.offset,
-            input.pos.line,
-            input.pos.column,
-            input.textLength),
-        tokenText))
-    return Token.fromBlank()
+    return errorToken(input, -TokenizeFSM.DEFAULT, dest, tokenText)
 }
 
 
@@ -464,7 +447,7 @@ private inline fun changeState(input: pointer<LexInput>, state: int, dest: point
 {
     dest.setState(state)
     dest.updateCursor(input.textLength)
-    return Token.fromBlank()
+    return null
 }
 
 
@@ -554,19 +537,8 @@ private fun endLineComment(input: pointer<LexInput>, dest: pointer<TokenizeFSM>)
 }
 
 
-private fun unterminatedBlockCommentError(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token>
-{
-    dest.push(Diagnostic.makeError(
-        Diagnostic.UNRECOGNIZED_CHARACTER,
-        new SourceLocation(
-            null,
-            input.pos.offset,
-            input.pos.line,
-            input.pos.column,
-            input.textLength),
-        UNTERMINATED_BLOCK_COMMENT_ERROR_MSG))
-    return Token.fromBlank()
-}
+private fun unterminatedBlockCommentError(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token> =
+    errorToken(input, -BLOCK_COMMENT_STATE, dest, UNTERMINATED_BLOCK_COMMENT_ERROR_MSG)
 
 
 private fun endBlockComment(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token>
@@ -577,19 +549,8 @@ private fun endBlockComment(input: pointer<LexInput>, dest: pointer<TokenizeFSM>
 }
 
 
-private fun unterminatedCharError(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token>
-{
-    dest.push(Diagnostic.makeError(
-        Diagnostic.UNRECOGNIZED_CHARACTER,
-        new SourceLocation(
-            null,
-            input.pos.offset,
-            input.pos.line,
-            input.pos.column,
-            input.textLength),
-        UNTERMINATED_CHAR_ERROR_MSG))
-    return Token.fromBlank()
-}
+private fun unterminatedCharError(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token> =
+    errorToken(input, -CHAR_STATE, dest, UNTERMINATED_CHAR_ERROR_MSG)
 
 
 private fun endChar(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token>
@@ -610,23 +571,12 @@ private fun eatChar(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> poi
 {
     dest.accumulator.append(input.text)
     dest.updateCursor(input.textLength)
-    return Token.fromBlank()
+    return null
 }
 
 
-private fun unterminatedStringError(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token>
-{
-    dest.push(Diagnostic.makeError(
-        Diagnostic.UNRECOGNIZED_CHARACTER,
-        new SourceLocation(
-            null,
-            input.pos.offset,
-            input.pos.line,
-            input.pos.column,
-            input.textLength),
-        UNTERMINATED_STRING_ERROR_MSG))
-    return Token.fromBlank()
-}
+private fun unterminatedStringError(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token> =
+    errorToken(input, -STRING_STATE, dest, UNTERMINATED_STRING_ERROR_MSG)
 
 
 private fun endString(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> pointer<Token>
@@ -643,49 +593,17 @@ private fun endString(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> p
 }
 
 
-fun tokenize(code: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<TokenList>
-{
-    if !tokenizerIsInit:
-        tokenizerInit()
-
-    val tokenList: pointer<TokenList> = new TokenList()
-    val lexState: pointer<TokenizeFSM> = new TokenizeFSM(code)
-
-    while true:
-    {
-        val token: pointer<Token> = lexState.apply(rulePtr, ruleLength, diagnostics)
-
-        if token == null || diagnostics.haveError():
-            return null
-
-        if token.isBlank():
-            continue
-
-        tokenList.push(token)
-
-        if token.kind < 0 || token.isEOF():
-            break
-    }
-
-    return tokenList
-}
-
-
-fun fullTokenize(code: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<TokenList>
+fun fullTokenize(code: pointer<char>) -> pointer<TokenList>
 {
     if code == null:
         return null
 
-    val tokens: pointer<TokenList> = tokenize(code, diagnostics)
-
-    if diagnostics.haveError():
-        return null
-
+    val tokens: pointer<TokenList> = tokenize(code)
     return TokenNormalizer.normalize(tokens)
 }
 
 
-fun fullTokenize(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<TokenizedFile>
+fun fullTokenize(file: pointer<File>) -> pointer<TokenizedFile>
 {
     if file == null:
         return null
@@ -693,8 +611,7 @@ fun fullTokenize(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> poin
     if !file.hasContent():
         return new TokenizedFile(file.getPath(), file.getContent(), null)
 
-    val tokens: pointer<TokenList> = fullTokenize(file.getContent(), diagnostics)
-    diagnostics.setFilePath(file.getPath())
+    val tokens: pointer<TokenList> = fullTokenize(file.getContent())
     return new TokenizedFile(file.getPath(), file.getContent(), tokens)
 }
 
@@ -975,6 +892,31 @@ private fun tokenizerInit()
     rulePtr[91] = rule91
     keywordListInit()
     tokenizerIsInit = true
+}
+
+
+fun tokenize(code: pointer<char>) -> pointer<TokenList>
+{
+    if !tokenizerIsInit:
+        tokenizerInit()
+
+    val tokenList: pointer<TokenList> = new TokenList()
+    val lexState: pointer<TokenizeFSM> = new TokenizeFSM(code)
+
+    while true:
+    {
+        val token: pointer<Token> = lexState.apply(rulePtr, ruleLength)
+
+        if token == null:
+            continue
+
+        tokenList.push(token)
+
+        if token.kind < 0 || token.isEOF():
+            break
+    }
+
+    return tokenList
 }
 
 

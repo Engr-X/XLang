@@ -101,6 +101,7 @@ struct TokenPosition
     }
     
 
+
     /**
      * Compares two ArrayList token slots by their token positions.
      *
@@ -124,8 +125,6 @@ struct TokenPosition
 
         return TokenPosition.compare(leftToken.pos, rightToken.pos)
     }
-
-
     /**
      * Stores the absolute one-dimensional offset in the source text.
      *
@@ -197,24 +196,20 @@ struct TokenPosition
  */
 struct Token
 {
-    // Identifies the end-of-file token kind.
+    /**
+     * Identifies the end-of-file token kind.
+     */
     static val EOF_KIND: int = 0
 
     /**
-     * Identifies the wildcard token kind used by token-pattern matching.
+     * Represents a wildcard token kind that may match any concrete kind.
      *
-     * This sentinel does not represent a token produced by the lexer. When a
-     * pattern uses ANY_KIND, it accepts a token regardless of its actual kind.
-     */
-    static val ANY_KIND: int = -1
-
-    /**
-     * Identifies a blank token that does not represent source input.
+     * This value is the minimum representable 32-bit signed integer.
      *
-     * This value is the minimum representable 32-bit signed integer and is
-     * reserved for placeholder or sentinel tokens.
+     * @note                    This constant is intended for matching and lookup operations,
+     * not for ordinary lexer output.
      */
-    static val BLANK_KIND: int = -2147483647 - 1
+    static val AnyKind: int = -2147483647 - 1
 
     /**
      * Provides the shared textual representation of an EOF token.
@@ -224,31 +219,6 @@ struct Token
      * @warning                 This shared string must not be modified or released by callers.
      */
     static val EOF_STRING: pointer<char> = "<EOF>"
-
-
-    /**
-     * Creates a blank placeholder token.
-     *
-     * The returned token has BLANK_KIND, no source position and an empty text
-     * value. It does not represent any characters from the source input.
-     *
-     * @return                  a newly allocated blank token
-     */
-    static fun fromBlank() -> pointer<Token> = new Token(BLANK_KIND, null, "")
-
-
-    /**
-     * Creates an end-of-file token at the specified source position.
-     *
-     * The supplied position is stored by reference and is not cloned. The
-     * token text is the shared EOF_STRING value.
-     *
-     * @param pos               the source position at the end of the input
-     *
-     * @return                  a newly allocated EOF token
-     */
-    static fun fromEOF(pos: pointer<TokenPosition>) -> pointer<Token> = new Token(EOF_KIND, pos, EOF_STRING)
-
 
     /**
      * Stores the token kind identifier.
@@ -269,6 +239,13 @@ struct Token
      * text. For EOF tokens, this points to the shared EOF_STRING value.
      */
     var text: pointer<char>
+
+    /**
+     * Points to optional diagnostic information associated with the token.
+     *
+     * This field is normally null when the token does not contain an error.
+     */
+    var errorInfo: pointer<char>
 
 
     /**
@@ -303,22 +280,54 @@ struct Token
         }
 
         this.text = String.strdup(text)
+        this.errorInfo = null
     }
 
 
     /**
-     * Creates a copy of this token.
+     * Initializes a token with diagnostic information.
      *
-     * The returned token has the same kind and refers to the same source
-     * position object. For an ordinary token, the constructor duplicates the
-     * token text; for an EOF token, it uses the shared EOF_STRING value.
+     * For ordinary tokens, both the supplied text and error information
+     * are duplicated and stored in the token.
      *
-     * @return                  a newly allocated token with the same kind,
-     *                          position and text
+     * For an EOF token, the supplied text and error information are
+     * ignored and the token uses the shared EOF_STRING value.
      *
-     * @note                    The TokenPosition object is shared and is not cloned.
+     * The caller must provide a valid position pointer and valid
+     * null-terminated strings for ordinary tokens.
+     *
+     * @param kind              the token kind identifier
+     * @param pos               the source position of the token
+     * @param text              the null-terminated token text
+     * @param errorInfo         the null-terminated diagnostic message
+     *
+     * @note                    The position object is not copied.
+     *
+     * @warning                 Passing an invalid string pointer to a non-EOF token may cause undefined behavior.
      */
-    fun clone() -> pointer<Token> = new Token(this.kind, this.pos, this.text)
+    constructor(kind: int, pos: pointer<TokenPosition>, text: pointer<char>, errorInfo: pointer<char>)
+    {
+        this.kind = kind
+        this.pos = pos
+
+        if kind == EOF_KIND:
+        {
+            this.text = EOF_STRING
+            return
+        }
+
+        this.text = String.strdup(text)
+        this.errorInfo = String.strdup(errorInfo)
+    }
+
+
+    fun clone() -> pointer<Token>
+    {
+        if this.errorInfo == null:
+            return new Token(this.kind, this.pos, this.text)
+
+        return new Token(this.kind, this.pos, this.text, this.errorInfo)
+    }
 
 
     /**
@@ -329,15 +338,6 @@ struct Token
      * @return                  true if this token is an EOF token; otherwise false
      */
     fun isEOF() -> bool = this.kind == EOF_KIND
-
-
-    /**
-     * Tests whether this token is a blank placeholder token.
-     *
-     * @return                  true if this token's kind equals BLANK_KIND;
-     *                          otherwise false
-     */
-    fun isBlank() -> bool = this.kind == BLANK_KIND
 }
 
 

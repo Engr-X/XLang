@@ -24,7 +24,6 @@
 package xlang.compiler.parser
 
 import xlang.Files
-import xlang.Diagnostics
 import xlang.compiler.type.Type
 import xlang.System
 import xlang.compiler.lexer.Tokenizer
@@ -193,7 +192,7 @@ fun genTest() -> pointer<TestGroup>
 
 private fun annotationValueCount(text: pointer<char>) -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(text)
     val annotation: pointer<Annotation> = Parser.parseAnnotation(tokens)
 
     if annotation == null:
@@ -224,7 +223,7 @@ private fun annotationSeparatedValuesTest() -> int
 
 private fun preprocessValueCount(text: pointer<char>) -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
     val setting: pointer<PreprocessSetting> = Parser.parsePreprocessSetting(tokens)
 
     if setting == null:
@@ -255,7 +254,7 @@ private fun preprocessSeparatedValuesTest() -> int
 
 private fun parseSelectiveImportsText(text: pointer<char>) -> pointer<SelectiveImports>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
     val selectiveImports: pointer<SelectiveImports> = Parser.parseSelectiveImports(tokens)
 
     if selectiveImports == null:
@@ -276,7 +275,7 @@ private fun parseSelectiveImportsText(text: pointer<char>) -> pointer<SelectiveI
 
 private fun parseImportedSymbolText(text: pointer<char>) -> pointer<ImportedSymbol>
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(text)
     val importedSymbol: pointer<ImportedSymbol> = Parser.parseImportedSymbol(tokens)
 
     if importedSymbol == null:
@@ -291,7 +290,7 @@ private fun parseImportedSymbolText(text: pointer<char>) -> pointer<ImportedSymb
 
 private fun parseNamespaceImportText(text: pointer<char>) -> pointer<NamespaceImport>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
     val namespaceImport: pointer<NamespaceImport> = Parser.parseNamespaceImport(tokens)
 
     if namespaceImport == null:
@@ -512,35 +511,35 @@ private fun selectiveImportsTest() -> int
 
 private fun parseExpressionText(text: pointer<char>) -> pointer<Expression>
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(text)
     return Parser.parseExpression(tokens)
 }
 
 
 private fun parseFullExpressionText(text: pointer<char>) -> pointer<Expression>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
     return Parser.parseExpression(tokens)
 }
 
 
 private fun parseStatementText(text: pointer<char>) -> pointer<Statement>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
     return Parser.parseStatement(tokens)
 }
 
 
 private fun parseFunctionText(text: pointer<char>) -> pointer<Function>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
     return Parser.parseFunction(tokens)
 }
 
 
 private fun parseStructText(text: pointer<char>) -> pointer<Struct>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text, new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(text)
     return Parser.parseStruct(tokens)
 }
 
@@ -690,7 +689,7 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
                 null
 
         printProgramFailure(path, "parseProgram returned null near", token)
-        printTokenDump("raw tokens: ", Tokenizer.tokenize(source, new Diagnostics()))
+        printTokenDump("raw tokens: ", Tokenizer.tokenize(source))
         printTokenDump("normalized tokens: ", tokens)
         return false
     }
@@ -699,7 +698,7 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
     {
         val token: pointer<Token> = tokens.get(0)
         printProgramFailure(path, "parseProgram left token", token)
-        printTokenDump("raw tokens: ", Tokenizer.tokenize(source, new Diagnostics()))
+        printTokenDump("raw tokens: ", Tokenizer.tokenize(source))
         printTokenDump("normalized tokens: ", tokens)
         return false
     }
@@ -1135,7 +1134,7 @@ private fun genAllSourceProgramsTestGroup() -> pointer<TestGroup>
 
 private fun atomParserTest() -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("true", new Diagnostics())
+    val tokens: pointer<TokenList> = Tokenizer.tokenize("true")
     val originalLength: int = tokens.length()
     val atom: pointer<Atom> = Parser.parseAtom(tokens)
 
