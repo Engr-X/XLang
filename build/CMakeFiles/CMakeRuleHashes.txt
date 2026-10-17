@@ -1,0 +1,21 @@
+# Hashes of file build rules.
+fa0a026110fe3556757596c6ac2fa7ce D:/Coding/projects/XLang/xlang/src/main/xlang/compiler/lexer/TokenNormalizer.x
+01b3788404b2bdb64edc56e994b87506 D:/Coding/projects/XLang/xlang/src/main/xlang/compiler/lexer/Tokenizer.x
+44481a951e818beb9d9b5307eb76ca63 D:/Coding/projects/XLang/xlang/src/main/xlang/compiler/parser/Parser.x
+6dd5024539a657d1ab3a7e6f9b61efa5 objs/main/xlang/Diagnostic.o
+f79d5eaf8f2bf5607cd3d8a5521780bd objs/src/main/c/file.o
+63195e0b985ea71a04d3e2500b719e1a objs/src/main/c/io.o
+e63d55199f4a2e074583b5befcde8a51 objs/src/main/c/string_regex.o
+0b357ed9789bd5102c11caa8ac28f812 objs/src/main/c/type_convert.o
+eb1f91e8beac068c35a26d5f489519e8 objs/src/main/c/util.o
+8eab6c1b9406482c918143c354ff9867 objs/test/xlang/Files.o
+581d85f4e0868f00c43e18ea4db08e95 src/main/CMakeFiles/xlang_c_objects
+581d85f4e0868f00c43e18ea4db08e95 src/main/CMakeFiles/xlang_compiler_parser_codegen
+581d85f4e0868f00c43e18ea4db08e95 src/main/CMakeFiles/xlang_compiler_token_normalizer_codegen
+581d85f4e0868f00c43e18ea4db08e95 src/main/CMakeFiles/xlang_compiler_tokenizer_codegen
+581d85f4e0868f00c43e18ea4db08e95 src/main/CMakeFiles/xlang_executable
+581d85f4e0868f00c43e18ea4db08e95 src/main/CMakeFiles/xlang_objects
+c5524a878bf7368ec0fc555f48d57db0 src/test/CMakeFiles/xlang_test_executable
+c5524a878bf7368ec0fc555f48d57db0 src/test/CMakeFiles/xlang_test_objects
+e666d030b090d9e982f5bf660c2cc7a5 xlang/xlang-test.exe
+79fe6113e9fab82c75294b9bf53db360 xlang/xlang.exe
