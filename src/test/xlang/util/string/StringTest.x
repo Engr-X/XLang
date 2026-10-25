@@ -49,10 +49,12 @@ fun genTest() -> pointer<TestGroup>
     val substringTC: pointer<TestCase> = new TestCase("substring", substringTest)
     val strMatchTC: pointer<TestCase> = new TestCase("strMatch", strMatchTest)
     val splitTC: pointer<TestCase> = new TestCase("split", splitTest)
+    val unescapeCharTC: pointer<TestCase> = new TestCase("unescapeChar", unescapeCharTest)
+    val unescapeStringTC: pointer<TestCase> = new TestCase("unescapeString", unescapeStringTest)
 
     val testCaseSpace: blob[sizeof(pointer<TestCase>) * 100]
     val testCase: pointer<pointer<TestCase>> = testCaseSpace as pointer<pointer<TestCase>>
-    val testCaseLength: int = 10
+    val testCaseLength: int = 12
 
     testCase[0] = strlenTC
     testCase[1] = streqTC
@@ -64,6 +66,8 @@ fun genTest() -> pointer<TestGroup>
     testCase[7] = substringTC
     testCase[8] = strMatchTC
     testCase[9] = splitTC
+    testCase[10] = unescapeCharTC
+    testCase[11] = unescapeStringTC
 
     for (var i = 0; i < testCaseLength; i++):
     {
@@ -467,6 +471,195 @@ fun splitTest() -> int
 
     if !splitPartEquals(emptySpliter, 0, "abc"):
         return 13
+
+    return 0
+}
+
+
+fun unescapeCharTest() -> int
+{
+    var consume: int = 0
+    var value: char = String.unescapeChar("A", consume.ref)
+
+    if consume != 1 || value != 'A':
+        return 1
+
+    consume = 0
+    value = String.unescapeChar("\\n", consume.ref)
+
+    if consume != 2 || value != '\n':
+        return 2
+
+    consume = 0
+    value = String.unescapeChar("\\\\", consume.ref)
+
+    if consume != 2 || value != '\\':
+        return 3
+
+    consume = 0
+    value = String.unescapeChar("\\u328", consume.ref)
+
+    if consume != 5 || value != (0x328 as char):
+        return 4
+
+    consume = 0
+    value = String.unescapeChar("\\uAbCd", consume.ref)
+
+    if consume != 6 || value != (0xabcd as char):
+        return 5
+
+    consume = 0
+    value = String.unescapeChar("\\uFFFFFFFF", consume.ref)
+
+    if consume != 10 || value != ((-1) as char):
+        return 6
+
+    consume = 0
+    value = String.unescapeChar("AB", consume.ref)
+
+    if consume != 1 || value != 'A':
+        return 7
+
+    consume = 0
+    value = String.unescapeChar("\\nX", consume.ref)
+
+    if consume != 2 || value != '\n':
+        return 8
+
+    consume = 0
+    value = String.unescapeChar("\\u12G", consume.ref)
+
+    if consume != 4 || value != (0x12 as char):
+        return 9
+
+    consume = -1
+    value = String.unescapeChar("\\q", consume.ref)
+
+    if consume != 0:
+        return 10
+
+    consume = -1
+    value = String.unescapeChar("\\u", consume.ref)
+
+    if consume != 0:
+        return 11
+
+    consume = -1
+    value = String.unescapeChar("\\u123456789", consume.ref)
+
+    if consume != 0:
+        return 12
+
+    consume = -1
+    value = String.unescapeChar("\\", consume.ref)
+
+    if consume != 0:
+        return 13
+
+    consume = -1
+    value = String.unescapeChar("", consume.ref)
+
+    if consume != 0:
+        return 14
+
+    consume = -1
+    value = String.unescapeChar(null, consume.ref)
+
+    if consume != 0:
+        return 15
+
+    return 0
+}
+
+
+fun unescapeStringTest() -> int
+{
+    var consume: int = -1
+    var result: pointer<StringBuilder> = String.unescapeString("plain", consume.ref)
+
+    if result == null || consume != 5 || !result.equals("plain"):
+        return 1
+
+    consume = -1
+    result = String.unescapeString("a\\nb\\t", consume.ref)
+
+    if result == null || consume != 6 || result.length != 4:
+        return 2
+
+    if result.get(0) != 'a' || result.get(1) != '\n' ||
+        result.get(2) != 'b' || result.get(3) != '\t':
+        return 3
+
+    consume = -1
+    result = String.unescapeString("A\\u328Z", consume.ref)
+
+    if result == null || consume != 7 || result.length != 3:
+        return 4
+
+    if result.get(0) != 'A' || result.get(1) != (0x328 as char) || result.get(2) != 'Z':
+        return 5
+
+    consume = -1
+    result = String.unescapeString("\\u12G", consume.ref)
+
+    if result == null || consume != 5 || result.length != 2:
+        return 6
+
+    if result.get(0) != (0x12 as char) || result.get(1) != 'G':
+        return 7
+
+    consume = -1
+    result = String.unescapeString("A\\0B", consume.ref)
+
+    if result == null || consume != 4 || result.length != 3:
+        return 8
+
+    if result.get(0) != 'A' || result.get(1) != '\0' || result.get(2) != 'B':
+        return 9
+
+    consume = -1
+    result = String.unescapeString("\\uFFFFFFFFX", consume.ref)
+
+    if result == null || consume != 11 || result.length != 2:
+        return 10
+
+    if result.get(0) != ((-1) as char) || result.get(1) != 'X':
+        return 11
+
+    consume = -1
+    result = String.unescapeString("", consume.ref)
+
+    if result == null || consume != 0 || result.length != 0:
+        return 12
+
+    consume = -1
+    result = String.unescapeString("ok\\q", consume.ref)
+
+    if result != null || consume != 2:
+        return 13
+
+    consume = -1
+    result = String.unescapeString("A\\u", consume.ref)
+
+    if result != null || consume != 1:
+        return 14
+
+    consume = -1
+    result = String.unescapeString("\\u123456789", consume.ref)
+
+    if result != null || consume != 0:
+        return 15
+
+    consume = -1
+    result = String.unescapeString(null, consume.ref)
+
+    if result != null || consume != 0:
+        return 16
+
+    result = String.unescapeString("plain", null)
+
+    if result != null:
+        return 17
 
     return 0
 }

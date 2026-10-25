@@ -48,7 +48,7 @@ import xlang.util.ArrayList
  *
  * <p>The parser stores the most recent parse result and diagnostic. Successful
  * type parsing produces a {@code Type} instance wrapped in a
- * {@code ParseContainer} whose kind is the identifier assigned to this parser.
+ * {@code ParserResult} whose kind is the identifier assigned to this parser.
  *
  * <p>Generic type parsing keeps track of the current nesting depth and may
  * decompose composite greater-than tokens such as {@code >=}, {@code >>=},
@@ -75,7 +75,7 @@ struct TypeParser
      * <p>This value is {@code null} when no successful parse result is
      * currently available.
      */
-    private var result: pointer<ParseContainer>
+    private var result: pointer<ParserResult>
 
     /**
      * The current generic-type nesting depth.
@@ -130,7 +130,7 @@ struct TypeParser
         this.reset()
         val consumed: int = this.parseType(tokens, index)
 
-        if !this.haveError(consumed):
+        if !this.hasError(consumed):
             return consumed
 
         if tokens == null || index < 0 || index >= tokens.length():
@@ -144,7 +144,7 @@ struct TypeParser
         this.reset()
         val innerConsumed: int = this.parse(tokens, index + 1)
 
-        if this.haveError(innerConsumed):
+        if this.hasError(innerConsumed):
             return -1
 
         val rightParenIndex: int = index + innerConsumed + 1
@@ -186,12 +186,12 @@ struct TypeParser
             {
                 val consumed: int = this.parseFunction(tokens, index)
 
-                if this.haveError(consumed):
+                if this.hasError(consumed):
                     return -1
 
                 val functionType: pointer<FunctionType> = this.result.getValue() as pointer<FunctionType>
 
-                this.result = new ParseContainer(this.id, Type.fromFunction(functionType))
+                this.result = new ParserResult(this.id, Type.fromFunction(functionType))
                 return consumed
             }
 
@@ -199,24 +199,24 @@ struct TypeParser
             {
                 val consumed: int = this.parseBlob(tokens, index)
 
-                if this.haveError(consumed):
+                if this.hasError(consumed):
                     return -1
 
                 val blobType: pointer<BlobType> = this.result.getValue() as pointer<BlobType>
 
-                this.result = new ParseContainer(this.id, Type.fromBlob(blobType))
+                this.result = new ParserResult(this.id, Type.fromBlob(blobType))
                 return consumed
             }
         }
 
         val consumed: int = this.parseNormal(tokens, index)
 
-        if this.haveError(consumed):
+        if this.hasError(consumed):
             return -1
 
         val normalType: pointer<NormalType> = this.result.getValue() as pointer<NormalType>
 
-        this.result = new ParseContainer(this.id, Type.fromNormal(normalType))
+        this.result = new ParserResult(this.id, Type.fromNormal(normalType))
         return consumed
     }
 
@@ -286,13 +286,13 @@ struct TypeParser
             if parameterLength <= 0:
                 return this.failCannotParseType(tokens, index + consumed)
 
-            val parameterResult: pointer<ParseContainer> = parameterRefs.getResult()
+            val parameterResult: pointer<ParserResult> = parameterRefs.getResult()
             val parameterValues: pointer<ArrayList> = parameterResult.getValue() as pointer<ArrayList>
 
             for (var i = 0; i < parameterValues.length; i++):
             {
                 val slot: pointer<pointer<*>> = parameterValues.get(i) as pointer<pointer<*>>
-                val container: pointer<ParseContainer> = slot.deref as pointer<ParseContainer>
+                val container: pointer<ParserResult> = slot.deref as pointer<ParserResult>
                 val parameterType: pointer<Type> = container.getValue() as pointer<Type>
 
                 parameters.push(parameterType)
@@ -330,13 +330,13 @@ struct TypeParser
         val returnParser: pointer<TypeParser> = this.clone()
         val returnLength: int = returnParser.parse(tokens, index + consumed)
 
-        if returnParser.haveError(returnLength):
+        if returnParser.hasError(returnLength):
         {
             this.error = returnParser.getError()
             return -1
         }
 
-        val returnResult: pointer<ParseContainer> = returnParser.getResult()
+        val returnResult: pointer<ParserResult> = returnParser.getResult()
         val returnType: pointer<Type> = returnResult.getValue() as pointer<Type>
 
         consumed += returnLength
@@ -349,7 +349,7 @@ struct TypeParser
             parsedType.addExtraToken(token)
         }
 
-        this.result = new ParseContainer(this.id, parsedType)
+        this.result = new ParserResult(this.id, parsedType)
         return consumed
     }
 
@@ -443,22 +443,18 @@ struct TypeParser
             if this.depth >= 1:
             {
                 val parsedType: pointer<NormalType> = NormalType.unresolved("void").addToken(token)
-                this.result = new ParseContainer(this.id, parsedType)
+                this.result = new ParserResult(this.id, parsedType)
                 return 1
             }
 
-            val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-            val location: pointer<SourceLocation> = new SourceLocation(
-                null,
-                token.pos.offset,
-                token.pos.line,
-                token.pos.column,
-                token.pos.length)
-
-            locations.push(location)
             this.error = Diagnostic.makeError(
                 Diagnostic.CANNOT_PARSE_TYPE,
-                locations,
+                new SourceLocation(
+                    null,
+                    token.pos.offset,
+                    token.pos.line,
+                    token.pos.column,
+                    token.pos.length),
                 Diagnostic.CANNOT_PARSE_TYPE_MSG)
             return -1
         }
@@ -475,18 +471,14 @@ struct TypeParser
             token.kind != Tokenizer.KW_SHORT &&
             token.kind != Tokenizer.KW_VOID:
         {
-            val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-            val location: pointer<SourceLocation> = new SourceLocation(
-                null,
-                token.pos.offset,
-                token.pos.line,
-                token.pos.column,
-                token.pos.length)
-
-            locations.push(location)
             this.error = Diagnostic.makeError(
                 Diagnostic.CANNOT_PARSE_TYPE,
-                locations,
+                new SourceLocation(
+                    null,
+                    token.pos.offset,
+                    token.pos.line,
+                    token.pos.column,
+                    token.pos.length),
                 Diagnostic.CANNOT_PARSE_TYPE_MSG)
             return -1
         }
@@ -497,10 +489,10 @@ struct TypeParser
         {
             nameLength = Parser.QUALIFIED_NAME_PARSER.parse(tokens, index)
 
-            if Parser.QUALIFIED_NAME_PARSER.haveError(nameLength):
+            if Parser.QUALIFIED_NAME_PARSER.hasError(nameLength):
                 return this.failCannotParseType(tokens, index)
 
-            val qualifiedNameResult: pointer<ParseContainer> = Parser.QUALIFIED_NAME_PARSER.getResult()
+            val qualifiedNameResult: pointer<ParserResult> = Parser.QUALIFIED_NAME_PARSER.getResult()
 
             if qualifiedNameResult == null:
                 return this.failCannotParseType(tokens, index)
@@ -529,7 +521,7 @@ struct TypeParser
 
         if nextToken == null || nextToken.kind != Tokenizer.LESS:
         {
-            this.result = new ParseContainer(this.id, parsedType)
+            this.result = new ParserResult(this.id, parsedType)
             return nameLength
         }
 
@@ -543,14 +535,14 @@ struct TypeParser
             argumentParser.depth = this.depth
             val argumentLength: int = argumentParser.parse(tokens, index + consumed)
 
-            if argumentParser.haveError(argumentLength):
+            if argumentParser.hasError(argumentLength):
             {
                 this.depth--
                 this.error = argumentParser.getError()
                 return -1
             }
 
-            val argumentResult: pointer<ParseContainer> = argumentParser.getResult()
+            val argumentResult: pointer<ParserResult> = argumentParser.getResult()
             val typeArgument: pointer<Type> = argumentResult.getValue() as pointer<Type>
 
             parsedType.addTypeArgument(typeArgument)
@@ -575,7 +567,7 @@ struct TypeParser
                 this.depth--
                 consumed++
                 parsedType.addToken(delimiter)
-                this.result = new ParseContainer(this.id, parsedType)
+                this.result = new ParserResult(this.id, parsedType)
                 return consumed
             }
 
@@ -594,17 +586,14 @@ struct TypeParser
 
         val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
         val errorToken: pointer<Token> = tokens.get(errorIndex)
-        val location: pointer<SourceLocation> = new SourceLocation(
-            null,
-            errorToken.pos.offset,
-            errorToken.pos.line,
-            errorToken.pos.column,
-            errorToken.pos.length)
-
-        locations.push(location)
         this.error = Diagnostic.makeError(
             Diagnostic.CANNOT_PARSE_TYPE,
-            locations,
+            new SourceLocation(
+                null,
+                errorToken.pos.offset,
+                errorToken.pos.line,
+                errorToken.pos.column,
+                errorToken.pos.length),
             Diagnostic.CANNOT_PARSE_TYPE_MSG)
 
         return -1
@@ -655,10 +644,10 @@ struct TypeParser
 
         val expressionLength: int = Parser.EXPRESSION_PARSER.parse(tokens, index + 2)
 
-        if Parser.EXPRESSION_PARSER.haveError(expressionLength) || expressionLength <= 0:
+        if Parser.EXPRESSION_PARSER.hasError(expressionLength) || expressionLength <= 0:
             return this.failCannotParseType(tokens, index + 2)
 
-        val expressionResult: pointer<ParseContainer> = Parser.EXPRESSION_PARSER.getResult()
+        val expressionResult: pointer<ParserResult> = Parser.EXPRESSION_PARSER.getResult()
 
         if expressionResult == null:
             return this.failCannotParseType(tokens, index + 2)
@@ -683,7 +672,7 @@ struct TypeParser
             .addExtraToken(leftBracket)
             .addExtraToken(rightBracket)
 
-        this.result = new ParseContainer(this.id, parsedType)
+        this.result = new ParserResult(this.id, parsedType)
         return expressionLength + 3
     }
 
@@ -820,7 +809,7 @@ struct TypeParser
 
         val consumed: int = this.parse(input, 0)
 
-        if this.haveError(consumed):
+        if this.hasError(consumed):
             return -1
 
         if consumed > input.length():
@@ -847,7 +836,7 @@ struct TypeParser
      *
      * @return                  {@code true} if parsing failed; {@code false} otherwise
      */
-    fun haveError(eaten: int) -> bool = this.error != null || eaten <= 0
+    fun hasError(eaten: int) -> bool = this.error != null || eaten <= 0
 
 
     /**
@@ -856,7 +845,7 @@ struct TypeParser
      * @return                  a pointer to the current parse result, or {@code null} if no
      *                          successful result is available
      */
-    fun getResult() -> pointer<ParseContainer> = this.result
+    fun getResult() -> pointer<ParserResult> = this.result
 
 
     /**

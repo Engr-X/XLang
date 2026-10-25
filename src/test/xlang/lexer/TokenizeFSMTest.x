@@ -105,7 +105,7 @@ private fun eofDefaultTest() -> int
     val state: pointer<TokenizeFSM> = new TokenizeFSM("")
     val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * 1]
     val rules: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>
-    val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT, "\\0", eatEOF)
+    val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "\\0", eatEOF)
 
     rules[0] = rule0
 
@@ -141,7 +141,7 @@ private fun noMatchTest() -> int
     val state: pointer<TokenizeFSM> = new TokenizeFSM("abc")
     val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * 1]
     val rules: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>
-    val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT, "z", eatA)
+    val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "z", eatA)
 
     rules[0] = rule0
 
@@ -167,7 +167,7 @@ private fun stateFilterTest() -> int
     val state: pointer<TokenizeFSM> = new TokenizeFSM("abc")
     val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * 2]
     val rules: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>
-    val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT, "a", eatA)
+    val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "a", eatA)
     val rule1: pointer<TokenizeRule> = new TokenizeRule(1, OTHER_STATE, "a", eatB)
 
     rules[0] = rule0
@@ -199,8 +199,8 @@ private fun firstRuleTest() -> int
     val state: pointer<TokenizeFSM> = new TokenizeFSM("abc")
     val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * 2]
     val rules: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>
-    val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT, "a", eatA)
-    val rule1: pointer<TokenizeRule> = new TokenizeRule(1, TokenizeFSM.DEFAULT, "ab", eatB)
+    val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "a", eatA)
+    val rule1: pointer<TokenizeRule> = new TokenizeRule(1, TokenizeFSM.DEFAULT_STATE, "ab", eatB)
 
     rules[0] = rule0
     rules[1] = rule1

@@ -35,16 +35,19 @@ fun genTest() -> pointer<TestGroup>
     val removeTC: pointer<TestCase> = new TestCase("remove", removeTest)
     val toArrayTC: pointer<TestCase> = new TestCase("toArray", toArrayTest)
     val chainAddTC: pointer<TestCase> = new TestCase("chainAdd", chainAddTest)
+    val intersectTC: pointer<TestCase> = new TestCase("intersect", intersectTest)
 
     val basicUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, basicTC, null)
     val removeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, removeTC, null)
     val toArrayUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, toArrayTC, null)
     val chainAddUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, chainAddTC, null)
+    val intersectUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, intersectTC, null)
 
     result.addTestUnion(basicUnion)
     result.addTestUnion(removeUnion)
     result.addTestUnion(toArrayUnion)
     result.addTestUnion(chainAddUnion)
+    result.addTestUnion(intersectUnion)
 
     return result
 }
@@ -174,6 +177,66 @@ private fun removeTest() -> int
 
     if !set.contains(value):
         return 7
+
+    return 0
+}
+
+
+private fun intersectTest() -> int
+{
+    val left: pointer<HashSet> = new HashSet(sizeof(int), intEq, intHash)
+    val right: pointer<HashSet> = new HashSet(sizeof(int), intEq, intHash)
+    val leftValuesSpace: blob[sizeof(int) * 3]
+    val rightValuesSpace: blob[sizeof(int) * 3]
+    val leftValues: pointer<int> = leftValuesSpace as pointer<int>
+    val rightValues: pointer<int> = rightValuesSpace as pointer<int>
+
+    leftValues[0] = 1
+    leftValues[1] = 2
+    leftValues[2] = 3
+    rightValues[0] = 2
+    rightValues[1] = 3
+    rightValues[2] = 4
+
+    for (var i: int = 0; i < 3; i++):
+    {
+        left.add(leftValues + i)
+        right.add(rightValues + i)
+    }
+
+    val result: pointer<HashSet> = left.intersect(right)
+
+    if result == null:
+        return 1
+
+    if result.length != 2:
+        return 2
+
+    if !result.contains(leftValues + 1):
+        return 3
+
+    if !result.contains(leftValues + 2):
+        return 4
+
+    if result.contains(leftValues):
+        return 5
+
+    if result.contains(rightValues + 2):
+        return 6
+
+    if left.length != 3 || right.length != 3:
+        return 7
+
+    if !result.remove(leftValues + 1):
+        return 8
+
+    if !left.contains(leftValues + 1) || !right.contains(leftValues + 1):
+        return 9
+
+    val nullIntersection: pointer<HashSet> = left.intersect(null)
+
+    if nullIntersection == null || nullIntersection.length != 0:
+        return 10
 
     return 0
 }

@@ -757,7 +757,7 @@ private fun invalidIdentTest() -> int
     val kinds: pointer<int> = kindsSpace as pointer<int>
     val texts: pointer<pointer<char>> = textsSpace as pointer<pointer<char>>
 
-    kinds[0] = -TokenizeFSM.DEFAULT
+    kinds[0] = -TokenizeFSM.DEFAULT_STATE
     texts[0] = "123abc"
 
     if checkTokens("123abc", kinds, texts, 1) != 0:

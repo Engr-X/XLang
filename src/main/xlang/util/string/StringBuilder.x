@@ -275,4 +275,7 @@ struct StringBuilder
      */
     fun toString(dest: pointer<char>):
         String.strcpy(dest, this.list)
+
+
+    fun getText() -> pointer<char> = this.list 
 }

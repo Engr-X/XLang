@@ -262,7 +262,7 @@ struct TokenizedFile
      * @return                  {@code true} if a lexical error is present;
      *                          {@code false} otherwise
      */
-    fun haveError() -> bool = this.getError() != null
+    fun hasError() -> bool = this.getError() != null
 
 
     /**

@@ -23,16 +23,19 @@
 
 package xlang.parser
 
+import xlang.Diagnostics
+
+
 /**
  * Represents a generic parser result container.
  *
- * <p>A {@code ParseContainer} stores an untyped result value together with a
+ * <p>A {@code ParserResult} stores an untyped result value together with a
  * kind identifier describing how the value should be interpreted.
  *
  * <p>The container does not copy or own the referenced value. The lifetime of
  * the stored object is managed by the code that created it.
  */
-struct ParseContainer
+struct ParserResult
 {
     /**
      * Identifies a parse result whose value is an {@code ArrayList}.
@@ -53,6 +56,12 @@ struct ParseContainer
      * {@code kind}.
      */
     private var value: pointer<*>
+
+
+    /**
+     * Diagnostics produced while parsing.
+     */
+    private var diagnostics: pointer<Diagnostics>
 
 
     /**

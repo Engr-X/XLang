@@ -4,6 +4,8 @@
     "package": "xlang.compiler.parser",
     "class": "Parser",
     "imports": [
+        "xlang.Diagnostic",
+        "xlang.Diagnostics",
         "xlang.compiler.lexer.Tokenizer",
         "xlang.lexer.Token",
         "xlang.compiler.parser.expression.Atom",
@@ -727,21 +729,56 @@
             "}" ],
 
 
-        [   "private inline fun parse(input: pointer<TokenList>) -> pointer<Program>",
+        [   "private inline fun parse(input: pointer<TokenList>, diagnostics: pointer<Diagnostics>) -> pointer<Program>",
             "{",
             "    PROGRAM_PARSER.doParse(input)",
             "",
-            "    val result: pointer<ParseContainer> = PROGRAM_PARSER.getResult()",
+            "    if PROGRAM_PARSER.getError() != null:",
+            "    {",
+            "         diagnostics.push(PROGRAM_PARSER.getError())",
+            "         return null",
+            "    }",
+            "",
+            "    val result: pointer<ParserResult> = PROGRAM_PARSER.getResult()",
             "    return result.getValue() as pointer<Program>",
             "}" ],
 
 
-        [   "fun parseProgram(input: pointer<TokenizedFile>) -> pointer<ASTFile>",
+        [   "fun parse(input: pointer<TokenizedFile>, diagnostics: pointer<Diagnostics>) -> pointer<ASTFile>",
             "{",
             "    PROGRAM_PARSER.doParse(input.getTokens())",
-            "    val program: pointer<ParseContainer> = PROGRAM_PARSER.getResult()",
+            "",
+            "    if PROGRAM_PARSER.getError() != null:",
+            "    {",
+            "         diagnostics.push(PROGRAM_PARSER.getError())",
+            "         return null",
+            "    }",
+            "",
+            "    val program: pointer<ParserResult> = PROGRAM_PARSER.getResult()",
             "    val result: pointer<ASTFile> = new ASTFile(input.getPath(), program.getValue())",
-            "    return result.pushDiagnostic(PROGRAM_PARSER.getError())",
+            "    return result",
+            "}" ],
+
+
+        [   "private inline fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<Program>",
+            "{",
+            "    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, diagnostics)",
+            "",
+            "    if tokens == null:",
+            "        return null",
+            "",
+            "    return parse(tokens, diagnostics)",
+            "}" ],
+
+
+        [   "private inline fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<Program>",
+            "{",
+            "    val tokenFile: pointer<TokenizedFile> = Tokenizer.fullTokenize(file, diagnostics)",
+            "",
+            "    if tokenFile == null:",
+            "        return null",
+            "",
+            "    return parse(tokenFile, diagnostics)",
             "}" ]
     ]
 }

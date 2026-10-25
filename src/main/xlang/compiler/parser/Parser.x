@@ -2,6 +2,8 @@
 package xlang.compiler.parser
 
 
+import xlang.Diagnostic
+import xlang.Diagnostics
 import xlang.Operation
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.expression.Atom
@@ -61,7 +63,7 @@ import xlang.lexer.TokenList
 import xlang.lexer.TokenPosition
 import xlang.lexer.TokenizedFile
 import xlang.parser.ASTFile
-import xlang.parser.ParseContainer
+import xlang.parser.ParserResult
 import xlang.parser.PrattParser
 import xlang.parser.util.ParserRef
 import xlang.parser.util.ParserRefs
@@ -121,7 +123,7 @@ private inline fun getContainerValue(results: pointer<ArrayList>, index: int, un
     if !unwrapContainer:
         return value
 
-    val container: pointer<ParseContainer> = value as pointer<ParseContainer>
+    val container: pointer<ParserResult> = value as pointer<ParserResult>
     return container.getValue()
 }
 
@@ -1703,20 +1705,53 @@ private inline fun makeProgram(results: pointer<ArrayList>) -> pointer<*>
         .setImportDeclarations(imports.toImportDeclarations())
 }
 
-private inline fun parse(input: pointer<TokenList>) -> pointer<Program>
+private inline fun parse(input: pointer<TokenList>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
 {
     PROGRAM_PARSER.doParse(input)
 
-    val result: pointer<ParseContainer> = PROGRAM_PARSER.getResult()
+    if PROGRAM_PARSER.getError() != null:
+    {
+         diagnostics.push(PROGRAM_PARSER.getError())
+         return null
+    }
+
+    val result: pointer<ParserResult> = PROGRAM_PARSER.getResult()
     return result.getValue() as pointer<Program>
 }
 
-fun parseProgram(input: pointer<TokenizedFile>) -> pointer<ASTFile>
+fun parse(input: pointer<TokenizedFile>, diagnostics: pointer<Diagnostics>) -> pointer<ASTFile>
 {
     PROGRAM_PARSER.doParse(input.getTokens())
-    val program: pointer<ParseContainer> = PROGRAM_PARSER.getResult()
+
+    if PROGRAM_PARSER.getError() != null:
+    {
+         diagnostics.push(PROGRAM_PARSER.getError())
+         return null
+    }
+
+    val program: pointer<ParserResult> = PROGRAM_PARSER.getResult()
     val result: pointer<ASTFile> = new ASTFile(input.getPath(), program.getValue())
-    return result.pushDiagnostic(PROGRAM_PARSER.getError())
+    return result
+}
+
+private inline fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
+{
+    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, diagnostics)
+
+    if tokens == null:
+        return null
+
+    return parse(tokens, diagnostics)
+}
+
+private inline fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
+{
+    val tokenFile: pointer<TokenizedFile> = Tokenizer.fullTokenize(file, diagnostics)
+
+    if tokenFile == null:
+        return null
+
+    return parse(tokenFile, diagnostics)
 }
 
 
@@ -2327,7 +2362,7 @@ fun parseExpression(input: pointer<TokenList>) -> pointer<Expression>
     if EXPRESSION_PARSER_SETUP.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = EXPRESSION_PARSER_SETUP.getResult()
+    val result: pointer<ParserResult> = EXPRESSION_PARSER_SETUP.getResult()
 
     if result == null || result.isKind(EXPRESSION_PARSER_ID) == false:
         return null
@@ -2343,7 +2378,7 @@ fun parseAtom(input: pointer<TokenList>) -> pointer<Atom>
     if ATOM_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = ATOM_PARSER.getResult()
+    val result: pointer<ParserResult> = ATOM_PARSER.getResult()
 
     if result == null || result.isKind(ATOM_PARSER_ID) == false:
         return null
@@ -2359,7 +2394,7 @@ fun parseSizeOf(input: pointer<TokenList>) -> pointer<SizeOf>
     if SIZE_OF_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = SIZE_OF_PARSER.getResult()
+    val result: pointer<ParserResult> = SIZE_OF_PARSER.getResult()
 
     if result == null || result.isKind(SIZE_OF_PARSER_ID) == false:
         return null
@@ -2375,7 +2410,7 @@ fun parseExpressionTuple(input: pointer<TokenList>) -> pointer<ExpressionTuple>
     if EXPRESSION_TUPLE_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = EXPRESSION_TUPLE_PARSER.getResult()
+    val result: pointer<ParserResult> = EXPRESSION_TUPLE_PARSER.getResult()
 
     if result == null || result.isKind(EXPRESSION_TUPLE_PARSER_ID) == false:
         return null
@@ -2391,7 +2426,7 @@ fun parseListLiteral(input: pointer<TokenList>) -> pointer<ListLiteral>
     if LIST_LITERAL_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = LIST_LITERAL_PARSER.getResult()
+    val result: pointer<ParserResult> = LIST_LITERAL_PARSER.getResult()
 
     if result == null || result.isKind(LIST_LITERAL_PARSER_ID) == false:
         return null
@@ -2407,7 +2442,7 @@ fun parseStatement(input: pointer<TokenList>) -> pointer<Statement>
     if STATEMENT_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = STATEMENT_PARSER.getResult()
+    val result: pointer<ParserResult> = STATEMENT_PARSER.getResult()
 
     if result == null || result.isKind(STATEMENT_PARSER_ID) == false:
         return null
@@ -2423,7 +2458,7 @@ fun parseElseStatement(input: pointer<TokenList>) -> pointer<ElseStatement>
     if ELSE_STATEMENT_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = ELSE_STATEMENT_PARSER.getResult()
+    val result: pointer<ParserResult> = ELSE_STATEMENT_PARSER.getResult()
 
     if result == null || result.isKind(ELSE_STATEMENT_PARSER_ID) == false:
         return null
@@ -2439,7 +2474,7 @@ fun parseWhileStatement(input: pointer<TokenList>) -> pointer<WhileStatement>
     if WHILE_STATEMENT_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = WHILE_STATEMENT_PARSER.getResult()
+    val result: pointer<ParserResult> = WHILE_STATEMENT_PARSER.getResult()
 
     if result == null || result.isKind(WHILE_STATEMENT_PARSER_ID) == false:
         return null
@@ -2455,7 +2490,7 @@ fun parseForHeader(input: pointer<TokenList>) -> pointer<ForHeader>
     if FOR_HEADER_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = FOR_HEADER_PARSER.getResult()
+    val result: pointer<ParserResult> = FOR_HEADER_PARSER.getResult()
 
     if result == null || result.isKind(FOR_HEADER_PARSER_ID) == false:
         return null
@@ -2471,7 +2506,7 @@ fun parseForStatement(input: pointer<TokenList>) -> pointer<ForStatement>
     if FOR_STATEMENT_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = FOR_STATEMENT_PARSER.getResult()
+    val result: pointer<ParserResult> = FOR_STATEMENT_PARSER.getResult()
 
     if result == null || result.isKind(FOR_STATEMENT_PARSER_ID) == false:
         return null
@@ -2487,7 +2522,7 @@ fun parseVariableDefine(input: pointer<TokenList>) -> pointer<VariableDefine>
     if VARIABLE_DEFINE_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = VARIABLE_DEFINE_PARSER.getResult()
+    val result: pointer<ParserResult> = VARIABLE_DEFINE_PARSER.getResult()
 
     if result == null || result.isKind(VARIABLE_DEFINE_PARSER_ID) == false:
         return null
@@ -2503,7 +2538,7 @@ fun parseReturnStatement(input: pointer<TokenList>) -> pointer<ReturnStatement>
     if RETURN_STATEMENT_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = RETURN_STATEMENT_PARSER.getResult()
+    val result: pointer<ParserResult> = RETURN_STATEMENT_PARSER.getResult()
 
     if result == null || result.isKind(RETURN_STATEMENT_PARSER_ID) == false:
         return null
@@ -2519,7 +2554,7 @@ fun parseBlock(input: pointer<TokenList>) -> pointer<Block>
     if BLOCK_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = BLOCK_PARSER.getResult()
+    val result: pointer<ParserResult> = BLOCK_PARSER.getResult()
 
     if result == null || result.isKind(BLOCK_PARSER_ID) == false:
         return null
@@ -2535,7 +2570,7 @@ fun parseIfExpression(input: pointer<TokenList>) -> pointer<IfExpression>
     if IF_EXPRESSION_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = IF_EXPRESSION_PARSER.getResult()
+    val result: pointer<ParserResult> = IF_EXPRESSION_PARSER.getResult()
 
     if result == null || result.isKind(IF_EXPRESSION_PARSER_ID) == false:
         return null
@@ -2551,7 +2586,7 @@ fun parseIfElseExpression(input: pointer<TokenList>) -> pointer<IfElseExpression
     if IF_ELSE_EXPRESSION_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = IF_ELSE_EXPRESSION_PARSER.getResult()
+    val result: pointer<ParserResult> = IF_ELSE_EXPRESSION_PARSER.getResult()
 
     if result == null || result.isKind(IF_ELSE_EXPRESSION_PARSER_ID) == false:
         return null
@@ -2567,7 +2602,7 @@ fun parseModifier(input: pointer<TokenList>) -> pointer<Modifier>
     if MODIFIER_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = MODIFIER_PARSER.getResult()
+    val result: pointer<ParserResult> = MODIFIER_PARSER.getResult()
 
     if result == null || result.isKind(MODIFIER_PARSER_ID) == false:
         return null
@@ -2583,7 +2618,7 @@ fun parseModifierListMaybe(input: pointer<TokenList>) -> pointer<ModifierListMay
     if MODIFIER_LIST_MAYBE_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = MODIFIER_LIST_MAYBE_PARSER.getResult()
+    val result: pointer<ParserResult> = MODIFIER_LIST_MAYBE_PARSER.getResult()
 
     if result == null || result.isKind(MODIFIER_LIST_MAYBE_PARSER_ID) == false:
         return null
@@ -2599,7 +2634,7 @@ fun parsePreprocessSetting(input: pointer<TokenList>) -> pointer<PreprocessSetti
     if PREPROCESS_SETTING_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = PREPROCESS_SETTING_PARSER.getResult()
+    val result: pointer<ParserResult> = PREPROCESS_SETTING_PARSER.getResult()
 
     if result == null || result.isKind(PREPROCESS_SETTING_PARSER_ID) == false:
         return null
@@ -2615,7 +2650,7 @@ fun parseAnnotation(input: pointer<TokenList>) -> pointer<Annotation>
     if ANNOTATION_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = ANNOTATION_PARSER.getResult()
+    val result: pointer<ParserResult> = ANNOTATION_PARSER.getResult()
 
     if result == null || result.isKind(ANNOTATION_PARSER_ID) == false:
         return null
@@ -2631,7 +2666,7 @@ fun parseAnnotationsMaybe(input: pointer<TokenList>) -> pointer<AnnotationsMaybe
     if ANNOTATIONS_MAYBE_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = ANNOTATIONS_MAYBE_PARSER.getResult()
+    val result: pointer<ParserResult> = ANNOTATIONS_MAYBE_PARSER.getResult()
 
     if result == null || result.isKind(ANNOTATIONS_MAYBE_PARSER_ID) == false:
         return null
@@ -2647,7 +2682,7 @@ fun parseQualifiedName(input: pointer<TokenList>) -> pointer<QualifiedName>
     if QUALIFIED_NAME_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = QUALIFIED_NAME_PARSER.getResult()
+    val result: pointer<ParserResult> = QUALIFIED_NAME_PARSER.getResult()
 
     if result == null || result.isKind(QUALIFIED_NAME_PARSER_ID) == false:
         return null
@@ -2663,7 +2698,7 @@ fun parsePackageDeclarationMaybe(input: pointer<TokenList>) -> pointer<PackageDe
     if PACKAGE_DECLARATION_MAYBE_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = PACKAGE_DECLARATION_MAYBE_PARSER.getResult()
+    val result: pointer<ParserResult> = PACKAGE_DECLARATION_MAYBE_PARSER.getResult()
 
     if result == null || result.isKind(PACKAGE_DECLARATION_MAYBE_PARSER_ID) == false:
         return null
@@ -2679,7 +2714,7 @@ fun parseNamespaceImport(input: pointer<TokenList>) -> pointer<NamespaceImport>
     if NAMESPACE_IMPORT_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = NAMESPACE_IMPORT_PARSER.getResult()
+    val result: pointer<ParserResult> = NAMESPACE_IMPORT_PARSER.getResult()
 
     if result == null || result.isKind(NAMESPACE_IMPORT_PARSER_ID) == false:
         return null
@@ -2695,7 +2730,7 @@ fun parseImportedSymbolAliasMaybe(input: pointer<TokenList>) -> pointer<Imported
     if IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.getResult()
+    val result: pointer<ParserResult> = IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.getResult()
 
     if result == null || result.isKind(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_ID) == false:
         return null
@@ -2711,7 +2746,7 @@ fun parseImportedSymbol(input: pointer<TokenList>) -> pointer<ImportedSymbol>
     if IMPORTED_SYMBOL_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = IMPORTED_SYMBOL_PARSER.getResult()
+    val result: pointer<ParserResult> = IMPORTED_SYMBOL_PARSER.getResult()
 
     if result == null || result.isKind(IMPORTED_SYMBOL_PARSER_ID) == false:
         return null
@@ -2727,7 +2762,7 @@ fun parseSelectiveImports(input: pointer<TokenList>) -> pointer<SelectiveImports
     if SELECTIVE_IMPORTS_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = SELECTIVE_IMPORTS_PARSER.getResult()
+    val result: pointer<ParserResult> = SELECTIVE_IMPORTS_PARSER.getResult()
 
     if result == null || result.isKind(SELECTIVE_IMPORTS_PARSER_ID) == false:
         return null
@@ -2743,7 +2778,7 @@ fun parseImportDeclaration(input: pointer<TokenList>) -> pointer<ImportDeclarati
     if IMPORT_DECLARATION_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = IMPORT_DECLARATION_PARSER.getResult()
+    val result: pointer<ParserResult> = IMPORT_DECLARATION_PARSER.getResult()
 
     if result == null || result.isKind(IMPORT_DECLARATION_PARSER_ID) == false:
         return null
@@ -2759,7 +2794,7 @@ fun parseImportDeclarationsMaybe(input: pointer<TokenList>) -> pointer<ImportDec
     if IMPORT_DECLARATIONS_MAYBE_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = IMPORT_DECLARATIONS_MAYBE_PARSER.getResult()
+    val result: pointer<ParserResult> = IMPORT_DECLARATIONS_MAYBE_PARSER.getResult()
 
     if result == null || result.isKind(IMPORT_DECLARATIONS_MAYBE_PARSER_ID) == false:
         return null
@@ -2775,7 +2810,7 @@ fun parseFunctionParam(input: pointer<TokenList>) -> pointer<FunctionParam>
     if FUNCTION_PARAM_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = FUNCTION_PARAM_PARSER.getResult()
+    val result: pointer<ParserResult> = FUNCTION_PARAM_PARSER.getResult()
 
     if result == null || result.isKind(FUNCTION_PARAM_PARSER_ID) == false:
         return null
@@ -2791,7 +2826,7 @@ fun parseFunctionParamsMaybe(input: pointer<TokenList>) -> pointer<FunctionParam
     if FUNCTION_PARAMS_MAYBE_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = FUNCTION_PARAMS_MAYBE_PARSER.getResult()
+    val result: pointer<ParserResult> = FUNCTION_PARAMS_MAYBE_PARSER.getResult()
 
     if result == null || result.isKind(FUNCTION_PARAMS_MAYBE_PARSER_ID) == false:
         return null
@@ -2807,7 +2842,7 @@ fun parseField(input: pointer<TokenList>) -> pointer<Field>
     if FIELD_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = FIELD_PARSER.getResult()
+    val result: pointer<ParserResult> = FIELD_PARSER.getResult()
 
     if result == null || result.isKind(FIELD_PARSER_ID) == false:
         return null
@@ -2823,7 +2858,7 @@ fun parseFunction(input: pointer<TokenList>) -> pointer<Function>
     if FUNCTION_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = FUNCTION_PARSER.getResult()
+    val result: pointer<ParserResult> = FUNCTION_PARSER.getResult()
 
     if result == null || result.isKind(FUNCTION_PARSER_ID) == false:
         return null
@@ -2839,7 +2874,7 @@ fun parseStructConstructor(input: pointer<TokenList>) -> pointer<StructConstruct
     if STRUCT_CONSTRUCTOR_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = STRUCT_CONSTRUCTOR_PARSER.getResult()
+    val result: pointer<ParserResult> = STRUCT_CONSTRUCTOR_PARSER.getResult()
 
     if result == null || result.isKind(STRUCT_CONSTRUCTOR_PARSER_ID) == false:
         return null
@@ -2855,7 +2890,7 @@ fun parseMember(input: pointer<TokenList>) -> pointer<Member>
     if MEMBER_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = MEMBER_PARSER.getResult()
+    val result: pointer<ParserResult> = MEMBER_PARSER.getResult()
 
     if result == null || result.isKind(MEMBER_PARSER_ID) == false:
         return null
@@ -2871,7 +2906,7 @@ fun parseStruct(input: pointer<TokenList>) -> pointer<Struct>
     if STRUCT_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = STRUCT_PARSER.getResult()
+    val result: pointer<ParserResult> = STRUCT_PARSER.getResult()
 
     if result == null || result.isKind(STRUCT_PARSER_ID) == false:
         return null
@@ -2887,7 +2922,7 @@ fun parseProgram(input: pointer<TokenList>) -> pointer<Program>
     if PROGRAM_PARSER.doParse(input) < 0:
         return null
 
-    val result: pointer<ParseContainer> = PROGRAM_PARSER.getResult()
+    val result: pointer<ParserResult> = PROGRAM_PARSER.getResult()
 
     if result == null || result.isKind(PROGRAM_PARSER_ID) == false:
         return null

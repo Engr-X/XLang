@@ -645,3 +645,149 @@ fun split(string: pointer<char>, spliter: pointer<char>) -> pointer<ArrayList>
 
     return result
 }
+
+
+/**
+ * Decodes the first character or escape sequence in a string.
+ *
+ * An ordinary character consumes one source character. Short escapes consume
+ * two source characters and support n, t, r, backslash, single quote, double
+ * quote, 0, a, b, f and v. Unicode-style escapes use a lowercase u followed
+ * by one to eight hexadecimal digits, for example \u328.
+ *
+ * Characters after the decoded prefix are not consumed. Invalid escape forms
+ * return (-1) as char and set consume to zero.
+ *
+ * @param string            string beginning with the character to decode
+ * @param consume           receives the number of source characters consumed,
+ *                          or zero when decoding fails
+ *
+ * @return                  decoded character, or (-1) as char for invalid input.
+ *
+ * @warning                 Passing an invalid non-null pointer may cause undefined behavior.
+ */
+fun unescapeChar(string: pointer<char>, consume: pointer<int>) -> char
+{
+    if consume == null:
+        return (-1) as char
+
+    consume.deref = 0
+
+    if string == null || string[0] == String.NULL_CHAR:
+        return (-1) as char
+
+    if string[0] != '\\':
+    {
+        consume.deref = 1
+        return string[0]
+    }
+
+    if string[1] == String.NULL_CHAR:
+        return (-1) as char
+
+    if string[1] == 'u':
+    {
+        var value: long = 0L
+        var digitCount: int = 0
+
+        while digitCount < 8:
+        {
+            val digitChar: char = string[digitCount + 2]
+            var digit: int = -1
+
+            if '0' <= digitChar && digitChar <= '9':
+                digit = (digitChar - '0') as int
+            elif 'a' <= digitChar && digitChar <= 'f':
+                digit = (digitChar - 'a' + 10) as int
+            elif 'A' <= digitChar && digitChar <= 'F':
+                digit = (digitChar - 'A' + 10) as int
+
+            if digit < 0:
+                break
+
+            value = value * 16L + (digit as long)
+            digitCount++
+        }
+
+        if digitCount <= 0:
+            return (-1) as char
+
+        val next: char = string[digitCount + 2]
+
+        if digitCount == 8 &&
+            (('0' <= next && next <= '9') ||
+                ('a' <= next && next <= 'f') ||
+                ('A' <= next && next <= 'F')):
+            return (-1) as char
+
+        consume.deref = digitCount + 2
+        return value as char
+    }
+
+    var value: char = (-1) as char
+
+    if string[1] == 'n': value = '\n'
+    elif string[1] == 't': value = '\t'
+    elif string[1] == 'r': value = '\r'
+    elif string[1] == '\\': value = '\\'
+    elif string[1] == '\'': value = '\''
+    elif string[1] == '"': value = '"'
+    elif string[1] == '0': value = '\0'
+    elif string[1] == 'a': value = '\a'
+    elif string[1] == 'b': value = '\b'
+    elif string[1] == 'f': value = '\f'
+    elif string[1] == 'v': value = '\v'
+    else: return (-1) as char
+
+    consume.deref = 2
+    return value
+}
+
+
+/**
+ * Decodes every escape sequence in a null-terminated string.
+ *
+ * The input is processed from left to right through unescapeChar. Ordinary
+ * characters and decoded escape values are appended to a newly allocated
+ * StringBuilder. The surrounding quotes of a string literal, if any, must be
+ * removed before calling this function.
+ *
+ * If an invalid escape sequence is encountered, null is returned. In that
+ * case consume contains the number of source characters decoded before the
+ * error. An empty input string is valid and produces an empty StringBuilder.
+ *
+ * @param string            string body to decode
+ * @param consume           receives the number of source characters consumed
+ *
+ * @return                  decoded StringBuilder, or null when decoding fails
+ *
+ * @warning                 Passing an invalid non-null pointer may cause undefined behavior.
+ */
+fun unescapeString(string: pointer<char>, consume: pointer<int>) -> pointer<StringBuilder>
+{
+    if consume == null:
+        return null
+
+    consume.deref = 0
+
+    if string == null:
+        return null
+
+    val result: pointer<StringBuilder> = new StringBuilder()
+    var offset: int = 0
+
+    while string[offset] != String.NULL_CHAR:
+    {
+        var charConsume: int = 0
+        val value: char = unescapeChar(string + offset, charConsume.ref)
+
+        if charConsume <= 0:
+            return null
+
+        result.append(value)
+        offset += charConsume
+        consume.deref = offset
+    }
+
+    return result
+}

@@ -134,10 +134,10 @@ private fun parseTypeValue(input: pointer<char>, expectedConsumed: int) -> point
     val parser: pointer<TypeParser> = new TypeParser(1)
     val consumed: int = parser.parse(tokens, 0)
 
-    if parser.haveError(consumed) || consumed != expectedConsumed:
+    if parser.hasError(consumed) || consumed != expectedConsumed:
         return null
 
-    val container: pointer<ParseContainer> = parser.getResult()
+    val container: pointer<ParserResult> = parser.getResult()
 
     if container == null || !container.isKind(1):
         return null
@@ -469,10 +469,10 @@ private fun parseTypeTokens(input: pointer<char>, expectedConsumed: int) -> poin
     val parser: pointer<TypeParser> = new TypeParser(1)
     val consumed: int = parser.parse(tokens, 0)
 
-    if parser.haveError(consumed) || consumed != expectedConsumed:
+    if parser.hasError(consumed) || consumed != expectedConsumed:
         return null
 
-    val container: pointer<ParseContainer> = parser.getResult()
+    val container: pointer<ParserResult> = parser.getResult()
 
     if container == null || !container.isKind(1):
         return null
@@ -492,13 +492,13 @@ private fun pointerVoidTest() -> int
     val parser: pointer<TypeParser> = new TypeParser(1)
     val consumed: int = parser.parse(tokens, 0)
 
-    if parser.haveError(consumed):
+    if parser.hasError(consumed):
         return 1
 
     if consumed != 4:
         return 2
 
-    val container: pointer<ParseContainer> = parser.getResult()
+    val container: pointer<ParserResult> = parser.getResult()
 
     if container == null || !container.isKind(1):
         return 3

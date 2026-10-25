@@ -129,11 +129,11 @@ private fun parserWithBinary() -> pointer<PrattParser> =
     parserWithAtom().addContinuationRule(plusRule(10)).addContinuationRule(starRule(20))
 
 
-private fun valueList(container: pointer<ParseContainer>) -> pointer<ArrayList> =
+private fun valueList(container: pointer<ParserResult>) -> pointer<ArrayList> =
     container.getValue() as pointer<ArrayList>
 
 
-private fun tokenAt(container: pointer<ParseContainer>, index: int) -> pointer<Token>
+private fun tokenAt(container: pointer<ParserResult>, index: int) -> pointer<Token>
 {
     val list: pointer<ArrayList> = valueList(container)
     val slot: pointer<pointer<*>> = list.get(index) as pointer<pointer<*>>
@@ -141,11 +141,11 @@ private fun tokenAt(container: pointer<ParseContainer>, index: int) -> pointer<T
 }
 
 
-private fun containerAt(container: pointer<ParseContainer>, index: int) -> pointer<ParseContainer>
+private fun containerAt(container: pointer<ParserResult>, index: int) -> pointer<ParserResult>
 {
     val list: pointer<ArrayList> = valueList(container)
     val slot: pointer<pointer<*>> = list.get(index) as pointer<pointer<*>>
-    return slot.deref as pointer<ParseContainer>
+    return slot.deref as pointer<ParserResult>
 }
 
 
@@ -180,7 +180,7 @@ private fun tryParseAtomTest() -> int
     val parser: pointer<PrattParser> = parserWithAtom()
     val tokens: pointer<TokenList> = Tokenizer.tokenize("1")
     var length: int = 0
-    val result: pointer<ParseContainer> = parser.tryParse(tokens, 0, length.ref)
+    val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
 
     if result == null || length != 1:
         return 1
@@ -202,7 +202,7 @@ private fun tryParsePlusTest() -> int
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.tokenize("1 + 2")
     var length: int = 0
-    val result: pointer<ParseContainer> = parser.tryParse(tokens, 0, length.ref)
+    val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
 
     if result == null || length != 3:
         return 1
@@ -232,7 +232,7 @@ private fun tryParsePriorityTest() -> int
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.tokenize("1 + 2 * 3")
     var length: int = 0
-    val result: pointer<ParseContainer> = parser.tryParse(tokens, 0, length.ref)
+    val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
 
     if result == null || length != 5:
         return 1
@@ -242,7 +242,7 @@ private fun tryParsePriorityTest() -> int
     if plusToken.kind != Tokenizer.PLUS:
         return 2
 
-    val right: pointer<ParseContainer> = containerAt(result, 2)
+    val right: pointer<ParserResult> = containerAt(result, 2)
     val starToken: pointer<Token> = tokenAt(right, 1)
 
     if starToken.kind != Tokenizer.STAR:
@@ -257,7 +257,7 @@ private fun tryParseMinPriorityTest() -> int
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.tokenize("1 + 2")
     var length: int = 0
-    val result: pointer<ParseContainer> = parser.tryParse(tokens, 0, 11, length.ref)
+    val result: pointer<ParserResult> = parser.tryParse(tokens, 0, 11, length.ref)
 
     if result == null:
         return 1

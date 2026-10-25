@@ -23,6 +23,7 @@
 
 package xlang.lexer
 
+import xlang.Diagnostic
 import xlang.System
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
@@ -122,9 +123,9 @@ struct TokenizeRule
 struct TokenizeFSM
 {
     /**
-     * Identifies the default tokenizer state.
+     * Identifies the DEFAULT_STATE tokenizer state.
      */
-    static val DEFAULT: int = 1
+    static val DEFAULT_STATE: int = 1
 
     /**
      * Points to the source-code buffer being tokenized.
@@ -173,11 +174,22 @@ struct TokenizeFSM
      */
     private var input: pointer<LexInput>
 
+    /**
+     * Stores diagnostics generated during tokenization.
+     *
+     * Collects lexical errors, warnings, and other diagnostic messages
+     * reported by tokenizer rules and actions.
+     *
+     * Diagnostics are retained in this collection for later inspection
+     * or reporting.
+     */
+    private var diagnostics: pointer<Diagnostics>
+
 
     /**
      * Initializes a tokenizer FSM for a source-code buffer.
      *
-     * The FSM begins in DEFAULT state at offset 0, line 1 and column 1.
+     * The FSM begins in DEFAULT_STATE state at offset 0, line 1 and column 1.
      * An empty accumulator and reusable lexical-input objects are allocated.
      *
      * The source pointer is stored directly without copying or validating
@@ -194,11 +206,12 @@ struct TokenizeFSM
     constructor(code: pointer<char>)
     {
         this.code = code
-        this.state = DEFAULT
+        this.state = DEFAULT_STATE
         this.accumulator = new StringBuilder()
         this.cursorPos = new LexPosition(0, 1, 1)
         this.inputPos = new LexPosition(0, 1, 1)
         this.input = new LexInput(this.inputPos, 0 as char, null as pointer<char>, 0)
+        this.diagnostics = new Diagnostics()
     }
 
 
@@ -326,7 +339,6 @@ struct TokenizeFSM
      * and lifetime.
      *
      * @param rules             the ordered array of tokenize-rule pointers
-     * @param rulesLength       the number of accessible entries in the rule array
      *
      * @return                  the value returned by the first matching rule action, or null if no active rule matches
      *
@@ -338,13 +350,13 @@ struct TokenizeFSM
      * @warning                 If the cursor offset is outside the source buffer, calculating
      *                          currentPtr or matching a pattern may cause undefined behavior.
      */
-    fun apply(rules: pointer<pointer<TokenizeRule>>, rulesLength: int) -> pointer<Token>
+    fun apply(rules: pointer<ArrayList>) -> pointer<Token>
     {
         val currentPtr: pointer<char> = this.code + this.cursorPos.offset
 
-        for (var i: int = 0; i < rulesLength; i++):
+        for (var i: int = 0; i < rules.length; i++):
         {
-            val rule: pointer<TokenizeRule> = rules[i]
+            val rule: pointer<TokenizeRule> = rules.get(i) as pointer<TokenizeRule>
 
             if rule.state == this.state:
             {
@@ -372,4 +384,43 @@ struct TokenizeFSM
 
         return null
     }
+
+
+    /**
+     * Adds a diagnostic to the tokenizer's diagnostic collection.
+     *
+     * The supplied diagnostic is forwarded directly to the internal
+     * Diagnostics collection without being copied or modified.
+     *
+     * @param diagnostic        the diagnostic to add.
+     *
+     * @return                  this TokenizeFSM instance for method chaining.
+     *
+     * @note                    Null diagnostics are ignored by Diagnostics.push.
+     *
+     * @warning                 The diagnostic is not cloned. The caller must ensure
+     *                          that it remains valid while the collection uses it.
+     */
+    fun pushDiagnostic(diagnostic: pointer<Diagnostic>) -> pointer<TokenizeFSM>
+    {
+        this.diagnostics.push(diagnostic)
+        return this
+    }
+
+
+    /**
+     * Retrieves the tokenizer's diagnostic collection.
+     *
+     * Returns a direct reference to the internal Diagnostics collection
+     * without creating a copy.
+     *
+     * @return                  the diagnostic collection associated with this TokenizeFSM.
+     * 
+     * @note                    Changes made to the returned collection directly affect
+     *                          the diagnostics stored in this tokenizer.
+     *
+     * @warning                 The returned collection is not cloned. Callers must not
+     *                          release or invalidate it while the tokenizer uses it.
+     */
+    fun getDiagnostics() -> pointer<Diagnostics> = this.diagnostics
 }
