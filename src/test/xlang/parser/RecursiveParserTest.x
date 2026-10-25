@@ -75,7 +75,7 @@ private fun resultLifetimeTest() -> int
     if recursiveParser.doParse(tokens) != 1:
         return 1
 
-    val result: pointer<ParseContainer> = recursiveParser.getResult()
+    val result: pointer<ParserResult> = recursiveParser.getResult()
 
     if result == null || !result.isKind(1):
         return 2

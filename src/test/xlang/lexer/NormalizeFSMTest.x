@@ -364,7 +364,7 @@ private fun anyKindTest() -> int
     if exactRule.match(list, 1):
         return 1
 
-    anyRule.addPattern(Token.AnyKind, "b")
+    anyRule.addPattern(Token.ANY_KIND, "b")
     anyRule.setPivot(0)
 
     if !anyRule.match(list, 1):

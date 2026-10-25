@@ -190,6 +190,34 @@ struct HashSet
     }
 
 
+    fun intersect(other: pointer<HashSet>) -> pointer<HashSet>
+    {
+        val result: pointer<HashSet> =
+            new HashSet(this.tsize, this.eqFun, this.hashCodeFun)
+
+        if other == null || this.tsize != other.tsize:
+            return result
+
+        for (var i: int = 0; i < this.bucketCount; i++):
+        {
+            val bucket: pointer<ArrayList> = this.getBucket(i)
+
+            if bucket == null:
+                continue
+
+            for (var j: int = 0; j < bucket.length; j++):
+            {
+                val item: pointer<*> = bucket.get(j)
+
+                if item != null && other.contains(item):
+                    result.add(item)
+            }
+        }
+
+        return result
+    }
+
+
     private fun rehash(newBucketCount: int)
     {
         val oldBuckets: pointer<ArrayList> =

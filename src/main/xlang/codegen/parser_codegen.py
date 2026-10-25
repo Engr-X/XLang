@@ -30,7 +30,7 @@ PRATT_PARSER: str = "pratt"
 DEFAULT_IMPORTS: set[str] = {
     "xlang.lexer.Token",
     "xlang.lexer.TokenList",
-    "xlang.parser.ParseContainer",
+    "xlang.parser.ParserResult",
     "xlang.parser.PrattParser",
     "xlang.parser.util.PatternAtom",
     "xlang.parser.util.ParserRef",
@@ -255,7 +255,7 @@ def genKindExpr(kind: object) -> str | None:
 
 def genPatternAtomExpr(pattern: object) -> str:
     if isinstance(pattern, str):
-        return f"new PatternAtom(Token.AnyKind, {json.dumps(pattern)})"
+        return f"new PatternAtom(Token.ANY_KIND, {json.dumps(pattern)})"
 
     if not isinstance(pattern, dict):
         raise TypeError(f"parser pattern must be string or object: {pattern!r}")
@@ -289,7 +289,7 @@ def genPatternAtomExpr(pattern: object) -> str:
         parser_name = f"{upperSnake(kind[1:])}_PARSER"
         return f"new PatternAtom({parser_name})"
 
-    kind_expr = "Token.AnyKind" if kind is None else kind
+    kind_expr = "Token.ANY_KIND" if kind is None else kind
     regex_expr = "null" if regex is None else regex
     return f"new PatternAtom({kind_expr}, {regex_expr})"
 
@@ -1196,7 +1196,7 @@ def genParseEntrypoints(rules: list[JsonObject], tabs: int) -> str:
                 f"{indent}    if {parser_entry_name}.doParse(input) < 0:",
                 f"{indent}        return null",
                 "",
-                f"{indent}    val result: pointer<ParseContainer> = {parser_entry_name}.getResult()",
+                f"{indent}    val result: pointer<ParserResult> = {parser_entry_name}.getResult()",
                 "",
                 f"{indent}    if result == null || result.isKind({parser_id_name}) == false:",
                 f"{indent}        return null",

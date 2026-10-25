@@ -276,7 +276,7 @@
             "    if !unwrapContainer:",
             "        return value",
             "",
-            "    val container: pointer<ParseContainer> = value as pointer<ParseContainer>",
+            "    val container: pointer<ParserResult> = value as pointer<ParserResult>",
             "    return container.getValue()",
             "}" ],
 

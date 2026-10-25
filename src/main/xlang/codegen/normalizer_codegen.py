@@ -240,7 +240,7 @@ def getRulePatternOptions(
             raise ValueError(f"normalizer pattern must contain kind, regex or both: {pattern!r}")
 
         if kind is None:
-            kind = "Token.AnyKind"
+            kind = "Token.ANY_KIND"
 
         if regex_pattern is None:
             return [{

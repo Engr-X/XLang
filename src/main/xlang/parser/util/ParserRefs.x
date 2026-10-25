@@ -25,7 +25,7 @@ package xlang.parser.util
 
 import xlang.lexer.Token
 import xlang.lexer.TokenList
-import xlang.parser.ParseContainer
+import xlang.parser.ParserResult
 import xlang.util.ArrayList
 
 
@@ -209,10 +209,10 @@ struct ParserRefs
     {
         val consumed: int = this.parser.parse(tokens, index)
 
-        if this.parser.haveError(consumed) || consumed <= 0:
+        if this.parser.hasError(consumed) || consumed <= 0:
             return 0
 
-        val result: pointer<ParseContainer> = this.parser.getResult()
+        val result: pointer<ParserResult> = this.parser.getResult()
 
         this.results.push(result.ref)
         return consumed
@@ -243,10 +243,10 @@ struct ParserRefs
         {
             val innerConsumed: int = this.parser.parse(tokens, index + consumed)
 
-            if this.parser.haveError(innerConsumed) || innerConsumed <= 0:
+            if this.parser.hasError(innerConsumed) || innerConsumed <= 0:
                 break
 
-            val result: pointer<ParseContainer> = this.parser.getResult()
+            val result: pointer<ParserResult> = this.parser.getResult()
 
             this.results.push(result.ref)
             consumed += innerConsumed
@@ -298,10 +298,10 @@ struct ParserRefs
 
             val innerConsumed: int = this.parser.parse(tokens, nextIndex)
 
-            if this.parser.haveError(innerConsumed) || innerConsumed <= 0:
+            if this.parser.hasError(innerConsumed) || innerConsumed <= 0:
                 break
 
-            val result: pointer<ParseContainer> = this.parser.getResult()
+            val result: pointer<ParserResult> = this.parser.getResult()
 
             this.results.push(result.ref)
 
@@ -368,12 +368,12 @@ struct ParserRefs
      * Returns the results produced by the most recent parse operation.
      *
      * <p>The individual result references are wrapped in a
-     * {@code ParseContainer} of kind {@code ARRAY_LIST_KIND}.
+     * {@code ParserResult} of kind {@code ARRAY_LIST_KIND}.
      *
      * @return                  a parse container containing all successfully parsed element results
      */
-    fun getResult() -> pointer<ParseContainer> =
-        new ParseContainer(ParseContainer.ARRAY_LIST_KIND, this.results)
+    fun getResult() -> pointer<ParserResult> =
+        new ParserResult(ParserResult.ARRAY_LIST_KIND, this.results)
 
 
     /**

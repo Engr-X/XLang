@@ -25,7 +25,7 @@ package xlang.parser.util
 
 import xlang.Diagnostic
 import xlang.lexer.TokenList
-import xlang.parser.ParseContainer
+import xlang.parser.ParserResult
 import xlang.parser.PrattParser
 import xlang.parser.RecursiveParser
 import xlang.parser.TypeParser
@@ -221,7 +221,7 @@ struct ParserRef
      *
      * <p>If {@code input} is {@code null}, parsing fails immediately.
      *
-     * <p>After parsing, the result is validated using {@code haveError}. Parsing
+     * <p>After parsing, the result is validated using {@code hasError}. Parsing
      * also fails if the reported number of consumed tokens exceeds the number
      * of available tokens.
      *
@@ -238,7 +238,7 @@ struct ParserRef
 
         val consumed: int = this.parse(input, 0)
 
-        if this.haveError(consumed) || consumed > input.length():
+        if this.hasError(consumed) || consumed > input.length():
             return -1
 
         input.remove(0, consumed)
@@ -256,24 +256,24 @@ struct ParserRef
      * @return                  {@code true} if the parse result represents an error;
      *                          {@code false} otherwise
      */
-    fun haveError(eaten: int) -> bool
+    fun hasError(eaten: int) -> bool
     {
         if this.type == RECURSIVE_DOWN:
         {
             val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
-            return parser.haveError(eaten)
+            return parser.hasError(eaten)
         }
 
         if this.type == PRATT:
         {
             val parser: pointer<PrattParser> = this.host as pointer<PrattParser>
-            return parser.haveError(eaten)
+            return parser.hasError(eaten)
         }
 
         if this.type == TYPE_PARSER:
         {
             val parser: pointer<TypeParser> = this.host as pointer<TypeParser>
-            return parser.haveError(eaten)
+            return parser.hasError(eaten)
         }
 
         return true
@@ -366,13 +366,13 @@ struct ParserRef
     /**
      * Returns the parse result produced by the underlying parser.
      *
-     * <p>The result is normalized to a {@code ParseContainer} pointer regardless
+     * <p>The result is normalized to a {@code ParserResult} pointer regardless
      * of the concrete parser implementation.
      *
      * @return                  a pointer to the current parse result, or {@code null} if the
      *                          parser type is invalid or no result is available
      */
-    fun getResult() -> pointer<ParseContainer>
+    fun getResult() -> pointer<ParserResult>
     {
         if this.type == RECURSIVE_DOWN:
         {
@@ -383,7 +383,7 @@ struct ParserRef
         if this.type == PRATT:
         {
             val parser: pointer<PrattParser> = this.host as pointer<PrattParser>
-            return parser.getResult() as pointer<ParseContainer>
+            return parser.getResult() as pointer<ParserResult>
         }
 
         if this.type == TYPE_PARSER:

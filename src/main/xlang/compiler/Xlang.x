@@ -26,6 +26,7 @@
 
 package xlang.compiler
 
+import xlang.Diagnostics
 import xlang.System
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.expression.Expression
@@ -59,112 +60,113 @@ private fun skipLineTerminators(tokens: pointer<TokenList>)
 
 fun parseExpressionLoop()
 {
-    val inputSpace: blob[1024]
-    val input: pointer<char> = inputSpace as pointer<char>
+    // val inputSpace: blob[1024]
+    // val input: pointer<char> = inputSpace as pointer<char>
 
-    while true:
-    {
-        val length: int = IO.readLine(input, 1024)
+    // while true:
+    // {
+    //     val length: int = IO.readLine(input, 1024)
 
-        if length < 0:
-            return
+    //     if length < 0:
+    //         return
 
-        if length == 0:
-            continue
+    //     if length == 0:
+    //         continue
 
-        val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input)
-        val expression: pointer<Expression> = Parser.parseExpression(tokens)
+    //     val d: pointer<Diagnostic> = new Diagnostic()
+    //     val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, d)
+    //     val expression: pointer<Expression> = Parser.parseExpression(tokens)
 
-        if expression == null:
-        {
-            IO.println("failed to parse expression")
-            continue
-        }
+    //     if expression == null:
+    //     {
+    //         IO.println("failed to parse expression")
+    //         continue
+    //     }
 
-        // skipLineTerminators(tokens)
+    //     // skipLineTerminators(tokens)
 
-        if tokens.length() > 0 && !tokens.get(0).isEOF():
-        {
-            val unexpected: pointer<Token> = tokens.get(0)
-            val builder: pointer<StringBuilder> = new StringBuilder("failed to parse expression: unexpected token ")
+    //     if tokens.length() > 0 && !tokens.get(0).isEOF():
+    //     {
+    //         val unexpected: pointer<Token> = tokens.get(0)
+    //         val builder: pointer<StringBuilder> = new StringBuilder("failed to parse expression: unexpected token ")
 
-            if unexpected != null && unexpected.text != null:
-                builder.append(unexpected.text)
-            else:
-                builder.append("<unknown>")
+    //         if unexpected != null && unexpected.text != null:
+    //             builder.append(unexpected.text)
+    //         else:
+    //             builder.append("<unknown>")
 
-            val output: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
+    //         val output: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
 
-            builder.toString(output)
-            IO.println(output)
-            continue
-        }
+    //         builder.toString(output)
+    //         IO.println(output)
+    //         continue
+    //     }
 
-        val builder: pointer<StringBuilder> = expression.toString()
-        val output: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
+    //     val builder: pointer<StringBuilder> = expression.toString()
+    //     val output: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
 
-        builder.toString(output)
-        IO.println(output)
-    }
+    //     builder.toString(output)
+    //     IO.println(output)
+    // }
 }
 
 
 fun parseStatementLoop()
 {
-    val inputSpace: blob[1024]
-    val input: pointer<char> = inputSpace as pointer<char>
+    // val inputSpace: blob[1024]
+    // val input: pointer<char> = inputSpace as pointer<char>
 
-    while true:
-    {
-        val length: int = IO.readLine(input, 1024)
+    // while true:
+    // {
+    //     val length: int = IO.readLine(input, 1024)
 
-        if length < 0:
-            return
+    //     if length < 0:
+    //         return
 
-        if length == 0:
-            continue
+    //     if length == 0:
+    //         continue
 
-        if length + 1 >= 1024:
-        {
-            IO.println("failed to parse statement: input too long")
-            continue
-        }
+    //     if length + 1 >= 1024:
+    //     {
+    //         IO.println("failed to parse statement: input too long")
+    //         continue
+    //     }
 
-        input[length] = '\n'
-        input[length + 1] = 0
+    //     input[length] = '\n'
+    //     input[length + 1] = 0
 
-        val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input)
-        val statement: pointer<Statement> = Parser.parseStatement(tokens)
+    //     val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, null)
+    //     val statement: pointer<Statement> = Parser.parseStatement(tokens)
 
-        if statement == null:
-        {
-            IO.println("failed to parse statement")
-            continue
-        }
+    //     if statement == null:
+    //     {
+    //         IO.println("failed to parse statement")
+    //         continue
+    //     }
 
-        // skipLineTerminators(tokens)
+    //     // skipLineTerminators(tokens)
 
-        if tokens.length() > 0 && !tokens.get(0).isEOF():
-        {
-            val unexpected: pointer<Token> = tokens.get(0)
-            val builder: pointer<StringBuilder> = new StringBuilder("failed to parse statement: unexpected token ")
+    //     if tokens.length() > 0 && !tokens.get(0).isEOF():
+    //     {
+    //         val unexpected: pointer<Token> = tokens.get(0)
+    //         val builder: pointer<StringBuilder> = new StringBuilder("failed to parse statement: unexpected token ")
 
-            if unexpected != null && unexpected.text != null:
-                builder.append(unexpected.text)
-            else:
-                builder.append("<unknown>")
+    //         if unexpected != null && unexpected.text != null:
+    //             builder.append(unexpected.text)
+    //         else:
+    //             builder.append("<unknown>")
 
-            val output: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
+    //         val output: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
 
-            builder.toString(output)
-            IO.println(output)
-            continue
-        }
+    //         builder.toString(output)
+    //         IO.println(output)
+    //         continue
+    //     }
 
-        val builder: pointer<StringBuilder> = statement.toString()
-        val output: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
+    //     val builder: pointer<StringBuilder> = statement.toString()
+    //     val output: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
 
-        builder.toString(output)
-        IO.println(output)
-    }
+    //     builder.toString(output)
+    //     IO.println(output)
+    // }
 }

@@ -39,6 +39,7 @@ DEFAULT_IMPORTS: set[str] = {
     "xlang.lexer.TokenPosition",
     "xlang.lexer.TokenizeFSM",
     "xlang.lexer.TokenizeRule",
+    "xlang.util.ArrayList",
 }
 
 
@@ -354,12 +355,8 @@ def genRules(rules: list[JsonObject], defs: Defs, tabs: int) -> str:
     indent = " " * (tabs * 4)
     lines: list[str] = []
 
-    total_rule_size: int = len(rules)
-
     lines.append(f"{indent}var tokenizerIsInit: bool = false")
-    lines.append(f"{indent}val ruleLength: int = {total_rule_size}")
-    lines.append(f"{indent}val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * {total_rule_size}]")
-    lines.append(f"{indent}val rulePtr: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>")
+    lines.append(f"{indent}val rules: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))")
 
     for index, rule in enumerate(rules):
         state = str(rule["state"])
@@ -415,7 +412,7 @@ def genTokenizerInitFun(
     ]
 
     for index, _ in enumerate(rules):
-        lines.append(f"{body_indent}rulePtr[{index}] = rule{index}")
+        lines.append(f"{body_indent}rules.push(rule{index})")
 
     if token_defs:
         lines.append(f"{body_indent}keywordListInit()")
@@ -429,42 +426,6 @@ def genTokenizerInitFun(
             raise TypeError(f"init item must be string or string list: {item!r}")
 
     lines.append(f"{body_indent}tokenizerIsInit = true")
-    lines.append(f"{indent}}}")
-
-    return "\n".join(lines) + "\n\n\n"
-
-
-def genTokenzeFun(tabs: int) -> str:
-    indent = " " * (tabs * 4)
-    body_indent = " " * ((tabs + 1) * 4)
-    nested_indent = " " * ((tabs + 2) * 4)
-    loop_indent = " " * ((tabs + 2) * 4)
-    loop_body_indent = " " * ((tabs + 3) * 4)
-    lines: list[str] = [
-        f"{indent}fun tokenize(code: pointer<char>) -> pointer<TokenList>",
-        f"{indent}{{",
-        f"{body_indent}if !tokenizerIsInit:",
-        f"{nested_indent}tokenizerInit()",
-        "",
-        f"{body_indent}val tokenList: pointer<TokenList> = new TokenList()",
-        f"{body_indent}val lexState: pointer<TokenizeFSM> = new TokenizeFSM(code)",
-        "",
-        f"{body_indent}while true:",
-        f"{body_indent}{{",
-        f"{loop_indent}val token: pointer<Token> = lexState.apply(rulePtr, ruleLength)",
-        "",
-        f"{loop_indent}if token == null:",
-        f"{loop_body_indent}continue",
-        "",
-        f"{loop_indent}tokenList.push(token)",
-        "",
-        f"{loop_indent}if token.kind < 0 || token.isEOF():",
-        f"{loop_body_indent}break",
-        f"{body_indent}}}",
-        "",
-        f"{body_indent}return tokenList",
-    ]
-
     lines.append(f"{indent}}}")
 
     return "\n".join(lines) + "\n\n\n"
@@ -494,7 +455,6 @@ def codegen(rules: JsonObject, dest: Path) -> str:
         genOthers(rules.get("others", [])),
         genSymbolEatFunctions(symbol_defs),
         genTokenizerInitFun(expanded_rules, rules.get("init", []), token_defs, 0),
-        genTokenzeFun(0),
     ]
 
     return "".join(section for section in sections if section != "")

@@ -33,7 +33,6 @@ import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.lexer.TokenPosition
 import xlang.util.ArrayList
-import xlang.util.string.String
 
 
 /**
@@ -43,48 +42,6 @@ import xlang.util.string.String
  * compiler frontend. Concrete grammar parsing should stay in the compiler
  * parser package until it is stable enough to become reusable.
  */
-
-
-/**
- * Decodes one escaped character literal body.
- *
- * A one-character input is returned unchanged. Multi-character inputs must
- * begin with a backslash and use one of the supported escape suffixes:
- * n, t, r, backslash, single quote, double quote, 0, a, b, f or v.
- *
- * Invalid escape forms return (-1) as char. The caller is responsible for
- * treating that sentinel as an error.
- *
- * @param string            character literal body without surrounding quotes.
- *
- * @return                  decoded character, or (-1) as char for invalid input.
- *
- * @warning                 Passing a null or invalid string pointer may cause undefined
- *                              behavior in String.strlen or indexed access.
- */
-fun unescapeChar(string: pointer<char>) -> char
-{
-    if String.strlen(string) == 1:
-        return string[0]
-
-    if string[0] != '\\':
-        return (-1) as char
-
-    return (
-        if string[1] == 'n': '\n'
-        elif string[1] == 't': '\t'
-        elif string[1] == 'r': '\r'
-        elif string[1] == '\\': '\\'
-        elif string[1] == '\'': '\''
-        elif string[1] == '"': '"'
-        elif string[1] == '0': '\0'
-        elif string[1] == 'a': '\a'
-        elif string[1] == 'b': '\b'
-        elif string[1] == 'f': '\f'
-        elif string[1] == 'v': '\v'
-        else: (-1) as char
-    )
-}
 
 
 /**
@@ -145,11 +102,8 @@ private fun tokenError(
 {
     if token == null:
         return Diagnostic.makeError(code, new ArrayList(sizeof(SourceLocation)), message)
-
-    val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-    locations.push(sourceLocation(tokens, token.pos))
-
-    return Diagnostic.makeError(code, locations, message)
+    else:
+        return Diagnostic.makeError(code, sourceLocation(tokens, token.pos), message)
 }
 
 
@@ -157,7 +111,7 @@ private fun tokenError(
  * Returns the token kind stored at an index in a bracket-pair table.
  *
  * The bracket table is represented as an ArrayList of integer token kinds.
- * If the requested slot contains a null pointer, Token.AnyKind is returned
+ * If the requested slot contains a null pointer, Token.ANY_KIND is returned
  * as a sentinel value.
  *
  * This function does not validate the array pointer or index.
@@ -168,7 +122,7 @@ private fun tokenError(
  * @param bracketPairs      the bracket-pair table.
  * @param index             the zero-based index of the kind to read.
  *
- * @return                  the stored token kind, or Token.AnyKind if the slot is null.
+ * @return                  the stored token kind, or Token.ANY_KIND if the slot is null.
  *
  * @warning                 An invalid array pointer or out-of-range index may cause
  *                              undefined behavior.
@@ -178,7 +132,7 @@ private inline fun bracketKindAt(bracketPairs: pointer<ArrayList>, index: int) -
     val kindSlot: pointer<int> = bracketPairs.get(index) as pointer<int>
 
     if kindSlot == null:
-        return Token.AnyKind
+        return Token.ANY_KIND
 
     return kindSlot.deref
 }
@@ -194,14 +148,14 @@ private inline fun bracketKindAt(bracketPairs: pointer<ArrayList>, index: int) -
  * Only even indices are examined as opening-bracket entries. If openKind is
  * found, the following entry is returned as its corresponding closing kind.
  *
- * If no matching opening kind exists, Token.AnyKind is returned.
+ * If no matching opening kind exists, Token.ANY_KIND is returned.
  *
  * The caller must provide a valid table containing an even number of entries.
  *
  * @param openKind          the opening-bracket token kind to search for.
  * @param bracketPairs      the ordered open-close bracket-pair table.
  *
- * @return                  the corresponding closing-bracket kind, or Token.AnyKind if no
+ * @return                  the corresponding closing-bracket kind, or Token.ANY_KIND if no
  *                              pair is found.
  *
  * @warning                 A null bracketPairs pointer causes undefined behavior.
@@ -218,7 +172,7 @@ private fun findCloseKind(openKind: int, bracketPairs: pointer<ArrayList>) -> in
         i += 2
     }
 
-    return Token.AnyKind
+    return Token.ANY_KIND
 }
 
 
@@ -232,14 +186,14 @@ private fun findCloseKind(openKind: int, bracketPairs: pointer<ArrayList>) -> in
  * Only odd indices are examined as closing-bracket entries. If closeKind is
  * found, the preceding entry is returned as its corresponding opening kind.
  *
- * If no matching closing kind exists, Token.AnyKind is returned.
+ * If no matching closing kind exists, Token.ANY_KIND is returned.
  *
  * The caller must provide a valid table containing an even number of entries.
  *
  * @param closeKind         the closing-bracket token kind to search for.
  * @param bracketPairs      the ordered open-close bracket-pair table.
  *
- * @return                  the corresponding opening-bracket kind, or Token.AnyKind if no
+ * @return                  the corresponding opening-bracket kind, or Token.ANY_KIND if no
  *                              pair is found.
  *
  * @warning                 A null bracketPairs pointer causes undefined behavior.
@@ -256,7 +210,7 @@ private fun findOpenKind(closeKind: int, bracketPairs: pointer<ArrayList>) -> in
         i += 2
     }
 
-    return Token.AnyKind
+    return Token.ANY_KIND
 }
 
 
@@ -320,7 +274,7 @@ fun checkBrackets(tokens: pointer<TokenList>, bracketPairs: pointer<ArrayList>) 
 
         val expectedCloseKind: int = findCloseKind(token.kind, bracketPairs)
 
-        if expectedCloseKind != Token.AnyKind:
+        if expectedCloseKind != Token.ANY_KIND:
         {
             stack.push(token)
             continue
@@ -328,7 +282,7 @@ fun checkBrackets(tokens: pointer<TokenList>, bracketPairs: pointer<ArrayList>) 
 
         val expectedOpenKind: int = findOpenKind(token.kind, bracketPairs)
 
-        if expectedOpenKind != Token.AnyKind:
+        if expectedOpenKind != Token.ANY_KIND:
         {
             val openToken: pointer<Token> = stack.peek() as pointer<Token>
 

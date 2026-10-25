@@ -148,8 +148,7 @@ private fun splitProgram(program: pointer<Program>, dest: pointer<ArrayList>) ->
     for (var i = 0; i < splitMembers.constructors.length; i++):
     {
         val structConstructor: pointer<StructConstructor> = splitMembers.constructors.get(i) as pointer<StructConstructor>
-        val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-
+    
         if structConstructor != null:
         {
             val tokens: pointer<ArrayList> = structConstructor.getAllTokens()
@@ -159,19 +158,17 @@ private fun splitProgram(program: pointer<Program>, dest: pointer<ArrayList>) ->
                 val token: pointer<Token> = tokens.get(0) as pointer<Token>
 
                 if token != null && token.pos != null:
-                    locations.push(new SourceLocation(
-                        null,
-                        token.pos.offset,
-                        token.pos.line,
-                        token.pos.column,
-                        token.pos.length))
+                    result.push(Diagnostic.makeError(
+                        Diagnostic.CANNOT_PARSE,
+                        new SourceLocation(
+                            null,
+                            token.pos.offset,
+                            token.pos.line,
+                            token.pos.column,
+                            token.pos.length),
+                        "constructor cannot be declared at program level"))
             }
         }
-
-        result.push(Diagnostic.makeError(
-            Diagnostic.CANNOT_PARSE,
-            locations,
-            "constructor cannot be declared at program level"))
     }
 
 

@@ -50,7 +50,7 @@ import xlang.util.ArrayList
  * repeated parser references. Nested parser references are cloned before use so
  * that their transient parsing state does not interfere with other operations.
  *
- * <p>The parser stores the most recent {@code ParseContainer} result and the
+ * <p>The parser stores the most recent {@code ParserResult} result and the
  * most recent diagnostic produced during parsing.
  */
 struct RecursiveParser
@@ -59,7 +59,7 @@ struct RecursiveParser
      * The identifier assigned to parse results produced by this parser.
      *
      * <p>The identifier is stored as the {@code kind} of each resulting
-     * {@code ParseContainer}.
+     * {@code ParserResult}.
      */
     private var id: int
 
@@ -76,7 +76,7 @@ struct RecursiveParser
      * <p>This value is {@code null} when no successful parse result is
      * currently available.
      */
-    private var result: pointer<ParseContainer>
+    private var result: pointer<ParserResult>
 
     /**
      * The collection of parsing rules evaluated by this parser.
@@ -205,7 +205,7 @@ struct RecursiveParser
      *
      * @return                  {@code true} if the parse failed; {@code false} otherwise
      */
-    fun haveError(eaten: int) -> bool = this.error != null || eaten < 0
+    fun hasError(eaten: int) -> bool = this.error != null || eaten < 0
 
 
     /**
@@ -269,18 +269,14 @@ struct RecursiveParser
             errorIndex = token.length() - 1
 
         val errorToken: pointer<Token> = token.get(errorIndex)
-        val locations: pointer<ArrayList> = new ArrayList(sizeof(SourceLocation))
-        val location: pointer<SourceLocation> = new SourceLocation(
-            null,
-            errorToken.pos.offset,
-            errorToken.pos.line,
-            errorToken.pos.column,
-            errorToken.pos.length)
-
-        locations.push(location)
         this.error = Diagnostic.makeError(
             Diagnostic.UNEXPECTED_TOKEN,
-            locations,
+            new SourceLocation(
+                null,
+                errorToken.pos.offset,
+                errorToken.pos.line,
+                errorToken.pos.column,
+                errorToken.pos.length),
             Diagnostic.UNEXPECTED_TOKEN_MSG)
 
         return maxMatchLength
@@ -303,7 +299,7 @@ struct RecursiveParser
      *
      * <p>After all pattern atoms have matched, the collected values are passed
      * to the rule's result constructor. The constructed value is wrapped in a
-     * {@code ParseContainer} using this parser's identifier.
+     * {@code ParserResult} using this parser's identifier.
      *
      * <p>If result construction fails, a
      * {@code Diagnostic.CANNOT_CONSTRUCT_AST} internal diagnostic is recorded.
@@ -331,7 +327,7 @@ struct RecursiveParser
             val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
             val constructedResult: pointer<*> = rule.constructResult(results)
 
-            this.result = new ParseContainer(this.id, constructedResult)
+            this.result = new ParserResult(this.id, constructedResult)
 
             // call after
             rule.afterFun(token, cursor)
@@ -381,12 +377,12 @@ struct RecursiveParser
                 val refParser: pointer<ParserRef> = sourceParser.clone()
                 val innerConsumed: int = refParser.parse(token, cursor + consumed)
 
-                if !refParser.haveError(innerConsumed):
+                if !refParser.hasError(innerConsumed):
                 {
                     consumed += innerConsumed
 
                     // add to result
-                    val innerResult: pointer<ParseContainer> = refParser.getResult()
+                    val innerResult: pointer<ParserResult> = refParser.getResult()
                     results.push(innerResult.ref)
                 }
                 else:
@@ -405,8 +401,8 @@ struct RecursiveParser
                 if !sourceParser.mayStartWith(token, cursor + consumed):
                 {
                     val emptyResults: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
-                    val emptyContainer: pointer<ParseContainer> =
-                        new ParseContainer(ParseContainer.ARRAY_LIST_KIND, emptyResults)
+                    val emptyContainer: pointer<ParserResult> =
+                        new ParserResult(ParserResult.ARRAY_LIST_KIND, emptyResults)
 
                     results.push(emptyContainer.ref)
                     continue
@@ -424,7 +420,7 @@ struct RecursiveParser
                 consumed += innerConsumed
 
                 // add to result
-                val innerResults: pointer<ParseContainer> = refsParser.getResult()
+                val innerResults: pointer<ParserResult> = refsParser.getResult()
                 results.push(innerResults.ref)
             }
             else:
@@ -445,7 +441,7 @@ struct RecursiveParser
             return false
         }
 
-        this.result = new ParseContainer(this.id, constructedResult)
+        this.result = new ParserResult(this.id, constructedResult)
 
         // call after
         rule.afterFun(token, cursor + consumed)
@@ -546,7 +542,7 @@ struct RecursiveParser
     {
         val consumed: int = this.parse(input, 0)
 
-        if this.haveError(consumed):
+        if this.hasError(consumed):
             return -1
 
         if consumed > input.length():
@@ -566,7 +562,7 @@ struct RecursiveParser
      * @return                  a pointer to the current parse result, or {@code null} if no
      *                          successful result is available
      */
-    fun getResult() -> pointer<ParseContainer> = this.result
+    fun getResult() -> pointer<ParserResult> = this.result
 
 
     /**

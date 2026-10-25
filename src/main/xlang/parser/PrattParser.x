@@ -64,7 +64,7 @@ struct PrattParser
      * The identifier assigned to parse results produced by this parser.
      *
      * <p>The identifier is stored as the {@code kind} of each resulting
-     * {@code ParseContainer}.
+     * {@code ParserResult}.
      */
     private var id: int
 
@@ -108,12 +108,12 @@ struct PrattParser
     /**
      * Creates an empty Pratt parser.
      *
-     * <p>The parser initially uses {@code ParseContainer.ARRAY_LIST_KIND} as its
+     * <p>The parser initially uses {@code ParserResult.ARRAY_LIST_KIND} as its
      * result identifier and contains no starter or continuation rules.
      */
     constructor()
     {
-        this.id = ParseContainer.ARRAY_LIST_KIND
+        this.id = ParserResult.ARRAY_LIST_KIND
         this.errors = new ArrayList(sizeof(Diagnostic))
         this.result = null
         this.starterRules = new ArrayList(sizeof(Rule))
@@ -126,7 +126,7 @@ struct PrattParser
      * Creates a Pratt parser using the supplied starter and continuation rules.
      *
      * <p>The supplied rule collections are stored by reference and are not copied.
-     * The parser initially uses {@code ParseContainer.ARRAY_LIST_KIND} as its
+     * The parser initially uses {@code ParserResult.ARRAY_LIST_KIND} as its
      * result identifier.
      *
      * @param starterRules      a pointer to the starter-rule collection
@@ -134,7 +134,7 @@ struct PrattParser
      */
     constructor(starterRules: pointer<ArrayList>, continuationRules: pointer<ArrayList>)
     {
-        this.id = ParseContainer.ARRAY_LIST_KIND
+        this.id = ParserResult.ARRAY_LIST_KIND
         this.errors = new ArrayList(sizeof(Diagnostic))
         this.result = null
         this.starterRules = starterRules
@@ -197,7 +197,7 @@ struct PrattParser
      *
      * @return                  {@code true} if the parse failed; {@code false} otherwise
      */
-    fun haveError(eaten: int) -> bool =
+    fun hasError(eaten: int) -> bool =
         this.getLastError() != null || eaten <= 0
 
 
@@ -296,7 +296,7 @@ struct PrattParser
      */
     fun tryParse(
         token: pointer<TokenList>, cursor: int,
-        matchLength: pointer<int>) -> pointer<ParseContainer> =
+        matchLength: pointer<int>) -> pointer<ParserResult> =
         this.tryParse(token, cursor, MIN_PRIORITY, matchLength)
 
 
@@ -330,7 +330,7 @@ struct PrattParser
     fun tryParse(
         token: pointer<TokenList>, cursor: int,
         minPriority: int,
-        matchLength: pointer<int>) -> pointer<ParseContainer>
+        matchLength: pointer<int>) -> pointer<ParserResult>
     {
         /*
          * Parses one Pratt expression from cursor.
@@ -371,7 +371,7 @@ struct PrattParser
 
         var consumed: int = 0
         var starterLength: int = 0
-        var left: pointer<ParseContainer> = this.tryParseStarter(token, cursor, starterLength.ref)
+        var left: pointer<ParserResult> = this.tryParseStarter(token, cursor, starterLength.ref)
 
         matchLength.deref = 0
 
@@ -402,7 +402,7 @@ struct PrattParser
             val hasRight: bool = lastAtom.isRef() &&
                 lastAtom.getRefParser().getId() == left.getKind()
             var rightLength: int = 0
-            var right: pointer<ParseContainer> = null
+            var right: pointer<ParserResult> = null
 
             if hasRight:
             {
@@ -451,7 +451,7 @@ struct PrattParser
                 return null
             }
 
-            left = new ParseContainer(this.id, constructedResult)
+            left = new ParserResult(this.id, constructedResult)
 
             consumed += continuationLength + rightLength
 
@@ -498,7 +498,7 @@ struct PrattParser
         }
 
         var matchLength: int = 0
-        val result: pointer<ParseContainer> = this.tryParse(token, cursor, matchLength.ref)
+        val result: pointer<ParserResult> = this.tryParse(token, cursor, matchLength.ref)
 
         if result == null:
             return -1
@@ -548,7 +548,7 @@ struct PrattParser
     {
         val consumed: int = this.parse(input, 0)
 
-        if this.haveError(consumed):
+        if this.hasError(consumed):
             return -1
 
         if consumed > input.length():
@@ -586,7 +586,7 @@ struct PrattParser
     private fun tryParseStarter(
         token: pointer<TokenList>, cursor: int,
         matchLength: pointer<int>
-    ) -> pointer<ParseContainer>
+    ) -> pointer<ParserResult>
     {
         matchLength.deref = 0
 
@@ -600,7 +600,7 @@ struct PrattParser
             val currentPriority: int = firstRule.priority
 
             var matchedRuleCount: int = 0
-            var matchedResult: pointer<ParseContainer> = null
+            var matchedResult: pointer<ParserResult> = null
             var matchedLength: int = 0
 
             // Check all rules with the same priority.
@@ -618,7 +618,7 @@ struct PrattParser
                     continue
 
                 var currentMatchLength: int = 0
-                val currentResult: pointer<ParseContainer> =
+                val currentResult: pointer<ParserResult> =
                     this.tryParseStarterRule(
                         token, cursor, rule, 0,
                         currentMatchLength.ref)
@@ -657,7 +657,7 @@ struct PrattParser
     }
     // private fun tryParseStarter(
     //     token: pointer<TokenList>, cursor: int,
-    //     matchLength: pointer<int>) -> pointer<ParseContainer>
+    //     matchLength: pointer<int>) -> pointer<ParserResult>
     // {
     //     var havePriorityLimit: bool = false
     //     var priorityLimit: int = 0
@@ -687,7 +687,7 @@ struct PrattParser
     //             return null
 
     //         var matchedRuleCount: int = 0
-    //         var bestResult: pointer<ParseContainer> = null
+    //         var bestResult: pointer<ParserResult> = null
     //         var bestMatchLength: int = 0
 
     //         for (var i = 0; i < this.starterRules.length; i++):
@@ -708,7 +708,7 @@ struct PrattParser
     //             }
 
     //             var currentMatchLength: int = 0
-    //             val currentResult: pointer<ParseContainer> =
+    //             val currentResult: pointer<ParserResult> =
     //                 this.tryParseStarterRule(token, cursor, rule, 0, currentMatchLength.ref)
 
     //             if currentResult != null:
@@ -756,7 +756,7 @@ struct PrattParser
      *
      * <p>Successfully parsed pattern results are collected and passed to the
      * rule's result constructor. If construction succeeds, the resulting object
-     * is wrapped in a {@code ParseContainer} using this parser's identifier.
+     * is wrapped in a {@code ParserResult} using this parser's identifier.
      *
      * <p>The rule's post-processing function is invoked after successful result
      * construction.
@@ -773,7 +773,7 @@ struct PrattParser
     private fun tryParseStarterRule(
         token: pointer<TokenList>, cursor: int,
         rule: pointer<Rule>, patternStart: int,
-        matchLength: pointer<int>) -> pointer<ParseContainer>
+        matchLength: pointer<int>) -> pointer<ParserResult>
     {
         var consumed: int = 0
         val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
@@ -815,7 +815,7 @@ struct PrattParser
 
                 val refParser: pointer<ParserRef> = sourceParser.clone()
                 var innerConsumed: int = 0
-                var innerResult: pointer<ParseContainer> = null
+                var innerResult: pointer<ParserResult> = null
                 var hasError: bool = false
 
                 if rule.getFixity() == Operation.PREFIX_TYPE && refParser.getId() == this.id:
@@ -830,7 +830,7 @@ struct PrattParser
                 else:
                 {
                     innerConsumed = refParser.parse(token, cursor + consumed)
-                    hasError = refParser.haveError(innerConsumed)
+                    hasError = refParser.hasError(innerConsumed)
 
                     if !hasError:
                         innerResult = refParser.getResult()
@@ -859,8 +859,8 @@ struct PrattParser
                 if !sourceParser.mayStartWith(token, cursor + consumed):
                 {
                     val emptyResults: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
-                    val emptyContainer: pointer<ParseContainer> =
-                        new ParseContainer(ParseContainer.ARRAY_LIST_KIND, emptyResults)
+                    val emptyContainer: pointer<ParserResult> =
+                        new ParserResult(ParserResult.ARRAY_LIST_KIND, emptyResults)
 
                     results.push(emptyContainer.ref)
                     continue
@@ -878,7 +878,7 @@ struct PrattParser
                 consumed += innerConsumed
 
                 // add to result
-                val innerResults: pointer<ParseContainer> = refsParser.getResult()
+                val innerResults: pointer<ParserResult> = refsParser.getResult()
                 results.push(innerResults.ref)
             }
             else:
@@ -898,7 +898,7 @@ struct PrattParser
 
         matchLength.deref = consumed
 
-        return new ParseContainer(this.id, constructedResult)
+        return new ParserResult(this.id, constructedResult)
     }
 
 
@@ -933,7 +933,7 @@ struct PrattParser
      */
     private fun tryParseContinuationHead(
         token: pointer<TokenList>, cursor: int,
-        left: pointer<ParseContainer>,
+        left: pointer<ParserResult>,
         results: pointer<pointer<ArrayList>>,
         matchLength: pointer<int>) -> pointer<Rule>
     {
@@ -1029,7 +1029,7 @@ struct PrattParser
     }
     // private fun tryParseContinuationHead(
     //     token: pointer<TokenList>, cursor: int,
-    //     left: pointer<ParseContainer>,
+    //     left: pointer<ParserResult>,
     //     results: pointer<pointer<ArrayList>>,
     //     matchLength: pointer<int>) -> pointer<Rule>
     // {
@@ -1168,7 +1168,7 @@ struct PrattParser
     private fun tryParseUntilSelfRef(
         token: pointer<TokenList>, cursor: int,
         rule: pointer<Rule>, patternStart: int,
-        left: pointer<ParseContainer>,
+        left: pointer<ParserResult>,
         matchLength: pointer<int>) -> pointer<ArrayList>
     {
         var consumed: int = 0
@@ -1218,11 +1218,11 @@ struct PrattParser
                 val refParser: pointer<ParserRef> = sourceParser.clone()
                 val innerConsumed: int = refParser.parse(token, cursor + consumed)
 
-                if !refParser.haveError(innerConsumed):
+                if !refParser.hasError(innerConsumed):
                 {
                     consumed += innerConsumed
 
-                    val innerResult: pointer<ParseContainer> = refParser.getResult()
+                    val innerResult: pointer<ParserResult> = refParser.getResult()
                     results.push(innerResult.ref)
                 }
                 else:
@@ -1241,8 +1241,8 @@ struct PrattParser
                 if !sourceParser.mayStartWith(token, cursor + consumed):
                 {
                     val emptyResults: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
-                    val emptyContainer: pointer<ParseContainer> =
-                        new ParseContainer(ParseContainer.ARRAY_LIST_KIND, emptyResults)
+                    val emptyContainer: pointer<ParserResult> =
+                        new ParserResult(ParserResult.ARRAY_LIST_KIND, emptyResults)
 
                     results.push(emptyContainer.ref)
                     continue
@@ -1259,7 +1259,7 @@ struct PrattParser
 
                 consumed += innerConsumed
 
-                val innerResults: pointer<ParseContainer> = refsParser.getResult()
+                val innerResults: pointer<ParserResult> = refsParser.getResult()
                 results.push(innerResults.ref)
             }
             else:
