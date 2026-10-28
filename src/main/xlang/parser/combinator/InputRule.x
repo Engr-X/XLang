@@ -31,16 +31,24 @@ import xlang.util.ArrayList
 
 struct InputRule
 {
-    private var id: int
+    private var priority: int
 
     private var atoms: pointer<ArrayList>
 
     private var resultConstructor: (pointer<ArrayList>) -> pointer<*>
 
 
-    constructor(id: int, resultConstructor: (pointer<ArrayList>) -> pointer<*>)
+    constructor(resultConstructor: (pointer<ArrayList>) -> pointer<*>)
     {
-        this.id = id
+        this.priority = 10
+        this.atoms = new ArrayList(sizeof(RegexAtomRule))
+        this.resultConstructor = resultConstructor
+    }
+
+
+    constructor(priority: int, resultConstructor: (pointer<ArrayList>) -> pointer<*>)
+    {
+        this.priority = priority
         this.atoms = new ArrayList(sizeof(RegexAtomRule))
         this.resultConstructor = resultConstructor
     }
@@ -53,18 +61,26 @@ struct InputRule
     }
 
 
-    fun getResult(input: pointer<ArrayList>, consume: int) -> pointer<ParserResult> =
-        new ParserResult(this.id, consume, this.resultConstructor(input))
+    fun getPriority() -> int = this.priority
+
+
+    fun getResult(id: int, input: pointer<ArrayList>, consume: int) -> pointer<ParserResult> =
+        new ParserResult(id, consume, this.resultConstructor(input))
 }
 
 
 struct InputRules
 {
+    var id: int
+
     private var rules: pointer<ArrayList>
 
 
-    constructor():
+    constructor(id: int)
+    {
+        this.id = id
         this.rules = new ArrayList(sizeof(InputRule))
+    }
 
 
     fun push(inputRule: pointer<InputRule>) -> pointer<InputRules>
@@ -92,6 +108,6 @@ struct InputRules
 
         val rule: pointer<InputRule> =
             this.rules.get(index) as pointer<InputRule>
-        return rule.getResult(input, consume)
+        return rule.getResult(this.id, input, consume)
     }
 }
