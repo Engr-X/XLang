@@ -38,7 +38,7 @@ import xlang.util.ArrayList
 /**
  * Implements a rule-based recursive parser.
  *
- * <p>A {@code RecursiveParser} contains an ordered collection of parsing rules.
+ * <p>An {@code ORecursiveParser} contains an ordered collection of parsing rules.
  * During parsing, each rule is tested against the input token stream beginning
  * at the specified cursor. The first rule that matches completely determines
  * the parse result.
@@ -53,7 +53,7 @@ import xlang.util.ArrayList
  * <p>The parser stores the most recent {@code ParserResult} result and the
  * most recent diagnostic produced during parsing.
  */
-struct RecursiveParser
+struct ORecursiveParser
 {
     /**
      * The identifier assigned to parse results produced by this parser.
@@ -156,9 +156,9 @@ struct RecursiveParser
      *
      * @param rule              a pointer to the rule to add
      *
-     * @return                  this {@code RecursiveParser} instance
+     * @return                  this {@code ORecursiveParser} instance
      */
-    fun addRule(rule: pointer<Rule>) -> pointer<RecursiveParser>
+    fun addRule(rule: pointer<Rule>) -> pointer<ORecursiveParser>
     {
         this.rules.push(rule)
         return this
@@ -174,9 +174,9 @@ struct RecursiveParser
      * @param code              the diagnostic code
      * @param message           a pointer to the diagnostic message
      *
-     * @return                  this {@code RecursiveParser} instance
+     * @return                  this {@code ORecursiveParser} instance
      */
-    private fun pushInternalError(code: int, message: pointer<char>) -> pointer<RecursiveParser>
+    private fun pushInternalError(code: int, message: pointer<char>) -> pointer<ORecursiveParser>
     {
         this.error = Diagnostic.makeInternalError(
             code,
@@ -214,9 +214,9 @@ struct RecursiveParser
      * <p>The current diagnostic and parse result are cleared. The parser
      * identifier and registered rules are preserved.
      *
-     * @return                  this {@code RecursiveParser} instance
+     * @return                  this {@code ORecursiveParser} instance
      */
-    fun reset() -> pointer<RecursiveParser>
+    fun reset() -> pointer<ORecursiveParser>
     {
         this.error = null
         this.result = null
@@ -327,7 +327,7 @@ struct RecursiveParser
             val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
             val constructedResult: pointer<*> = rule.constructResult(results)
 
-            this.result = new ParserResult(this.id, constructedResult)
+            this.result = new ParserResult(this.id, 0, constructedResult)
 
             // call after
             rule.afterFun(token, cursor)
@@ -402,7 +402,7 @@ struct RecursiveParser
                 {
                     val emptyResults: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
                     val emptyContainer: pointer<ParserResult> =
-                        new ParserResult(ParserResult.ARRAY_LIST_KIND, emptyResults)
+                        ParserResult.fromList(0, emptyResults)
 
                     results.push(emptyContainer.ref)
                     continue
@@ -441,7 +441,7 @@ struct RecursiveParser
             return false
         }
 
-        this.result = new ParserResult(this.id, constructedResult)
+        this.result = new ParserResult(this.id, consumed, constructedResult)
 
         // call after
         rule.afterFun(token, cursor + consumed)
@@ -572,7 +572,7 @@ struct RecursiveParser
      * <p>The rule collection is shared by reference. Transient state such as
      * the current parse result and diagnostic is not copied.
      *
-     * @return                  a pointer to the cloned {@code RecursiveParser}
+     * @return                  a pointer to the cloned {@code ORecursiveParser}
      */
-    fun clone() -> pointer<RecursiveParser> = new RecursiveParser(this.id, this.rules)
+    fun clone() -> pointer<ORecursiveParser> = new ORecursiveParser(this.id, this.rules)
 }

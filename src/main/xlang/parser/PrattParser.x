@@ -451,7 +451,10 @@ struct PrattParser
                 return null
             }
 
-            left = new ParserResult(this.id, constructedResult)
+            left = new ParserResult(
+                this.id,
+                consumed + continuationLength + rightLength,
+                constructedResult)
 
             consumed += continuationLength + rightLength
 
@@ -860,7 +863,7 @@ struct PrattParser
                 {
                     val emptyResults: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
                     val emptyContainer: pointer<ParserResult> =
-                        new ParserResult(ParserResult.ARRAY_LIST_KIND, emptyResults)
+                        ParserResult.fromList(0, emptyResults)
 
                     results.push(emptyContainer.ref)
                     continue
@@ -898,7 +901,7 @@ struct PrattParser
 
         matchLength.deref = consumed
 
-        return new ParserResult(this.id, constructedResult)
+        return new ParserResult(this.id, consumed, constructedResult)
     }
 
 
@@ -1242,7 +1245,7 @@ struct PrattParser
                 {
                     val emptyResults: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
                     val emptyContainer: pointer<ParserResult> =
-                        new ParserResult(ParserResult.ARRAY_LIST_KIND, emptyResults)
+                        ParserResult.fromList(0, emptyResults)
 
                     results.push(emptyContainer.ref)
                     continue

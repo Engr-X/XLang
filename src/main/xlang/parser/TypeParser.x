@@ -191,7 +191,7 @@ struct TypeParser
 
                 val functionType: pointer<FunctionType> = this.result.getValue() as pointer<FunctionType>
 
-                this.result = new ParserResult(this.id, Type.fromFunction(functionType))
+                this.result = new ParserResult(this.id, consumed, Type.fromFunction(functionType))
                 return consumed
             }
 
@@ -204,7 +204,7 @@ struct TypeParser
 
                 val blobType: pointer<BlobType> = this.result.getValue() as pointer<BlobType>
 
-                this.result = new ParserResult(this.id, Type.fromBlob(blobType))
+                this.result = new ParserResult(this.id, consumed, Type.fromBlob(blobType))
                 return consumed
             }
         }
@@ -216,7 +216,7 @@ struct TypeParser
 
         val normalType: pointer<NormalType> = this.result.getValue() as pointer<NormalType>
 
-        this.result = new ParserResult(this.id, Type.fromNormal(normalType))
+        this.result = new ParserResult(this.id, consumed, Type.fromNormal(normalType))
         return consumed
     }
 
@@ -349,7 +349,7 @@ struct TypeParser
             parsedType.addExtraToken(token)
         }
 
-        this.result = new ParserResult(this.id, parsedType)
+        this.result = new ParserResult(this.id, consumed, parsedType)
         return consumed
     }
 
@@ -443,7 +443,7 @@ struct TypeParser
             if this.depth >= 1:
             {
                 val parsedType: pointer<NormalType> = NormalType.unresolved("void").addToken(token)
-                this.result = new ParserResult(this.id, parsedType)
+                this.result = new ParserResult(this.id, 1, parsedType)
                 return 1
             }
 
@@ -521,7 +521,7 @@ struct TypeParser
 
         if nextToken == null || nextToken.kind != Tokenizer.LESS:
         {
-            this.result = new ParserResult(this.id, parsedType)
+            this.result = new ParserResult(this.id, nameLength, parsedType)
             return nameLength
         }
 
@@ -567,7 +567,7 @@ struct TypeParser
                 this.depth--
                 consumed++
                 parsedType.addToken(delimiter)
-                this.result = new ParserResult(this.id, parsedType)
+                this.result = new ParserResult(this.id, consumed, parsedType)
                 return consumed
             }
 
@@ -672,7 +672,7 @@ struct TypeParser
             .addExtraToken(leftBracket)
             .addExtraToken(rightBracket)
 
-        this.result = new ParserResult(this.id, parsedType)
+        this.result = new ParserResult(this.id, expressionLength + 3, parsedType)
         return expressionLength + 3
     }
 

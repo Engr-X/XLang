@@ -546,7 +546,19 @@
             "}" ],
 
 
-        [   "fun fullTokenize(",
+        [   "fun pureTokenize(",
+            "    code: pointer<char>,",
+            "    diagnostics: pointer<Diagnostics>",
+            ") -> pointer<TokenList>",
+            "{",
+            "    if code == null:",
+            "        return null",
+            "",
+            "    return xlang.lexer.Tokenizer.tokenize(rules, code, diagnostics)",
+            "}" ],
+
+
+        [   "fun tokenize(",
             "    code: pointer<char>,",
             "    diagnostics: pointer<Diagnostics>",
             ") -> pointer<TokenList>",
@@ -564,7 +576,7 @@
             "}" ],
 
             
-        [   "fun fullTokenize(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<TokenizedFile>",
+        [   "fun tokenize(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<TokenizedFile>",
             "{",
             "    if file == null:",
             "        return null",
@@ -572,7 +584,7 @@
             "    if !file.hasContent():",
             "        return new TokenizedFile(file.getPath(), file.getContent(), null)",
             "",
-            "    val tokens: pointer<TokenList> = fullTokenize(file.getContent(), diagnostics)",
+            "    val tokens: pointer<TokenList> = tokenize(file.getContent(), diagnostics)",
             "",
             "    if tokens == null:",
             "    {",

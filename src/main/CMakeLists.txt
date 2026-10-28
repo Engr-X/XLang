@@ -303,7 +303,7 @@ foreach(src_abs ${XLANG_SOURCES})
     list(APPEND XLANG_OBJ_DIRS "${obj_dir}")
     list(APPEND XLANG_OBJS "${obj_abs}")
 
-    if (src_rel MATCHES "^xlang/Diagnostic\\.x$" OR src_rel MATCHES "^xlang/Operation\\.x$" OR src_rel MATCHES "^xlang/compiler/" OR src_rel MATCHES "^xlang/lexer/" OR src_rel MATCHES "^xlang/parser/" OR src_rel MATCHES "^xlang/util/")
+    if (src_rel MATCHES "^xlang/Diagnostic\\.x$" OR src_rel MATCHES "^xlang/Diagnostics\\.x$" OR src_rel MATCHES "^xlang/Operation\\.x$" OR src_rel MATCHES "^xlang/compiler/" OR src_rel MATCHES "^xlang/lexer/" OR src_rel MATCHES "^xlang/parser/" OR src_rel MATCHES "^xlang/util/")
         list(APPEND XLANG_COMPILER_OBJS "${obj_abs}")
     endif()
 endforeach()
@@ -387,6 +387,7 @@ if (XLANG_SRCS)
     add_custom_target(xlang_executable ALL
         DEPENDS "${XLANG_EXE}"
     )
+    add_dependencies(xlang_executable xlang_objects)
 else()
     add_custom_target(xlang_executable
         COMMENT "No xlang object files available to build executable"

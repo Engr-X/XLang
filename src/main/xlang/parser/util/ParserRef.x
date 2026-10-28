@@ -27,7 +27,7 @@ import xlang.Diagnostic
 import xlang.lexer.TokenList
 import xlang.parser.ParserResult
 import xlang.parser.PrattParser
-import xlang.parser.RecursiveParser
+import xlang.parser.ORecursiveParser
 import xlang.parser.TypeParser
 
 
@@ -42,7 +42,7 @@ import xlang.parser.TypeParser
  *
  * <p>The following parser implementations are currently supported:
  * <ul>
- *     <li>{@code RECURSIVE_DOWN} - {@link RecursiveParser}</li>
+ *     <li>{@code RECURSIVE_DOWN} - {@link ORecursiveParser}</li>
  *     <li>{@code PRATT} - {@link PrattParser}</li>
  *     <li>{@code TYPE_PARSER} - {@link TypeParser}</li>
  * </ul>
@@ -88,10 +88,10 @@ struct ParserRef
      *
      * @param id                the identifier assigned to the parser
      *
-     * @return a                new parser reference containing a {@code RecursiveParser}
+     * @return a                new parser reference containing an {@code ORecursiveParser}
      */
     static fun fromRecursiveDown(id: int) -> pointer<ParserRef> =
-        new ParserRef(id, RECURSIVE_DOWN, new RecursiveParser(id))
+        new ParserRef(id, RECURSIVE_DOWN, new ORecursiveParser(id))
 
 
     /**
@@ -161,7 +161,7 @@ struct ParserRef
     {
         if this.type == RECURSIVE_DOWN:
         {
-            val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
+            val parser: pointer<ORecursiveParser> = this.host as pointer<ORecursiveParser>
             parser.addRule(rule)
         }
 
@@ -195,7 +195,7 @@ struct ParserRef
     {
         if this.type == RECURSIVE_DOWN:
         {
-            val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
+            val parser: pointer<ORecursiveParser> = this.host as pointer<ORecursiveParser>
             return parser.parse(tokens, index)
         }
 
@@ -260,7 +260,7 @@ struct ParserRef
     {
         if this.type == RECURSIVE_DOWN:
         {
-            val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
+            val parser: pointer<ORecursiveParser> = this.host as pointer<ORecursiveParser>
             return parser.hasError(eaten)
         }
 
@@ -285,8 +285,8 @@ struct ParserRef
      * consuming any tokens.
      *
      * <p>For a {@code RECURSIVE_DOWN} reference, the stored host is interpreted as
-     * a {@code RecursiveParser} and the decision is delegated to
-     * {@code RecursiveParser.canBeEmpty()}.
+     * an {@code ORecursiveParser} and the decision is delegated to
+     * {@code ORecursiveParser.canBeEmpty()}.
      *
      * <p>Other parser-reference types are currently considered unable to match an
      * empty token sequence and therefore return {@code false}.
@@ -299,8 +299,8 @@ struct ParserRef
     {
         if this.type == RECURSIVE_DOWN:
         {
-            val parser: pointer<RecursiveParser> =
-                this.host as pointer<RecursiveParser>
+            val parser: pointer<ORecursiveParser> =
+                this.host as pointer<ORecursiveParser>
 
             return parser.canBeEmpty()
         }
@@ -314,8 +314,8 @@ struct ParserRef
      * the specified token position.
      *
      * <p>For a {@code RECURSIVE_DOWN} reference, the stored host is interpreted as
-     * a {@code RecursiveParser} and the predictive check is delegated to
-     * {@code RecursiveParser.mayStartWith()}.
+     * an {@code ORecursiveParser} and the predictive check is delegated to
+     * {@code ORecursiveParser.mayStartWith()}.
      *
      * <p>For a {@code PRATT} reference, the stored host is interpreted as a
      * {@code PrattParser} and the predictive check is delegated to
@@ -342,8 +342,8 @@ struct ParserRef
     {
         if this.type == RECURSIVE_DOWN:
         {
-            val parser: pointer<RecursiveParser> =
-                this.host as pointer<RecursiveParser>
+            val parser: pointer<ORecursiveParser> =
+                this.host as pointer<ORecursiveParser>
 
             return parser.mayStartWith(tokens, index)
         }
@@ -376,7 +376,7 @@ struct ParserRef
     {
         if this.type == RECURSIVE_DOWN:
         {
-            val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
+            val parser: pointer<ORecursiveParser> = this.host as pointer<ORecursiveParser>
             return parser.getResult()
         }
 
@@ -410,7 +410,7 @@ struct ParserRef
     {
         if this.type == RECURSIVE_DOWN:
         {
-            val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
+            val parser: pointer<ORecursiveParser> = this.host as pointer<ORecursiveParser>
             return parser.getError()
         }
 
@@ -454,7 +454,7 @@ struct ParserRef
     {
         if this.type == RECURSIVE_DOWN:
         {
-            val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
+            val parser: pointer<ORecursiveParser> = this.host as pointer<ORecursiveParser>
             return new ParserRef(this.id, this.type, parser.clone())
         }
 

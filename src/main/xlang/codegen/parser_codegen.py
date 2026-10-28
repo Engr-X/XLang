@@ -644,7 +644,7 @@ def genParserIdDecls(rules: list[JsonObject], tabs: int) -> str:
     lines: list[str] = []
 
     for index, rule in enumerate(rules):
-        lines.append(f"{indent}private val {getParserIdName(rule)}: int = {index + 1}")
+        lines.append(f"{indent}private val {getParserIdName(rule)}: int = {index + 100}")
 
     return "\n".join(lines) + "\n\n\n"
 
