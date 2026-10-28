@@ -246,6 +246,9 @@ struct RecursiveParser
         if rule == null:
             return this.cannotParseResult()
 
+        val parseTokens: pointer<TokenList> =
+            rule.getInputRule().before(tokens, fromIndex)
+
         val expression: pointer<RuleExpression> = rule.getExpression()
 
         if expression == null:
@@ -253,11 +256,11 @@ struct RecursiveParser
 
         var result: pointer<ParserResult> =
             if expression.isAtom():
-                this.parseAtom(expression.getAtomRule(), tokens, fromIndex)
+                this.parseAtom(expression.getAtomRule(), parseTokens, fromIndex)
             elif expression.isSelect():
-                this.parseSelect(expression.getSelectRule(), tokens, fromIndex)
+                this.parseSelect(expression.getSelectRule(), parseTokens, fromIndex)
             elif expression.isSequence():
-                this.parseSequence(expression.getSequenceRule(), tokens, fromIndex)
+                this.parseSequence(expression.getSequenceRule(), parseTokens, fromIndex)
             else:
                 this.cannotParseResult()
 
@@ -274,7 +277,19 @@ struct RecursiveParser
             input.push(result.ref)
         }
 
-        return rule.getInputRule().getResult(this.getRuleIndex(), input, result.getConsume())
+        val ruleIndex: int = this.getRuleIndex()
+        val parseResult: pointer<ParserResult> = rule.getInputRule().getResult(
+            ruleIndex,
+            input,
+            result.getConsume())
+
+        if ruleIndex >= 0:
+            rule.getInputRule().after(
+                ruleIndex,
+                parseTokens,
+                fromIndex + result.getConsume())
+
+        return parseResult
     }
 
 
