@@ -25,6 +25,8 @@ package xlang.parser.combinator
 
 struct ParserRule
 {
+    private var id: int
+
     private var inputRule: pointer<InputRules>
 
     private var expression: pointer<RuleExpression>
@@ -34,6 +36,7 @@ struct ParserRule
     {
         this.inputRule = inputRule
         this.expression = expression
+        this.id = inputRule.id
     }
 
 
