@@ -26,12 +26,12 @@
 package xlang.compiler.lexer
 
 import xlang.Files
+import xlang.Diagnostics
 import xlang.System
 import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.lexer.TokenizedFile
-import xlang.lexer.TokenizeFSM
 import xlang.test.TestCase
 import xlang.test.TestGroup
 import xlang.test.TestUnion
@@ -49,15 +49,15 @@ val TEST_GROUP: pointer<TestGroup> = genTest()
 fun genTest() -> pointer<TestGroup>
 {
     val result: pointer<TestGroup> = new TestGroup("xlang.compiler.Tokenizer")
+    val pureTokenizeTC: pointer<TestCase> = new TestCase("pureTokenize", pureTokenizeTest)
     val tokenizeTC: pointer<TestCase> = new TestCase("tokenize", tokenizeTest)
-    val fullTokenizeTC: pointer<TestCase> = new TestCase("fullTokenize", fullTokenizeTest)
     val allSourceFilesTG: pointer<TestGroup> = genAllSourceFilesTestGroup()
+    val pureTokenizeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, pureTokenizeTC, null)
     val tokenizeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, tokenizeTC, null)
-    val fullTokenizeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, fullTokenizeTC, null)
     val allSourceFilesUnion: pointer<TestUnion> = new TestUnion(TestGroup.TYPE, null, allSourceFilesTG)
 
+    result.addTestUnion(pureTokenizeUnion)
     result.addTestUnion(tokenizeUnion)
-    result.addTestUnion(fullTokenizeUnion)
     result.addTestUnion(allSourceFilesUnion)
 
     return result
@@ -141,13 +141,14 @@ private fun sourceTokenTest() -> int
             return 1
 
         val file: pointer<File> = new File(path)
-        val tokenizedFile: pointer<TokenizedFile> = Tokenizer.fullTokenize(file)
+        val diagnostics: pointer<Diagnostics> = new Diagnostics()
+        val tokenizedFile: pointer<TokenizedFile> = Tokenizer.tokenize(file, diagnostics)
         val tokens: pointer<TokenList> = if tokenizedFile == null:
                 null
             else:
                 tokenizedFile.getTokens()
 
-        if tokens == null:
+        if tokens == null || diagnostics.hasError():
             return 2
 
         for (var i = 0; i < tokens.length(); i++):
@@ -191,7 +192,7 @@ private fun genAllSourceFilesTestGroup() -> pointer<TestGroup>
 }
 
 
-private fun tokenizeTest() -> int
+private fun pureTokenizeTest() -> int
 {
     var result: int = charEscapeTest()
 
@@ -267,14 +268,14 @@ private fun tokenizeTest() -> int
 }
 
 
-private fun fullTokenizeTest() -> int
+private fun tokenizeTest() -> int
 {
-    var result: int = fullTokenizeSymbolLineTerminatorTest()
+    var result: int = tokenizeSymbolLineTerminatorTest()
 
     if result != 0:
         return 1
 
-    result = fullTokenizeRightBraceLineTerminatorTest()
+    result = tokenizeRightBraceLineTerminatorTest()
 
     if result != 0:
         return 2
@@ -303,9 +304,13 @@ private fun checkTokenList(tokens: pointer<TokenList>, kinds: pointer<int>, text
 }
 
 
-private fun checkTokens(input: pointer<char>, kinds: pointer<int>, texts: pointer<pointer<char>>, length: int) -> int
+private fun checkPureTokens(input: pointer<char>, kinds: pointer<int>, texts: pointer<pointer<char>>, length: int) -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize(input)
+    val diagnostics: pointer<Diagnostics> = new Diagnostics()
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize(input, diagnostics)
+
+    if tokens == null || diagnostics.hasError():
+        return 1
 
     return checkTokenList(tokens, kinds, texts, length)
 }
@@ -328,11 +333,27 @@ private fun checkTokenAt(tokens: pointer<TokenList>, index: int, kind: int, text
 }
 
 
-private fun checkFullTokens(input: pointer<char>, kinds: pointer<int>, texts: pointer<pointer<char>>, length: int) -> int
+private fun checkTokens(input: pointer<char>, kinds: pointer<int>, texts: pointer<pointer<char>>, length: int) -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input)
+    val diagnostics: pointer<Diagnostics> = new Diagnostics()
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(input, diagnostics)
+
+    if tokens == null || diagnostics.hasError():
+        return 1
 
     return checkTokenList(tokens, kinds, texts, length)
+}
+
+
+private fun checkTokenizeError(input: pointer<char>) -> int
+{
+    val diagnostics: pointer<Diagnostics> = new Diagnostics()
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize(input, diagnostics)
+
+    if tokens != null || !diagnostics.hasError():
+        return 1
+
+    return 0
 }
 
 
@@ -359,7 +380,7 @@ private fun checkTokenPosition(tokens: pointer<TokenList>, index: int, offset: i
 }
 
 
-private fun fullTokenizeSymbolLineTerminatorTest() -> int
+private fun tokenizeSymbolLineTerminatorTest() -> int
 {
     val kindsSpace: blob[sizeof(int) * 5]
     val textsSpace: blob[sizeof(pointer<char>) * 5]
@@ -377,11 +398,11 @@ private fun fullTokenizeSymbolLineTerminatorTest() -> int
     kinds[4] = Token.EOF_KIND
     texts[4] = Token.EOF_STRING
 
-    return checkFullTokens("a\n+\nb", kinds, texts, 5)
+    return checkTokens("a\n+\nb", kinds, texts, 5)
 }
 
 
-private fun fullTokenizeRightBraceLineTerminatorTest() -> int
+private fun tokenizeRightBraceLineTerminatorTest() -> int
 {
     val kindsSpace: blob[sizeof(int) * 7]
     val textsSpace: blob[sizeof(pointer<char>) * 7]
@@ -403,7 +424,7 @@ private fun fullTokenizeRightBraceLineTerminatorTest() -> int
     kinds[6] = Token.EOF_KIND
     texts[6] = Token.EOF_STRING
 
-    return checkFullTokens("a}b", kinds, texts, 7)
+    return checkTokens("a}b", kinds, texts, 7)
 }
 
 
@@ -439,7 +460,7 @@ private fun commentsTest() -> int
     kinds[11] = Token.EOF_KIND
     texts[11] = Token.EOF_STRING
 
-    return checkTokens("a=1/*x*/b=2//y\nc=3", kinds, texts, 12)
+    return checkPureTokens("a=1/*x*/b=2//y\nc=3", kinds, texts, 12)
 }
 
 
@@ -455,7 +476,7 @@ private fun charEscapeTest() -> int
     kinds[1] = Tokenizer.EQUAL
     texts[1] = "="
     kinds[2] = Tokenizer.TK_CHAR
-    texts[2] = "\\n"
+    texts[2] = "\n"
     kinds[3] = Tokenizer.SEMICOLON
     texts[3] = ";"
     kinds[4] = Tokenizer.TK_IDENTIFIER
@@ -463,7 +484,7 @@ private fun charEscapeTest() -> int
     kinds[5] = Tokenizer.EQUAL
     texts[5] = "="
     kinds[6] = Tokenizer.TK_CHAR
-    texts[6] = "\\'"
+    texts[6] = "'"
     kinds[7] = Tokenizer.SEMICOLON
     texts[7] = ";"
     kinds[8] = Tokenizer.TK_IDENTIFIER
@@ -471,13 +492,13 @@ private fun charEscapeTest() -> int
     kinds[9] = Tokenizer.EQUAL
     texts[9] = "="
     kinds[10] = Tokenizer.TK_CHAR
-    texts[10] = "\\\\"
+    texts[10] = "\\"
     kinds[11] = Tokenizer.SEMICOLON
     texts[11] = ";"
     kinds[12] = Token.EOF_KIND
     texts[12] = Token.EOF_STRING
 
-    return checkTokens("a='\\n'; b='\\''; c='\\\\';", kinds, texts, 13)
+    return checkPureTokens("a='\\n'; b='\\''; c='\\\\';", kinds, texts, 13)
 }
 
 
@@ -511,7 +532,7 @@ private fun stringEscapeTest() -> int
     kinds[10] = Tokenizer.EQUAL
     texts[10] = "="
     kinds[11] = Tokenizer.TK_STRING
-    texts[11] = "\\0"
+    texts[11] = "\0"
     kinds[12] = Tokenizer.SEMICOLON
     texts[12] = ";"
     kinds[13] = Tokenizer.TK_LINE_TERMINATOR
@@ -529,11 +550,11 @@ private fun stringEscapeTest() -> int
     kinds[19] = Tokenizer.EQUAL
     texts[19] = "="
     kinds[20] = Tokenizer.TK_STRING
-    texts[20] = "a\\\"b"
+    texts[20] = "a\"b"
     kinds[21] = Token.EOF_KIND
     texts[21] = Token.EOF_STRING
 
-    return checkTokens("str1=\"hello, this is my own program language!!!\"; str2=\"hello, world\"; /* this is a test */ str3=\"\\0\"; /* /* perfect */ str4=null; q=\"a\\\"b\"", kinds, texts, 22)
+    return checkPureTokens("str1=\"hello, this is my own program language!!!\"; str2=\"hello, world\"; /* this is a test */ str3=\"\\0\"; /* /* perfect */ str4=null; q=\"a\\\"b\"", kinds, texts, 22)
 }
 
 
@@ -565,7 +586,7 @@ private fun numbersTest() -> int
     kinds[9] = Token.EOF_KIND
     texts[9] = Token.EOF_STRING
 
-    return checkTokens("0x1f + -42L * 3.14e-2f 1e10 1. 0x1.8p10", kinds, texts, 10)
+    return checkPureTokens("0x1f + -42L * 3.14e-2f 1e10 1. 0x1.8p10", kinds, texts, 10)
 }
 
 
@@ -625,7 +646,7 @@ private fun forLoopTest() -> int
     kinds[23] = Token.EOF_KIND
     texts[23] = Token.EOF_STRING
 
-    return checkTokens("for (x = a_address.getSize(); x <= 10; x *= 2) /* iterate the list */ print(x) // this is a comment too", kinds, texts, 24)
+    return checkPureTokens("for (x = a_address.getSize(); x <= 10; x *= 2) /* iterate the list */ print(x) // this is a comment too", kinds, texts, 24)
 }
 
 
@@ -693,15 +714,18 @@ private fun symbolsTest() -> int
     kinds[27] = Token.EOF_KIND
     texts[27] = Token.EOF_STRING
 
-    return checkTokens("a<<=1; b>>=2; c!^=3; d**=4; e->f; g===h; i!==j", kinds, texts, 28)
+    return checkPureTokens("a<<=1; b>>=2; c!^=3; d**=4; e->f; g===h; i!==j", kinds, texts, 28)
 }
 
 
 private fun compoundSymbolsTest() -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("inv !x; a xor b; a xnor b; a implies b; a nimplies b; a !&& b; a !|| b; a !^ b; a -> b; a !-> b; a <-> b; a !<-> b; a ~= b")
+    val diagnostics: pointer<Diagnostics> = new Diagnostics()
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize(
+        "inv !x; a xor b; a xnor b; a implies b; a nimplies b; a !&& b; a !|| b; a !^ b; a -> b; a !-> b; a <-> b; a !<-> b; a ~= b",
+        diagnostics)
 
-    if tokens == null || tokens.length() != 52:
+    if tokens == null || diagnostics.hasError() || tokens.length() != 52:
         return 1
 
     if checkTokenAt(tokens, 0, Tokenizer.KW_INV, "inv") != 0:
@@ -752,24 +776,7 @@ private fun compoundSymbolsTest() -> int
 
 private fun invalidIdentTest() -> int
 {
-    val kindsSpace: blob[sizeof(int) * 1]
-    val textsSpace: blob[sizeof(pointer<char>) * 1]
-    val kinds: pointer<int> = kindsSpace as pointer<int>
-    val texts: pointer<pointer<char>> = textsSpace as pointer<pointer<char>>
-
-    kinds[0] = -TokenizeFSM.DEFAULT_STATE
-    texts[0] = "123abc"
-
-    if checkTokens("123abc", kinds, texts, 1) != 0:
-        return 1
-
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("123abc")
-    val token: pointer<Token> = tokens.get(0)
-
-    if !String.streq(token.errorInfo, "invalid identifier name: 123abc"):
-        return 1
-
-    return 0
+    return checkTokenizeError("123abc")
 }
 
 
@@ -801,7 +808,7 @@ private fun dotIncDecTest() -> int
     kinds[9] = Token.EOF_KIND
     texts[9] = Token.EOF_STRING
 
-    return checkTokens("a.b . c ++d -- e", kinds, texts, 10)
+    return checkPureTokens("a.b . c ++d -- e", kinds, texts, 10)
 }
 
 
@@ -849,89 +856,35 @@ private fun arrayExpressionTest() -> int
     kinds[17] = Token.EOF_KIND
     texts[17] = Token.EOF_STRING
 
-    return checkTokens("arr[i++] += (x<2) ** 3 - y--;", kinds, texts, 18)
+    return checkPureTokens("arr[i++] += (x<2) ** 3 - y--;", kinds, texts, 18)
 }
 
 
 private fun unclosedBlockCommentTest() -> int
 {
-    val kindsSpace: blob[sizeof(int) * 5]
-    val textsSpace: blob[sizeof(pointer<char>) * 5]
-    val kinds: pointer<int> = kindsSpace as pointer<int>
-    val texts: pointer<pointer<char>> = textsSpace as pointer<pointer<char>>
-
-    kinds[0] = Tokenizer.TK_IDENTIFIER
-    texts[0] = "a"
-    kinds[1] = Tokenizer.EQUAL
-    texts[1] = "="
-    kinds[2] = Tokenizer.TK_INTEGER
-    texts[2] = "1"
-    kinds[3] = Tokenizer.SEMICOLON
-    texts[3] = ";"
-    kinds[4] = -Tokenizer.BLOCK_COMMENT_STATE
-    texts[4] = ""
-
-    return checkTokens("a=1; /* block\nstill", kinds, texts, 5)
+    return checkTokenizeError("a=1; /* block\nstill")
 }
 
 
 private fun unclosedStringTest() -> int
 {
-    val kindsSpace: blob[sizeof(int) * 3]
-    val textsSpace: blob[sizeof(pointer<char>) * 3]
-    val kinds: pointer<int> = kindsSpace as pointer<int>
-    val texts: pointer<pointer<char>> = textsSpace as pointer<pointer<char>>
-
-    kinds[0] = Tokenizer.TK_IDENTIFIER
-    texts[0] = "a"
-    kinds[1] = Tokenizer.EQUAL
-    texts[1] = "="
-    kinds[2] = -Tokenizer.STRING_STATE
-    texts[2] = "\n"
-
-    if checkTokens("a = \"this is unclosed\n", kinds, texts, 3) != 0:
-        return 1
-
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("a = \"this is unclosed\n")
-    val token: pointer<Token> = tokens.get(2)
-
-    if !String.streq(token.errorInfo, "unterminated string literal"):
-        return 1
-
-    return 0
+    return checkTokenizeError("a = \"this is unclosed\n")
 }
 
 
 private fun unclosedCharTest() -> int
 {
-    val kindsSpace: blob[sizeof(int) * 3]
-    val textsSpace: blob[sizeof(pointer<char>) * 3]
-    val kinds: pointer<int> = kindsSpace as pointer<int>
-    val texts: pointer<pointer<char>> = textsSpace as pointer<pointer<char>>
-
-    kinds[0] = Tokenizer.TK_IDENTIFIER
-    texts[0] = "c"
-    kinds[1] = Tokenizer.EQUAL
-    texts[1] = "="
-    kinds[2] = -Tokenizer.CHAR_STATE
-    texts[2] = "\n"
-
-    if checkTokens("c = '\\t\n", kinds, texts, 3) != 0:
-        return 1
-
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("c = '\\t\n")
-    val token: pointer<Token> = tokens.get(2)
-
-    if !String.streq(token.errorInfo, "unterminated char literal"):
-        return 1
-
-    return 0
+    return checkTokenizeError("c = '\\t\n")
 }
 
 
 private fun positionTest() -> int
 {
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("foo = 42;")
+    val diagnostics: pointer<Diagnostics> = new Diagnostics()
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("foo = 42;", diagnostics)
+
+    if tokens == null || diagnostics.hasError():
+        return 1
 
     if checkTokenPosition(tokens, 0, 0, 1, 1, 3) != 0:
         return 1

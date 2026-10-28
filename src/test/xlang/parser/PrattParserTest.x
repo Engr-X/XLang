@@ -23,6 +23,7 @@
 #file.outerClass("PrattParserTest")
 package xlang.parser
 
+import xlang.Diagnostics
 import xlang.compiler.lexer.Tokenizer
 import xlang.parser.util.ParserRef
 import xlang.lexer.Token
@@ -55,7 +56,7 @@ fun genTest() -> pointer<TestGroup>
 private fun parseTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("1 + 2")
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
     val consumed: int = parser.parse(tokens, 0)
 
@@ -75,7 +76,7 @@ private fun parseTest() -> int
 private fun doParseEntryTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("1 + 2")
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
     val consumed: int = parser.doParse(tokens)
 
@@ -178,7 +179,7 @@ private fun tryParseTest() -> int
 private fun tryParseAtomTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithAtom()
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("1")
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1", new Diagnostics())
     var length: int = 0
     val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
 
@@ -200,7 +201,7 @@ private fun tryParseAtomTest() -> int
 private fun tryParsePlusTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("1 + 2")
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     var length: int = 0
     val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
 
@@ -230,7 +231,7 @@ private fun tryParsePlusTest() -> int
 private fun tryParsePriorityTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("1 + 2 * 3")
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2 * 3", new Diagnostics())
     var length: int = 0
     val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
 
@@ -255,7 +256,7 @@ private fun tryParsePriorityTest() -> int
 private fun tryParseMinPriorityTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
-    val tokens: pointer<TokenList> = Tokenizer.tokenize("1 + 2")
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     var length: int = 0
     val result: pointer<ParserResult> = parser.tryParse(tokens, 0, 11, length.ref)
 

@@ -34,6 +34,7 @@ import xlang.lexer.Token
 import xlang.test.TestGroup
 import xlang.test.TestCase
 import xlang.test.TestUnion
+import xlang.util.ArrayList
 import xlang.util.string.String
 
 
@@ -103,13 +104,12 @@ private fun eatEOF(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> poin
 private fun eofDefaultTest() -> int
 {
     val state: pointer<TokenizeFSM> = new TokenizeFSM("")
-    val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * 1]
-    val rules: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>
+    val rules: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))
     val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "\\0", eatEOF)
 
-    rules[0] = rule0
+    rules.push(rule0)
 
-    val token: pointer<Token> = state.apply(rules, 1)
+    val token: pointer<Token> = state.apply(rules)
 
     if token == null:
         return 1
@@ -139,13 +139,12 @@ private fun eofDefaultTest() -> int
 private fun noMatchTest() -> int
 {
     val state: pointer<TokenizeFSM> = new TokenizeFSM("abc")
-    val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * 1]
-    val rules: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>
+    val rules: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))
     val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "z", eatA)
 
-    rules[0] = rule0
+    rules.push(rule0)
 
-    val token: pointer<Token> = state.apply(rules, 1)
+    val token: pointer<Token> = state.apply(rules)
 
     if token != null:
         return 1
@@ -165,16 +164,15 @@ private fun noMatchTest() -> int
 private fun stateFilterTest() -> int
 {
     val state: pointer<TokenizeFSM> = new TokenizeFSM("abc")
-    val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * 2]
-    val rules: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>
+    val rules: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))
     val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "a", eatA)
     val rule1: pointer<TokenizeRule> = new TokenizeRule(1, OTHER_STATE, "a", eatB)
 
-    rules[0] = rule0
-    rules[1] = rule1
+    rules.push(rule0)
+    rules.push(rule1)
     state.setState(OTHER_STATE)
 
-    val token: pointer<Token> = state.apply(rules, 2)
+    val token: pointer<Token> = state.apply(rules)
 
     if token == null:
         return 1
@@ -197,15 +195,14 @@ private fun stateFilterTest() -> int
 private fun firstRuleTest() -> int
 {
     val state: pointer<TokenizeFSM> = new TokenizeFSM("abc")
-    val rulesSpace: blob[sizeof(pointer<TokenizeRule>) * 2]
-    val rules: pointer<pointer<TokenizeRule>> = rulesSpace as pointer<pointer<TokenizeRule>>
+    val rules: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))
     val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "a", eatA)
     val rule1: pointer<TokenizeRule> = new TokenizeRule(1, TokenizeFSM.DEFAULT_STATE, "ab", eatB)
 
-    rules[0] = rule0
-    rules[1] = rule1
+    rules.push(rule0)
+    rules.push(rule1)
 
-    val token: pointer<Token> = state.apply(rules, 2)
+    val token: pointer<Token> = state.apply(rules)
 
     if token == null:
         return 1

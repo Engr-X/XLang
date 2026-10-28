@@ -355,15 +355,14 @@ def genRules(rules: list[JsonObject], defs: Defs, tabs: int) -> str:
     indent = " " * (tabs * 4)
     lines: list[str] = []
 
-    lines.append(f"{indent}var tokenizerIsInit: bool = false")
-    lines.append(f"{indent}val rules: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))")
-
     for index, rule in enumerate(rules):
         state = str(rule["state"])
         patterns = getRulePatterns(rule)
         pattern = json.dumps("|".join(expandPattern(pattern, defs) for pattern in patterns))
         action = rule["action"]
         lines.append(f"{indent}val rule{index}: pointer<TokenizeRule> = new TokenizeRule({index}, {state}, {pattern}, {action})")
+
+    lines.append(f"{indent}val rules: pointer<ArrayList> = genRules()")
 
     return "\n".join(lines) + "\n\n\n"
 
@@ -398,7 +397,7 @@ def genSymbolEatFunctions(symbol_defs: list[TokenDef]) -> str:
     return "\n".join(lines) + "\n\n"
 
 
-def genTokenizerInitFun(
+def genRulesFun(
     rules: list[JsonObject],
     init_lines: list[CodeBlock],
     token_defs: list[TokenDef],
@@ -407,12 +406,13 @@ def genTokenizerInitFun(
     indent = " " * (tabs * 4)
     body_indent = " " * ((tabs + 1) * 4)
     lines: list[str] = [
-        f"{indent}private fun tokenizerInit()",
+        f"{indent}private fun genRules() -> pointer<ArrayList>",
         f"{indent}{{",
+        f"{body_indent}val result: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))",
     ]
 
     for index, _ in enumerate(rules):
-        lines.append(f"{body_indent}rules.push(rule{index})")
+        lines.append(f"{body_indent}result.push(rule{index})")
 
     if token_defs:
         lines.append(f"{body_indent}keywordListInit()")
@@ -425,7 +425,7 @@ def genTokenizerInitFun(
         else:
             raise TypeError(f"init item must be string or string list: {item!r}")
 
-    lines.append(f"{body_indent}tokenizerIsInit = true")
+    lines.append(f"{body_indent}return result")
     lines.append(f"{indent}}}")
 
     return "\n".join(lines) + "\n\n\n"
@@ -454,7 +454,7 @@ def codegen(rules: JsonObject, dest: Path) -> str:
         genRules(expanded_rules, defs, 0),
         genOthers(rules.get("others", [])),
         genSymbolEatFunctions(symbol_defs),
-        genTokenizerInitFun(expanded_rules, rules.get("init", []), token_defs, 0),
+        genRulesFun(expanded_rules, rules.get("init", []), token_defs, 0),
     ]
 
     return "".join(section for section in sections if section != "")

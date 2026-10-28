@@ -762,7 +762,7 @@
 
         [   "private inline fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<Program>",
             "{",
-            "    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, diagnostics)",
+            "    val tokens: pointer<TokenList> = Tokenizer.tokenize(input, diagnostics)",
             "",
             "    if tokens == null:",
             "        return null",
@@ -773,7 +773,7 @@
 
         [   "private inline fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<Program>",
             "{",
-            "    val tokenFile: pointer<TokenizedFile> = Tokenizer.fullTokenize(file, diagnostics)",
+            "    val tokenFile: pointer<TokenizedFile> = Tokenizer.tokenize(file, diagnostics)",
             "",
             "    if tokenFile == null:",
             "        return null",

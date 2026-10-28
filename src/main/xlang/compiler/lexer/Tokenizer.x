@@ -301,8 +301,6 @@ val HASH_PATTERN: pointer<char> = "#"
 val AT_PATTERN: pointer<char> = "@"
 
 
-var tokenizerIsInit: bool = false
-val rules: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))
 val rule0: pointer<TokenizeRule> = new TokenizeRule(0, TokenizeFSM.DEFAULT_STATE, "\\0", eatEOF)
 val rule1: pointer<TokenizeRule> = new TokenizeRule(1, TokenizeFSM.DEFAULT_STATE, "//", beginLineComment)
 val rule2: pointer<TokenizeRule> = new TokenizeRule(2, TokenizeFSM.DEFAULT_STATE, "/\\*", beginBlockComment)
@@ -395,6 +393,7 @@ val rule88: pointer<TokenizeRule> = new TokenizeRule(88, STRING_STATE, "\\r?\\n"
 val rule89: pointer<TokenizeRule> = new TokenizeRule(89, STRING_STATE, "\\\\.", eatChar)
 val rule90: pointer<TokenizeRule> = new TokenizeRule(90, STRING_STATE, "\"", endString)
 val rule91: pointer<TokenizeRule> = new TokenizeRule(91, STRING_STATE, ".", eatChar)
+val rules: pointer<ArrayList> = genRules()
 
 
 private inline fun eatEOF(
@@ -715,7 +714,19 @@ private fun endString(
 }
 
 
-fun fullTokenize(
+fun pureTokenize(
+    code: pointer<char>,
+    diagnostics: pointer<Diagnostics>
+) -> pointer<TokenList>
+{
+    if code == null:
+        return null
+
+    return xlang.lexer.Tokenizer.tokenize(rules, code, diagnostics)
+}
+
+
+fun tokenize(
     code: pointer<char>,
     diagnostics: pointer<Diagnostics>
 ) -> pointer<TokenList>
@@ -733,7 +744,7 @@ fun fullTokenize(
 }
 
 
-fun fullTokenize(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<TokenizedFile>
+fun tokenize(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<TokenizedFile>
 {
     if file == null:
         return null
@@ -741,7 +752,7 @@ fun fullTokenize(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> poin
     if !file.hasContent():
         return new TokenizedFile(file.getPath(), file.getContent(), null)
 
-    val tokens: pointer<TokenList> = fullTokenize(file.getContent(), diagnostics)
+    val tokens: pointer<TokenList> = tokenize(file.getContent(), diagnostics)
 
     if tokens == null:
     {
@@ -933,102 +944,103 @@ private fun eatAt(input: pointer<LexInput>, dest: pointer<TokenizeFSM>) -> point
     eatToken(input, AT, dest)
 
 
-private fun tokenizerInit()
+private fun genRules() -> pointer<ArrayList>
 {
-    rules.push(rule0)
-    rules.push(rule1)
-    rules.push(rule2)
-    rules.push(rule3)
-    rules.push(rule4)
-    rules.push(rule5)
-    rules.push(rule6)
-    rules.push(rule7)
-    rules.push(rule8)
-    rules.push(rule9)
-    rules.push(rule10)
-    rules.push(rule11)
-    rules.push(rule12)
-    rules.push(rule13)
-    rules.push(rule14)
-    rules.push(rule15)
-    rules.push(rule16)
-    rules.push(rule17)
-    rules.push(rule18)
-    rules.push(rule19)
-    rules.push(rule20)
-    rules.push(rule21)
-    rules.push(rule22)
-    rules.push(rule23)
-    rules.push(rule24)
-    rules.push(rule25)
-    rules.push(rule26)
-    rules.push(rule27)
-    rules.push(rule28)
-    rules.push(rule29)
-    rules.push(rule30)
-    rules.push(rule31)
-    rules.push(rule32)
-    rules.push(rule33)
-    rules.push(rule34)
-    rules.push(rule35)
-    rules.push(rule36)
-    rules.push(rule37)
-    rules.push(rule38)
-    rules.push(rule39)
-    rules.push(rule40)
-    rules.push(rule41)
-    rules.push(rule42)
-    rules.push(rule43)
-    rules.push(rule44)
-    rules.push(rule45)
-    rules.push(rule46)
-    rules.push(rule47)
-    rules.push(rule48)
-    rules.push(rule49)
-    rules.push(rule50)
-    rules.push(rule51)
-    rules.push(rule52)
-    rules.push(rule53)
-    rules.push(rule54)
-    rules.push(rule55)
-    rules.push(rule56)
-    rules.push(rule57)
-    rules.push(rule58)
-    rules.push(rule59)
-    rules.push(rule60)
-    rules.push(rule61)
-    rules.push(rule62)
-    rules.push(rule63)
-    rules.push(rule64)
-    rules.push(rule65)
-    rules.push(rule66)
-    rules.push(rule67)
-    rules.push(rule68)
-    rules.push(rule69)
-    rules.push(rule70)
-    rules.push(rule71)
-    rules.push(rule72)
-    rules.push(rule73)
-    rules.push(rule74)
-    rules.push(rule75)
-    rules.push(rule76)
-    rules.push(rule77)
-    rules.push(rule78)
-    rules.push(rule79)
-    rules.push(rule80)
-    rules.push(rule81)
-    rules.push(rule82)
-    rules.push(rule83)
-    rules.push(rule84)
-    rules.push(rule85)
-    rules.push(rule86)
-    rules.push(rule87)
-    rules.push(rule88)
-    rules.push(rule89)
-    rules.push(rule90)
-    rules.push(rule91)
+    val result: pointer<ArrayList> = new ArrayList(sizeof(TokenizeRule))
+    result.push(rule0)
+    result.push(rule1)
+    result.push(rule2)
+    result.push(rule3)
+    result.push(rule4)
+    result.push(rule5)
+    result.push(rule6)
+    result.push(rule7)
+    result.push(rule8)
+    result.push(rule9)
+    result.push(rule10)
+    result.push(rule11)
+    result.push(rule12)
+    result.push(rule13)
+    result.push(rule14)
+    result.push(rule15)
+    result.push(rule16)
+    result.push(rule17)
+    result.push(rule18)
+    result.push(rule19)
+    result.push(rule20)
+    result.push(rule21)
+    result.push(rule22)
+    result.push(rule23)
+    result.push(rule24)
+    result.push(rule25)
+    result.push(rule26)
+    result.push(rule27)
+    result.push(rule28)
+    result.push(rule29)
+    result.push(rule30)
+    result.push(rule31)
+    result.push(rule32)
+    result.push(rule33)
+    result.push(rule34)
+    result.push(rule35)
+    result.push(rule36)
+    result.push(rule37)
+    result.push(rule38)
+    result.push(rule39)
+    result.push(rule40)
+    result.push(rule41)
+    result.push(rule42)
+    result.push(rule43)
+    result.push(rule44)
+    result.push(rule45)
+    result.push(rule46)
+    result.push(rule47)
+    result.push(rule48)
+    result.push(rule49)
+    result.push(rule50)
+    result.push(rule51)
+    result.push(rule52)
+    result.push(rule53)
+    result.push(rule54)
+    result.push(rule55)
+    result.push(rule56)
+    result.push(rule57)
+    result.push(rule58)
+    result.push(rule59)
+    result.push(rule60)
+    result.push(rule61)
+    result.push(rule62)
+    result.push(rule63)
+    result.push(rule64)
+    result.push(rule65)
+    result.push(rule66)
+    result.push(rule67)
+    result.push(rule68)
+    result.push(rule69)
+    result.push(rule70)
+    result.push(rule71)
+    result.push(rule72)
+    result.push(rule73)
+    result.push(rule74)
+    result.push(rule75)
+    result.push(rule76)
+    result.push(rule77)
+    result.push(rule78)
+    result.push(rule79)
+    result.push(rule80)
+    result.push(rule81)
+    result.push(rule82)
+    result.push(rule83)
+    result.push(rule84)
+    result.push(rule85)
+    result.push(rule86)
+    result.push(rule87)
+    result.push(rule88)
+    result.push(rule89)
+    result.push(rule90)
+    result.push(rule91)
     keywordListInit()
-    tokenizerIsInit = true
+    return result
 }
 
 

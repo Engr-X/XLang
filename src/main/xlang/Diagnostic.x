@@ -203,7 +203,7 @@ struct Diagnostic
     static val UNCLOSED_OPEN_BRACKET_MSG: pointer<char> = "unclosed opening bracket"
 
     // Message for a token that does not match the expected parser rule.
-    static val UNEXPECTED_TOKEN_MSG: pointer<char> = "unexpected token"
+    static val UNEXPECTED_TOKEN_MSG: pointer<char> = "unexpected token: "
 
     // Message for a null parser input.
     static val NULL_INPUT_MSG: pointer<char> = "internal error: null input"

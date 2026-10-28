@@ -85,6 +85,12 @@ struct ParserRefs
 
 
     /**
+     * Number of input tokens consumed by the most recent parse operation.
+     */
+    private var consume: int
+
+
+    /**
      * Creates a repeated parser without a separator pattern.
      *
      * <p>Elements are parsed consecutively using the supplied parser until the
@@ -99,6 +105,7 @@ struct ParserRefs
         this.allowTrailing = false
         this.extraTokens = new ArrayList(sizeof(Token))
         this.results = new ArrayList(sizeof(pointer<*>))
+        this.consume = 0
     }
 
 
@@ -123,6 +130,7 @@ struct ParserRefs
         this.allowTrailing = true
         this.extraTokens = new ArrayList(sizeof(Token))
         this.results = new ArrayList(sizeof(pointer<*>))
+        this.consume = 0
     }
 
 
@@ -142,6 +150,7 @@ struct ParserRefs
         this.allowTrailing = true
         this.extraTokens = new ArrayList(sizeof(Token))
         this.results = new ArrayList(sizeof(pointer<*>))
+        this.consume = 0
     }
 
 
@@ -168,6 +177,7 @@ struct ParserRefs
         this.allowTrailing = allowTrailing
         this.extraTokens = new ArrayList(sizeof(Token))
         this.results = new ArrayList(sizeof(pointer<*>))
+        this.consume = 0
     }
 
 
@@ -187,6 +197,7 @@ struct ParserRefs
         this.allowTrailing = allowTrailing
         this.extraTokens = new ArrayList(sizeof(Token))
         this.results = new ArrayList(sizeof(pointer<*>))
+        this.consume = 0
     }
 
 
@@ -348,6 +359,7 @@ struct ParserRefs
     {
         this.results = new ArrayList(sizeof(pointer<*>))
         this.extraTokens = new ArrayList(sizeof(Token))
+        this.consume = 0
 
         if this.parser == null || tokens == null || index < 0 || index >= tokens.length():
             return 0
@@ -357,10 +369,12 @@ struct ParserRefs
         if firstConsumed <= 0:
             return 0
 
-        return if this.splitBy == null:
+        this.consume = if this.splitBy == null:
                 this.parseWithoutSplit(tokens, index, firstConsumed)
             else:
                 this.parseWithSplit(tokens, index, firstConsumed)
+
+        return this.consume
     }
 
 
@@ -373,7 +387,7 @@ struct ParserRefs
      * @return                  a parse container containing all successfully parsed element results
      */
     fun getResult() -> pointer<ParserResult> =
-        new ParserResult(ParserResult.ARRAY_LIST_KIND, this.results)
+        ParserResult.fromList(this.consume, this.results)
 
 
     /**

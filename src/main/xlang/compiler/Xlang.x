@@ -74,7 +74,7 @@ fun parseExpressionLoop()
     //         continue
 
     //     val d: pointer<Diagnostic> = new Diagnostic()
-    //     val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, d)
+    //     val tokens: pointer<TokenList> = Tokenizer.tokenize(input, d)
     //     val expression: pointer<Expression> = Parser.parseExpression(tokens)
 
     //     if expression == null:
@@ -135,7 +135,7 @@ fun parseStatementLoop()
     //     input[length] = '\n'
     //     input[length + 1] = 0
 
-    //     val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, null)
+    //     val tokens: pointer<TokenList> = Tokenizer.tokenize(input, null)
     //     val statement: pointer<Statement> = Parser.parseStatement(tokens)
 
     //     if statement == null:

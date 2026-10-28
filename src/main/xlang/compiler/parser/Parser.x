@@ -77,42 +77,42 @@ import xlang.util.HashSet
 val TYPE_PARSER: pointer<ParserRef> = ParserRef.fromType(1000)
 
 
-private val EXPRESSION_PARSER_ID: int = 1
-private val ATOM_PARSER_ID: int = 2
-private val SIZE_OF_PARSER_ID: int = 3
-private val EXPRESSION_TUPLE_PARSER_ID: int = 4
-private val LIST_LITERAL_PARSER_ID: int = 5
-private val STATEMENT_PARSER_ID: int = 6
-private val ELSE_STATEMENT_PARSER_ID: int = 7
-private val WHILE_STATEMENT_PARSER_ID: int = 8
-private val FOR_HEADER_PARSER_ID: int = 9
-private val FOR_STATEMENT_PARSER_ID: int = 10
-private val VARIABLE_DEFINE_PARSER_ID: int = 11
-private val RETURN_STATEMENT_PARSER_ID: int = 12
-private val BLOCK_PARSER_ID: int = 13
-private val IF_EXPRESSION_PARSER_ID: int = 14
-private val IF_ELSE_EXPRESSION_PARSER_ID: int = 15
-private val MODIFIER_PARSER_ID: int = 16
-private val MODIFIER_LIST_MAYBE_PARSER_ID: int = 17
-private val PREPROCESS_SETTING_PARSER_ID: int = 18
-private val ANNOTATION_PARSER_ID: int = 19
-private val ANNOTATIONS_MAYBE_PARSER_ID: int = 20
-private val QUALIFIED_NAME_PARSER_ID: int = 21
-private val PACKAGE_DECLARATION_MAYBE_PARSER_ID: int = 22
-private val NAMESPACE_IMPORT_PARSER_ID: int = 23
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_ID: int = 24
-private val IMPORTED_SYMBOL_PARSER_ID: int = 25
-private val SELECTIVE_IMPORTS_PARSER_ID: int = 26
-private val IMPORT_DECLARATION_PARSER_ID: int = 27
-private val IMPORT_DECLARATIONS_MAYBE_PARSER_ID: int = 28
-private val FUNCTION_PARAM_PARSER_ID: int = 29
-private val FUNCTION_PARAMS_MAYBE_PARSER_ID: int = 30
-private val FIELD_PARSER_ID: int = 31
-private val FUNCTION_PARSER_ID: int = 32
-private val STRUCT_CONSTRUCTOR_PARSER_ID: int = 33
-private val MEMBER_PARSER_ID: int = 34
-private val STRUCT_PARSER_ID: int = 35
-private val PROGRAM_PARSER_ID: int = 36
+private val EXPRESSION_PARSER_ID: int = 100
+private val ATOM_PARSER_ID: int = 101
+private val SIZE_OF_PARSER_ID: int = 102
+private val EXPRESSION_TUPLE_PARSER_ID: int = 103
+private val LIST_LITERAL_PARSER_ID: int = 104
+private val STATEMENT_PARSER_ID: int = 105
+private val ELSE_STATEMENT_PARSER_ID: int = 106
+private val WHILE_STATEMENT_PARSER_ID: int = 107
+private val FOR_HEADER_PARSER_ID: int = 108
+private val FOR_STATEMENT_PARSER_ID: int = 109
+private val VARIABLE_DEFINE_PARSER_ID: int = 110
+private val RETURN_STATEMENT_PARSER_ID: int = 111
+private val BLOCK_PARSER_ID: int = 112
+private val IF_EXPRESSION_PARSER_ID: int = 113
+private val IF_ELSE_EXPRESSION_PARSER_ID: int = 114
+private val MODIFIER_PARSER_ID: int = 115
+private val MODIFIER_LIST_MAYBE_PARSER_ID: int = 116
+private val PREPROCESS_SETTING_PARSER_ID: int = 117
+private val ANNOTATION_PARSER_ID: int = 118
+private val ANNOTATIONS_MAYBE_PARSER_ID: int = 119
+private val QUALIFIED_NAME_PARSER_ID: int = 120
+private val PACKAGE_DECLARATION_MAYBE_PARSER_ID: int = 121
+private val NAMESPACE_IMPORT_PARSER_ID: int = 122
+private val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_ID: int = 123
+private val IMPORTED_SYMBOL_PARSER_ID: int = 124
+private val SELECTIVE_IMPORTS_PARSER_ID: int = 125
+private val IMPORT_DECLARATION_PARSER_ID: int = 126
+private val IMPORT_DECLARATIONS_MAYBE_PARSER_ID: int = 127
+private val FUNCTION_PARAM_PARSER_ID: int = 128
+private val FUNCTION_PARAMS_MAYBE_PARSER_ID: int = 129
+private val FIELD_PARSER_ID: int = 130
+private val FUNCTION_PARSER_ID: int = 131
+private val STRUCT_CONSTRUCTOR_PARSER_ID: int = 132
+private val MEMBER_PARSER_ID: int = 133
+private val STRUCT_PARSER_ID: int = 134
+private val PROGRAM_PARSER_ID: int = 135
 
 
 private inline fun getContainerValue(results: pointer<ArrayList>, index: int, unwrapContainer: bool) -> pointer<*>
@@ -1736,7 +1736,7 @@ fun parse(input: pointer<TokenizedFile>, diagnostics: pointer<Diagnostics>) -> p
 
 private inline fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
 {
-    val tokens: pointer<TokenList> = Tokenizer.fullTokenize(input, diagnostics)
+    val tokens: pointer<TokenList> = Tokenizer.tokenize(input, diagnostics)
 
     if tokens == null:
         return null
@@ -1746,7 +1746,7 @@ private inline fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnosti
 
 private inline fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
 {
-    val tokenFile: pointer<TokenizedFile> = Tokenizer.fullTokenize(file, diagnostics)
+    val tokenFile: pointer<TokenizedFile> = Tokenizer.tokenize(file, diagnostics)
 
     if tokenFile == null:
         return null

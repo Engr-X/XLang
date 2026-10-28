@@ -33,12 +33,12 @@ import xlang.lexer.TokenizeRule
 
 
 fun tokenize(
-    rule: pointer<ArrayList>,
+    rules: pointer<ArrayList>,
     inputString: pointer<char>,
     diagnostics: pointer<Diagnostics>
 ) -> pointer<TokenList>
 {
-    if rule == null || inputString == null:
+    if rules == null || inputString == null:
         return null
 
     val tokenList: pointer<TokenList> = new TokenList()
@@ -46,7 +46,7 @@ fun tokenize(
 
     while true:
     {
-        val token: pointer<Token> = lexFSM.apply(rule)
+        val token: pointer<Token> = lexFSM.apply(rules)
 
         if token == null:
         {

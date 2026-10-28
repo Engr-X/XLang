@@ -162,7 +162,7 @@ struct Diagnostics
      */
     private fun setFilePath(diagnostics: pointer<ArrayList>, path: pointer<char>)
     {
-        for (var i = 0; i < diagnostics.length; i++)
+        for (var i = 0; i < diagnostics.length; i++):
         {
             val diagnostic: pointer<Diagnostic> = diagnostics.get(i) as pointer<Diagnostic>
             diagnostic.setFilePath(path)
