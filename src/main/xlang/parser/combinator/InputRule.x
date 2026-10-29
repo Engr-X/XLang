@@ -53,7 +53,7 @@ struct InputRule
     {
         this.priority = 10
         this.operation = null
-        this.atoms = new ArrayList(sizeof(RegexAtomRule))
+        this.atoms = new ArrayList(sizeof(RuleAtom))
         this.resultConstructor = resultConstructor
         this.afterFun = ident
     }
@@ -65,7 +65,7 @@ struct InputRule
     {
         this.priority = priority
         this.operation = null
-        this.atoms = new ArrayList(sizeof(RegexAtomRule))
+        this.atoms = new ArrayList(sizeof(RuleAtom))
         this.resultConstructor = resultConstructor
         this.afterFun = ident
     }
@@ -78,7 +78,7 @@ struct InputRule
     {
         this.priority = priority
         this.operation = null
-        this.atoms = new ArrayList(sizeof(RegexAtomRule))
+        this.atoms = new ArrayList(sizeof(RuleAtom))
         this.resultConstructor = resultConstructor
         this.afterFun = afterFun
     }
@@ -90,7 +90,7 @@ struct InputRule
     {
         this.priority = operation.priority
         this.operation = operation
-        this.atoms = new ArrayList(sizeof(RegexAtomRule))
+        this.atoms = new ArrayList(sizeof(RuleAtom))
         this.resultConstructor = resultConstructor
         this.afterFun = ident
     }
@@ -103,17 +103,24 @@ struct InputRule
     {
         this.priority = operation.priority
         this.operation = operation
-        this.atoms = new ArrayList(sizeof(RegexAtomRule))
+        this.atoms = new ArrayList(sizeof(RuleAtom))
         this.resultConstructor = resultConstructor
         this.afterFun = afterFun
     }
 
 
-    fun push(atomRule: pointer<RegexAtomRule>) -> pointer<InputRule>
+    fun push(atomRule: pointer<RuleAtom>) -> pointer<InputRule>
     {
         this.atoms.push(atomRule)
         return this
     }
+
+
+    fun getAtom(index: int) -> pointer<RuleAtom> =
+        this.atoms.get(index) as pointer<RuleAtom>
+
+
+    fun length() -> int = this.atoms.length
 
 
     fun getPriority() -> int = this.priority
