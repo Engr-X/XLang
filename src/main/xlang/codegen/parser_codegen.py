@@ -32,6 +32,9 @@ DEFAULT_IMPORTS: set[str] = {
     "xlang.lexer.TokenList",
     "xlang.parser.ParserResult",
     "xlang.parser.PrattParser",
+    "xlang.parser.combinator.InputRule",
+    "xlang.parser.combinator.InputRules",
+    "xlang.parser.combinator.ParserRule",
     "xlang.parser.util.PatternAtom",
     "xlang.parser.util.ParserRef",
     "xlang.parser.util.ParserRefs",
@@ -636,6 +639,14 @@ def getParserIdName(rule: JsonObject) -> str:
     return f"{getParserName(rule)}_ID"
 
 
+def getInputRulesName(rule: JsonObject) -> str:
+    return f"{getParserName(rule)}_INPUT_RULES"
+
+
+def getCombinatorRuleName(rule: JsonObject) -> str:
+    return f"{getParserName(rule)}_RULE"
+
+
 def genParserIdDecls(rules: list[JsonObject], tabs: int) -> str:
     if not rules:
         return ""
@@ -664,6 +675,10 @@ def getRuleValueName(rule: JsonObject, index: int) -> str:
         return f"{parser_name[:-7]}_RULE{index}"
 
     return f"{parser_name}_RULE{index}"
+
+
+def getInputRuleValueName(rule: JsonObject, index: int) -> str:
+    return f"{getRuleValueName(rule, index)}_INPUT"
 
 
 def getSubRuleAction(sub_rule: JsonObject) -> str | None:
@@ -1000,6 +1015,22 @@ def genPrattRuleAction(
         f"{indent}}}",
     ])
 
+
+def genInputRuleCtor(sub_rule: JsonObject) -> str:
+    action = getSubRuleAction(sub_rule)
+    priority = getSubRulePriority(sub_rule)
+    after = getSubRuleAfter(sub_rule)
+
+    if action is None:
+        raise ValueError(f"recursive parser sub rule must have an action: {sub_rule!r}")
+
+    args = [str(priority), action]
+
+    if after is not None:
+        args.append(after)
+
+    return f"new InputRule({', '.join(args)})"
+
 def genParserDecls(rules: list[JsonObject], tabs: int) -> str:
     indent = " " * (tabs * 4)
     lines: list[str] = []
@@ -1029,6 +1060,17 @@ def genParserDecls(rules: list[JsonObject], tabs: int) -> str:
                 f"ParserRef.fromPratt({parser_id_name}, {specific_parser_name})"
             )
         else:
+            input_rules_name = getInputRulesName(rule)
+            combinator_rule_name = getCombinatorRuleName(rule)
+
+            lines.append(
+                f"{indent}private val {input_rules_name}: pointer<InputRules> = "
+                f"new InputRules({parser_id_name})"
+            )
+            lines.append(
+                f"{indent}val {combinator_rule_name}: pointer<ParserRule> = "
+                f"new ParserRule({input_rules_name})"
+            )
             lines.append(
                 f"{indent}val {parser_name}: pointer<ParserRef> = "
                 f"ParserRef.fromRecursiveDown({parser_id_name})"
@@ -1115,22 +1157,10 @@ def genParserDecls(rules: list[JsonObject], tabs: int) -> str:
             if not isinstance(sub_rule, dict):
                 raise TypeError(f"sub_rules item must be object: {sub_rule!r}")
 
-            rule_name = getRuleValueName(rule, sub_rule_index)
-            pattern_expr = genPatternListExpr(validateSubRulePatterns(rule, sub_rule))
-            action = getSubRuleAction(sub_rule)
-            priority = getSubRulePriority(sub_rule)
-
-            if action is None:
-                raise ValueError(f"recursive parser sub rule must have an action: {sub_rule!r}")
-
-            rule_ctor = appendSubRuleAfter(
-                f"new Rule({pattern_expr}, {action}, Rule.STARTER_ROLE, {priority})",
-                sub_rule,
-            )
-
+            rule_name = getInputRuleValueName(rule, sub_rule_index)
             lines.append(
-                f"{indent}private val {rule_name}: pointer<Rule> = "
-                f"{rule_ctor}"
+                f"{indent}private val {rule_name}: pointer<InputRule> = "
+                f"{genInputRuleCtor(sub_rule)}"
             )
 
         lines.append("")
@@ -1139,13 +1169,26 @@ def genParserDecls(rules: list[JsonObject], tabs: int) -> str:
     for rule in rules:
         parser_name = getParserName(rule)
         sub_rules = getSubRules(rule)
-        setup_expr = parser_name
+
+        if getParserType(rule) == PRATT_PARSER:
+            setup_expr = parser_name
+
+            for sub_rule_index, _ in enumerate(sub_rules):
+                setup_expr += f".addRule({getRuleValueName(rule, sub_rule_index)})"
+
+            lines.append(
+                f"{indent}private val {parser_name}_SETUP: pointer<ParserRef> = {setup_expr}"
+            )
+            continue
+
+        input_rules_name = getInputRulesName(rule)
+        setup_expr = input_rules_name
 
         for sub_rule_index, _ in enumerate(sub_rules):
-            setup_expr += f".addRule({getRuleValueName(rule, sub_rule_index)})"
+            setup_expr += f".push({getInputRuleValueName(rule, sub_rule_index)})"
 
         lines.append(
-            f"{indent}private val {parser_name}_SETUP: pointer<ParserRef> = {setup_expr}"
+            f"{indent}private val {parser_name}_INPUT_SETUP: pointer<InputRules> = {setup_expr}"
         )
 
     return "\n".join(lines).rstrip() + "\n\n\n"
