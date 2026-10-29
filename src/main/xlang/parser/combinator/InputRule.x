@@ -94,6 +94,9 @@ struct InputRule
     fun getPriority() -> int = this.priority
 
 
+    fun getOperation() -> pointer<Operator> = this.operator
+
+
     fun getResult(id: int, input: pointer<ArrayList>, consume: int) -> pointer<ParserResult> =
         new ParserResult(id, consume, this.resultConstructor(input))
 
@@ -140,6 +143,9 @@ struct InputRules
         this.rules.push(inputRule)
         return this
     }
+
+
+    fun getRule(index: int) -> pointer<InputRule> = this.rules.get(index)
 
 
     fun getResult(
