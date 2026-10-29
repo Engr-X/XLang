@@ -60,6 +60,31 @@ struct InputRule
 
 
     constructor(
+        priority: int,
+        resultConstructor: (pointer<ArrayList>) -> pointer<*>)
+    {
+        this.priority = priority
+        this.operation = null
+        this.atoms = new ArrayList(sizeof(RegexAtomRule))
+        this.resultConstructor = resultConstructor
+        this.afterFun = ident
+    }
+
+
+    constructor(
+        priority: int,
+        resultConstructor: (pointer<ArrayList>) -> pointer<*>,
+        afterFun: (pointer<TokenList>, int) -> pointer<TokenList>)
+    {
+        this.priority = priority
+        this.operation = null
+        this.atoms = new ArrayList(sizeof(RegexAtomRule))
+        this.resultConstructor = resultConstructor
+        this.afterFun = afterFun
+    }
+
+
+    constructor(
         operation: pointer<Operation>,
         resultConstructor: (pointer<ArrayList>) -> pointer<*>)
     {
@@ -94,7 +119,7 @@ struct InputRule
     fun getPriority() -> int = this.priority
 
 
-    fun getOperation() -> pointer<Operator> = this.operator
+    fun getOperation() -> pointer<Operation> = this.operation
 
 
     fun getResult(id: int, input: pointer<ArrayList>, consume: int) -> pointer<ParserResult> =
@@ -145,7 +170,11 @@ struct InputRules
     }
 
 
-    fun getRule(index: int) -> pointer<InputRule> = this.rules.get(index)
+    fun getRule(index: int) -> pointer<InputRule> =
+        this.rules.get(index) as pointer<InputRule>
+
+
+    fun length() -> int = this.rules.length
 
 
     fun getResult(
@@ -176,8 +205,11 @@ struct InputRules
 
     fun after(ruleIndex: int, token: pointer<TokenList>, index: int) -> pointer<TokenList>
     {
+        if ruleIndex < 0 || ruleIndex >= this.rules.length:
+            return token
+
         val rule: pointer<InputRule> =
             this.rules.get(ruleIndex) as pointer<InputRule>
-        return rule.afterFun(token, index)
+        return rule.after(token, index)
     }
 }
