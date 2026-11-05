@@ -202,9 +202,9 @@ struct NormalizeReceiver
     /**
      * Applies all recorded changes to a token list.
      *
-     * The function traverses the original list in order. At every index,
-     * the recorded inserted token is appended first, followed by the
-     * original token unless it is marked for deletion.
+     * The function traverses the original linked nodes in order. At every
+     * position, the recorded inserted token is appended first, followed by
+     * the original token unless it is marked for deletion.
      *
      * The original TokenList is not modified. A new TokenList is returned.
      *
@@ -228,10 +228,12 @@ struct NormalizeReceiver
         val result: pointer<TokenList> = new TokenList()
         var deleteCursor: pointer<bool> = this.deleted
         var addCursor: pointer<pointer<Token>> = this.addedTokens
+        var currentNode: pointer<LinkedListNode> = list.getHead()
 
-        for (var i = 0; i < this.length; i++):
+        while currentNode != null:
         {
-            val current: pointer<Token> = list.get(i)
+            val current: pointer<Token> =
+                currentNode.value as pointer<Token>
 
             if addCursor.deref != null:
                 result.push(addCursor.deref)
@@ -241,6 +243,7 @@ struct NormalizeReceiver
 
             deleteCursor++
             addCursor++
+            currentNode = currentNode.next
         }
 
         return result
