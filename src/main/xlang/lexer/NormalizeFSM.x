@@ -691,9 +691,9 @@ struct NormalizeFSM
     /**
      * Extracts the complete token window aligned with a matched rule.
      *
-     * currentIndex is treated as the position of the rule's pivot. The
-     * returned sublist begins at currentIndex minus the pivot index and
-     * contains exactly the rule's pattern length.
+     * currentToken is treated as the node aligned with the rule's pivot. The
+     * returned window begins pivotIndex nodes before currentToken and contains
+     * exactly the rule's pattern length.
      *
      * This function only checks whether rule and tokens are non-null.
      * It does not verify the calculated range.
@@ -703,7 +703,7 @@ struct NormalizeFSM
      *
      * @param rule              the matched normalization rule
      * @param tokens            the complete token list
-     * @param currentIndex      the token index aligned with the rule's pivot
+     * @param currentToken      the token node aligned with the rule's pivot
      *
      * @return                  the matched token window, or null if rule or tokens is null
      *
@@ -713,15 +713,20 @@ struct NormalizeFSM
     static fun window(
         rule: pointer<NormalizeRule>,
         tokens: pointer<TokenList>,
-        currentIndex: int
+        currentToken: pointer<LinkedListNode>
     ) -> pointer<LinkedList>
     {
-        if rule == null || tokens == null:
+        if rule == null || tokens == null || currentToken == null:
             return null
 
-        val start: int = currentIndex - rule.getPivotIndex()
+        val startToken: pointer<LinkedListNode> =
+            currentToken.backward(rule.getPivotIndex())
+
+        if startToken == null:
+            return null
+
         val tokenWindow: pointer<LinkedList> =
-            tokens.extract(start, start + rule.getPatternLength())
+            tokens.extract(startToken, rule.getPatternLength())
         return tokenWindow
     }
 
@@ -775,7 +780,7 @@ struct NormalizeFSM
                     continue
 
                 val tokens: pointer<LinkedList> =
-                    NormalizeFSM.window(rule, this.list, this.currentIndex)
+                    NormalizeFSM.window(rule, this.list, this.currentToken)
 
                 if rule.apply(this, tokens):
                 {

@@ -329,7 +329,8 @@ private fun ruleWindowTest() -> int
     if rule.match(list, lastNode):
         return 2
 
-    val window: pointer<LinkedList> = NormalizeFSM.window(rule, list, 1)
+    val window: pointer<LinkedList> =
+        NormalizeFSM.window(rule, list, pivotNode)
 
     if window == null:
         return 3
