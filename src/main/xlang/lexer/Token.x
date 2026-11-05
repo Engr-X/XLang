@@ -504,6 +504,10 @@ struct TokenList
     fun get(index: int) -> pointer<Token> = this.tokens.get(index) as pointer<Token>
 
 
+    fun extract(fromIndex: int, toIndex: int) -> pointer<LinkedList> =
+        this.tokens.extract(fromIndex, toIndex)
+
+
     /**
      * Creates an ArrayList snapshot of the current tokens.
      *

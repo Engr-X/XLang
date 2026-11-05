@@ -20,7 +20,7 @@ fun genTest() -> pointer<TestGroup>
     val testCaseSpace: blob[sizeof(pointer<TestCase>) * 32]
     val testCases: pointer<pointer<TestCase>> =
         testCaseSpace as pointer<pointer<TestCase>>
-    val testCaseLength: int = 29
+    val testCaseLength: int = 30
 
     testCases[0] = new TestCase("forward", forwardFunctionTest)
     testCases[1] = new TestCase("backward", backwardFunctionTest)
@@ -51,6 +51,7 @@ fun genTest() -> pointer<TestGroup>
     testCases[26] = new TestCase("subList", subListFunctionTest)
     testCases[27] = new TestCase("toArrayList", toArrayListFunctionTest)
     testCases[28] = new TestCase("clone", cloneFunctionTest)
+    testCases[29] = new TestCase("extract", extractFunctionTest)
 
     for (var i: int = 0; i < testCaseLength; i++):
         result.addTestUnion(new TestUnion(TestCase.TYPE, testCases[i], null))
@@ -1390,6 +1391,66 @@ private fun subListFunctionTest() -> int
         return 4
 
     return if (list.get(1) as pointer<int>).deref == 2: 0 else: 5
+}
+
+
+private fun extractFunctionTest() -> int
+{
+    val list: pointer<LinkedList> = newIntList()
+    val valuesSpace: blob[sizeof(int) * 6]
+    val values: pointer<int> = valuesSpace as pointer<int>
+
+    for (var i: int = 0; i < 6; i++):
+        values[i] = i + 1
+
+    for (var i: int = 0; i < 5; i++):
+        list.push(values + i)
+
+    val middle: pointer<LinkedList> = list.extract(1, 4)
+
+    if middle == null || middle.length != 3:
+        return 1
+
+    if middle.getHead() != list.triverseTo(1):
+        return 2
+
+    for (var i: int = 0; i < middle.length; i++):
+    {
+        if (middle.get(i) as pointer<int>).deref != i + 2:
+            return i + 3
+    }
+
+    middle.set(0, values + 5)
+
+    if (list.get(1) as pointer<int>).deref != 6:
+        return 6
+
+    val clipped: pointer<LinkedList> =
+        list.extract(list.triverseTo(3), 10)
+
+    if clipped == null || clipped.length != 2:
+        return 7
+
+    if (clipped.get(0) as pointer<int>).deref != 4 ||
+        (clipped.get(1) as pointer<int>).deref != 5:
+        return 8
+
+    val emptyByIndex: pointer<LinkedList> = list.extract(5, 5)
+    val emptyByNode: pointer<LinkedList> = list.extract(null, 0)
+
+    if emptyByIndex == null || !emptyByIndex.isEmpty() ||
+        emptyByNode == null || !emptyByNode.isEmpty():
+        return 9
+
+    if list.extract(-1, 2) != null || list.extract(4, 3) != null ||
+        list.extract(0, 6) != null:
+        return 10
+
+    if list.extract(null, 1) != null ||
+        list.extract(list.getHead(), -1) != null:
+        return 11
+
+    return 0
 }
 
 

@@ -46,6 +46,7 @@ DEFAULT_IMPORTS: set[str] = {
     "xlang.parser.combinator.RegexAtomRule",
     "xlang.parser.combinator.RuleAtom",
     "xlang.util.ArrayList",
+    "xlang.util.LinkedList",
 }
 
 

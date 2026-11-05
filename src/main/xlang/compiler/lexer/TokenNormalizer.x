@@ -11,6 +11,7 @@ import xlang.parser.combinator.RegexAtomRule
 import xlang.parser.combinator.RuleAtom
 import xlang.util.ArrayList
 import xlang.util.HashSet
+import xlang.util.LinkedList
 import xlang.util.LinkedListNode
 
 
@@ -108,31 +109,31 @@ private fun initBanBefore() -> pointer<HashSet>
     return result
 }
 
-private inline fun enterParenthesis(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private inline fun enterParenthesis(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     fsm.changeParenthesis(1)
     return false
 }
 
-private inline fun exitParenthesis(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private inline fun exitParenthesis(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     fsm.changeParenthesis(-1)
     return false
 }
 
-private inline fun enterBracket(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private inline fun enterBracket(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     fsm.changeBracket(1)
     return false
 }
 
-private inline fun exitBracket(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private inline fun exitBracket(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     fsm.changeBracket(-1)
     return false
 }
 
-private inline fun deleteLineTerminatorInPair(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private inline fun deleteLineTerminatorInPair(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     if !fsm.hasOpenPair():
         return false
@@ -141,13 +142,13 @@ private inline fun deleteLineTerminatorInPair(fsm: pointer<NormalizeFSM>, tokens
     return true
 }
 
-private inline fun deleteCursor(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private inline fun deleteCursor(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     fsm.deleteToken()
     return true
 }
 
-private fun insertLineTerminatorAroundRightBrace(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private fun insertLineTerminatorAroundRightBrace(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     if tokens == null || tokens.length != 3:
         return false
@@ -174,7 +175,7 @@ private fun insertLineTerminatorAroundRightBrace(fsm: pointer<NormalizeFSM>, tok
     return changed
 }
 
-private fun insertLineTerminatorBeforeElse(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private fun insertLineTerminatorBeforeElse(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     if tokens == null || tokens.length != 2:
         return false
@@ -190,7 +191,7 @@ private fun insertLineTerminatorBeforeElse(fsm: pointer<NormalizeFSM>, tokens: p
     return true
 }
 
-private fun insertLineTerminatorBeforeElif(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private fun insertLineTerminatorBeforeElif(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     if tokens == null || tokens.length != 2:
         return false
@@ -217,7 +218,7 @@ private fun isBanToken(set: pointer<HashSet>, token: pointer<Token>) -> bool
     return set.contains(kindPtr)
 }
 
-private fun deleteLineTerminatorBeforeBanToken(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private fun deleteLineTerminatorBeforeBanToken(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     if tokens == null || tokens.length != 2:
         return false
@@ -231,7 +232,7 @@ private fun deleteLineTerminatorBeforeBanToken(fsm: pointer<NormalizeFSM>, token
     return true
 }
 
-private fun deleteLineTerminatorAfterBanToken(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private fun deleteLineTerminatorAfterBanToken(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     if tokens == null || tokens.length != 3:
         return false
@@ -245,7 +246,7 @@ private fun deleteLineTerminatorAfterBanToken(fsm: pointer<NormalizeFSM>, tokens
     return true
 }
 
-private fun keepLineTerminator(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool =
+private fun keepLineTerminator(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool =
     true
 
 fun canonicalize(tokenlist: pointer<TokenList>) -> pointer<TokenList>

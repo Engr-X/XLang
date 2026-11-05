@@ -32,6 +32,7 @@ import xlang.test.TestCase
 import xlang.test.TestGroup
 import xlang.test.TestUnion
 import xlang.util.ArrayList
+import xlang.util.LinkedList
 import xlang.util.string.String
 
 
@@ -95,11 +96,11 @@ private fun newTestToken(kind: int, text: pointer<char>, offset: int) -> pointer
     new Token(kind, new TokenPosition(offset, 1, offset + 1, String.strlen(text)), text)
 
 
-private fun testNormalizeAction(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool =
+private fun testNormalizeAction(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool =
     false
 
 
-private fun recordCurrentIndexAction(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool
+private fun recordCurrentIndexAction(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool
 {
     ACTION_INDEX = fsm.getCurrentIndex()
     return true
@@ -216,7 +217,7 @@ private fun actionFallthroughTest() -> int
 }
 
 
-private fun checkArrayToken(list: pointer<ArrayList>, index: int, kind: int, text: pointer<char>) -> int
+private fun checkWindowToken(list: pointer<LinkedList>, index: int, kind: int, text: pointer<char>) -> int
 {
     val token: pointer<Token> = list.get(index) as pointer<Token>
 
@@ -323,7 +324,7 @@ private fun ruleWindowTest() -> int
     if rule.match(list, 2):
         return 2
 
-    val window: pointer<ArrayList> = NormalizeFSM.window(rule, list, 1)
+    val window: pointer<LinkedList> = NormalizeFSM.window(rule, list, 1)
 
     if window == null:
         return 3
@@ -331,13 +332,13 @@ private fun ruleWindowTest() -> int
     if window.length != 3:
         return 4
 
-    if checkArrayToken(window, 0, TOKEN_KIND_A, "a") != 0:
+    if checkWindowToken(window, 0, TOKEN_KIND_A, "a") != 0:
         return 5
 
-    if checkArrayToken(window, 1, TOKEN_KIND_B, "b") != 0:
+    if checkWindowToken(window, 1, TOKEN_KIND_B, "b") != 0:
         return 6
 
-    if checkArrayToken(window, 2, TOKEN_KIND_C, "c") != 0:
+    if checkWindowToken(window, 2, TOKEN_KIND_C, "c") != 0:
         return 7
 
     return 0

@@ -126,6 +126,47 @@ struct LinkedList
 
 
     constructor(
+        head: pointer<LinkedListNode>,
+        tail: pointer<LinkedListNode>,
+        length: int,
+        check: bool)
+    {
+        this.head = head
+        this.tail = tail
+        this.length = length
+
+        if head == null || length <= 0:
+        {
+            this.head = null
+            this.tail = null
+            this.length = 0
+            return
+        }
+
+        if !check && tail != null:
+            return
+
+        var calculatedTail: pointer<LinkedListNode> = head
+        var calculatedLength: int = 1
+
+        while calculatedLength < length:
+        {
+            if calculatedTail.next == null:
+                break
+
+            calculatedTail = calculatedTail.next
+            calculatedLength++
+        }
+
+        if calculatedTail != tail || calculatedLength != length:
+        {
+            this.tail = calculatedTail
+            this.length = calculatedLength
+        }
+    }
+
+
+    constructor(
         cmpFun: (pointer<*>, pointer<*>) -> int,
         eqFun: (pointer<*>, pointer<*>) -> bool
     )
@@ -350,10 +391,8 @@ struct LinkedList
     }
 
 
-    fun push(value: pointer<*>)
-    {
+    fun push(value: pointer<*>):
         this.add(null, value)
-    }
 
 
     // without copy list!!!
@@ -382,10 +421,8 @@ struct LinkedList
     }
 
 
-    fun pushFront(value: pointer<*>)
-    {
+    fun pushFront(value: pointer<*>):
         this.add(this.head, value)
-    }
 
 
     fun pushFrontAll(list: pointer<LinkedList>)
@@ -525,6 +562,44 @@ struct LinkedList
 
         val current: pointer<LinkedListNode> = this.triverseTo(index)
         return current.value
+    }
+
+
+    fun extract(fromIndex: int, toIndex: int) -> pointer<LinkedList>
+    {
+        if fromIndex < 0 || toIndex < fromIndex || toIndex > this.length:
+            return null
+
+        if fromIndex == toIndex:
+            return this.extract(null, 0)
+
+        return this.extract(
+            this.triverseTo(fromIndex),
+            toIndex - fromIndex)
+    }
+
+
+    fun extract(fromToken: pointer<LinkedListNode>, length: int) -> pointer<LinkedList>
+    {
+        if length < 0 || (fromToken == null && length > 0):
+            return null
+
+        var extractedTail: pointer<LinkedListNode> = null
+
+        if length > 0:
+            extractedTail = fromToken.forward(length - 1)
+
+        val result: pointer<LinkedList> =
+            if length == 0:
+                new LinkedList()
+            elif extractedTail == null:
+                new LinkedList(fromToken, fromToken, length, true)
+            else:
+                new LinkedList(fromToken, extractedTail, length, false)
+
+        result.setComparator(this.cmpFun)
+        result.setEquality(this.eqFun)
+        return result
     }
 
 

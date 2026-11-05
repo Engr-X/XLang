@@ -27,6 +27,7 @@ import xlang.System
 import xlang.parser.combinator.RegexAtomRule
 import xlang.parser.combinator.RuleAtom
 import xlang.util.ArrayList
+import xlang.util.LinkedList
 
 
 /**
@@ -43,7 +44,7 @@ import xlang.util.ArrayList
  * @note                    Returning false indicates that the rule did not perform
  *                          a successful normalization action.
  */
-private fun noopNormalizeAction(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool =
+private fun noopNormalizeAction(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool =
     false
 
 
@@ -282,7 +283,7 @@ struct NormalizeRule
      * The action receives the FSM and the matched token window. Its return
      * value indicates whether the normalization action was successful.
      */
-    var action: (pointer<NormalizeFSM>, pointer<ArrayList>) -> bool
+    var action: (pointer<NormalizeFSM>, pointer<LinkedList>) -> bool
     
     /**
      * Stores the pivot's zero-based index within the pattern sequence.
@@ -332,7 +333,7 @@ struct NormalizeRule
      * @warning                 A null or invalid action causes undefined behavior when
      *                          the rule is applied.
      */
-    constructor(id: int, state: int, action: (pointer<NormalizeFSM>, pointer<ArrayList>) -> bool):
+    constructor(id: int, state: int, action: (pointer<NormalizeFSM>, pointer<LinkedList>) -> bool):
     {
         this.id = id
         this.state = state
@@ -371,7 +372,7 @@ struct NormalizeRule
     constructor(
         id: int,
         state: int,
-        action: (pointer<NormalizeFSM>, pointer<ArrayList>) -> bool,
+        action: (pointer<NormalizeFSM>, pointer<LinkedList>) -> bool,
         patterns: pointer<ArrayList>)
     {
         this.id = id
@@ -503,7 +504,7 @@ struct NormalizeRule
      *
      * @warning                 The action function and both pointer arguments must be valid.
      */
-    fun apply(fsm: pointer<NormalizeFSM>, tokens: pointer<ArrayList>) -> bool =
+    fun apply(fsm: pointer<NormalizeFSM>, tokens: pointer<LinkedList>) -> bool =
         this.action(fsm, tokens)
 
 
@@ -543,9 +544,8 @@ struct NormalizeRule
  */
 struct NormalizeFSM
 {
-    /**
-     * Identifies the default normalization state.
-     */
+    
+    // Identifies the default normalization state.
     static val DEFAULT: int = 1
 
     /**
@@ -555,21 +555,19 @@ struct NormalizeFSM
      */
     var state: int
 
-    /**
-     * Stores the index currently being examined.
-     */
+    // Stores the index currently being examined.
     private var currentIndex: int
+
+    // private var currentTokenPtr: pointer<>
 
     /**
      * Stores the number of rule actions that returned true.
      *
      * This value is reset before each normalization scan.
      */
-    private var ptr: int
+    private var appliedRuleCount: int
 
-    /**
-     * Points to the original token list being normalized.
-     */
+    // Points to the original token list being normalized.
     private var list: pointer<TokenList>
 
     /**
@@ -613,7 +611,7 @@ struct NormalizeFSM
     {
         this.state = DEFAULT
         this.currentIndex = 0
-        this.ptr = 0
+        this.appliedRuleCount = 0
         this.list = list
         this.receiver = new NormalizeReceiver(list.length())
 
@@ -660,7 +658,7 @@ struct NormalizeFSM
      *
      * @return                  the successful-action count for the current or most recent scan
      */
-    fun getPtr() -> int = this.ptr
+    fun getPtr() -> int = this.appliedRuleCount
 
 
     /**
@@ -694,7 +692,7 @@ struct NormalizeFSM
      * @param tokens            the complete token list
      * @param currentIndex      the token index aligned with the rule's pivot
      *
-     * @return                  the matched token array, or null if rule or tokens is null
+     * @return                  the matched token window, or null if rule or tokens is null
      *
      * @warning                 An invalid pivot, current index or pattern length may produce
      *                          an out-of-range sublist request.
@@ -703,18 +701,15 @@ struct NormalizeFSM
         rule: pointer<NormalizeRule>,
         tokens: pointer<TokenList>,
         currentIndex: int
-    ) -> pointer<ArrayList>
+    ) -> pointer<LinkedList>
     {
         if rule == null || tokens == null:
             return null
 
         val start: int = currentIndex - rule.getPivotIndex()
-        val tokenWindow: pointer<TokenList> = tokens.subToken(start, start + rule.getPatternLength())
-
-        if tokenWindow == null:
-            return null
-
-        return tokenWindow.array()
+        val tokenWindow: pointer<LinkedList> =
+            tokens.extract(start, start + rule.getPatternLength())
+        return tokenWindow
     }
 
 
@@ -747,7 +742,7 @@ struct NormalizeFSM
         val tokenLength: int = this.list.length()
 
         this.currentIndex = 0
-        this.ptr = 0
+        this.appliedRuleCount = 0
 
         while this.currentIndex < tokenLength:
         {
@@ -765,11 +760,12 @@ struct NormalizeFSM
                 if !rule.match(this.list, this.currentIndex):
                     continue
 
-                val tokens: pointer<ArrayList> = NormalizeFSM.window(rule, this.list, this.currentIndex)
+                val tokens: pointer<LinkedList> =
+                    NormalizeFSM.window(rule, this.list, this.currentIndex)
 
                 if rule.apply(this, tokens):
                 {
-                    this.ptr++
+                    this.appliedRuleCount++
                     break
                 }
             }
