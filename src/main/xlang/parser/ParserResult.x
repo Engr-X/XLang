@@ -90,7 +90,7 @@ struct ParserResult
      */
     static fun fromToken(token: pointer<Token>) -> pointer<ParserResult>
     {
-        val stableToken: pointer<Token> = token.clone()
+        val stableToken: pointer<Token> = token
         val result: pointer<ParserResult> =
             new ParserResult(TOKEN_KIND, 1, stableToken)
         result.pushToken(stableToken)

@@ -27,6 +27,8 @@ package xlang.lexer
 
 import xlang.System
 import xlang.util.ArrayList
+import xlang.util.LinkedList
+import xlang.util.LinkedListNode
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
 
@@ -363,8 +365,7 @@ struct Token
  * The collection provides direct access, copying and source-like
  * string reconstruction operations.
  *
- * The internal ArrayList remains mutable. Methods that expose it directly
- * allow callers to modify the contents of this TokenList.
+ * Tokens are stored as stable pointers in an internal LinkedList.
  */
 struct TokenList
 {
@@ -373,17 +374,16 @@ struct TokenList
      *
      * This list is owned and managed by the TokenList instance.
      */
-    private var tokens: pointer<ArrayList>
+    private var tokens: pointer<LinkedList>
 
 
     /**
      * Initializes an empty token list.
      *
-     * A new internal ArrayList is created using the size of Token
-     * as its element size.
+     * A new internal LinkedList is created.
      */
     constructor():
-        this.tokens = new ArrayList(sizeof(Token))
+        this.tokens = new LinkedList()
 
 
     /**
@@ -445,7 +445,15 @@ struct TokenList
         if items == null || items.length <= 0:
             return
 
-        this.tokens.addAll(index, items)
+        val inserted: pointer<LinkedList> = new LinkedList()
+
+        for (var i: int = 0; i < items.length; i++):
+        {
+            val token: pointer<Token> = items.get(i) as pointer<Token>
+            inserted.push(token.clone())
+        }
+
+        this.tokens.addAll(index, inserted)
     }
 
 
@@ -463,8 +471,8 @@ struct TokenList
      * Token indices are zero-based. The valid index range is from
      * 0 through length() - 1.
      *
-     * The returned pointer refers to an element managed by the internal
-     * ArrayList and may become invalid if the list is modified or released.
+     * The returned pointer is stored in a LinkedList node and remains stable
+     * when other tokens are inserted or removed.
      *
      * The caller is responsible for ensuring that the index is valid.
      *
@@ -478,21 +486,14 @@ struct TokenList
 
 
     /**
-     * Returns the internal token array directly.
+     * Creates an ArrayList snapshot of the current tokens.
      *
-     * The returned ArrayList is the same object used internally by
-     * this TokenList. Modifications made through it affect this list.
+     * Modifications made through the returned ArrayList do not affect this
+     * TokenList.
      *
-     * The caller must not release the returned ArrayList while this
-     * TokenList is still using it.
-     *
-     * @return                  the internal mutable ArrayList
-     *
-     * @note                    Use toArray when an independent collection is required.
-     *
-     * @warning                 Direct modification may break TokenList invariants.
+     * @return                  a new ArrayList containing token values
      */
-    fun array() -> pointer<ArrayList> = this.tokens
+    fun array() -> pointer<ArrayList> = this.tokens.toArrayList(sizeof(Token))
 
 
     /**
@@ -512,7 +513,7 @@ struct TokenList
      * @note                    This method guarantees a separate list object, but it may
      *                          not create independent copies of referenced token data.
      */
-    fun toArray() -> pointer<ArrayList> = this.tokens.clone()
+    fun toArray() -> pointer<ArrayList> = this.tokens.toArrayList(sizeof(Token))
 
 
     /**
@@ -522,9 +523,8 @@ struct TokenList
      * - fromIndex is inclusive.
      * - toIndex is exclusive.
      *
-     * Token values are copied into a new backing ArrayList. Token text,
-     * position and error-info pointers inside each Token value are not
-     * deeply copied.
+     * Token pointers are copied into a new LinkedList. Token objects are
+     * shared with the original list.
      *
      * Invalid ranges return null.
      *
@@ -535,7 +535,7 @@ struct TokenList
      */
     fun subToken(fromIndex: int, toIndex: int) -> pointer<TokenList>
     {
-        val copiedTokens: pointer<ArrayList> = this.tokens.sublist(fromIndex, toIndex)
+        val copiedTokens: pointer<LinkedList> = this.tokens.subList(fromIndex, toIndex)
 
         if copiedTokens == null:
             return null
@@ -559,41 +559,20 @@ struct TokenList
      * @param fromIndex         inclusive start index
      * @param toIndex           exclusive end index
      */
-    fun removeIndex(fromIndex: int, toIndex: int)
+    fun remove(fromIndex: int, toIndex: int)
     {
         if fromIndex < 0 || toIndex < fromIndex || toIndex > this.tokens.length:
             return
 
-        var i: int = toIndex
+        var current: pointer<LinkedListNode> = this.tokens.triverseTo(fromIndex)
 
-        while i > fromIndex:
+        for (var i: int = fromIndex; i < toIndex; i++):
         {
-            i--
-            this.tokens.removeAt(i)
+            val next: pointer<LinkedListNode> = current.next
+            this.tokens.remove(current)
+            current = next
         }
     }
-
-
-    /**
-     * Removes a half-open token range from this list.
-     *
-     * This is the short-name alias of removeIndex.
-     *
-     * @param fromIndex         inclusive start index
-     * @param toIndex           exclusive end index
-     */
-    fun remove(fromIndex: int, toIndex: int):
-        this.removeIndex(fromIndex, toIndex)
-
-
-    /**
-     * Compatibility alias for removeIndex.
-     *
-     * @param fromIndex         inclusive start index
-     * @param toIndex           exclusive end index
-     */
-    fun romoveIndex(fromIndex: int, toIndex: int):
-        this.removeIndex(fromIndex, toIndex)
 
 
     /**
@@ -621,9 +600,11 @@ struct TokenList
     {
         val sb: pointer<StringBuilder> = new StringBuilder()
 
-        for (var i: int = 0; i < this.tokens.length; i++):
+        var current: pointer<LinkedListNode> = this.tokens.getHead()
+
+        while current != null:
         {
-            val token: pointer<Token> = this.get(i)
+            val token: pointer<Token> = current.value as pointer<Token>
 
             if token.kind == newlineKind:
                 sb.append("\n")
@@ -634,6 +615,8 @@ struct TokenList
                 sb.append(token.text)
                 sb.append(' ')
             }
+
+            current = current.next
         }
 
         return sb

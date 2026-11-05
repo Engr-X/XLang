@@ -148,8 +148,7 @@ private fun currentIndexTest() -> int
 
     val list: pointer<TokenList> = makeABCList()
     val fsm: pointer<NormalizeFSM> = new NormalizeFSM(list)
-    val rulesSpace: blob[sizeof(pointer<NormalizeRule>) * 1]
-    val rules: pointer<pointer<NormalizeRule>> = rulesSpace as pointer<pointer<NormalizeRule>>
+    val rules: pointer<ArrayList> = new ArrayList(sizeof(NormalizeRule))
     val rule: pointer<NormalizeRule> = new NormalizeRule(
         1,
         NormalizeFSM.DEFAULT,
@@ -160,9 +159,9 @@ private fun currentIndexTest() -> int
     rule.addPattern(TOKEN_KIND_C, "c")
     rule.setPivot(1)
 
-    rules[0] = rule
+    rules.push(rule)
 
-    val result: pointer<TokenList> = fsm.apply(rules, 1)
+    val result: pointer<TokenList> = fsm.apply(rules)
 
     if result == null:
         return 1
@@ -183,8 +182,7 @@ private fun actionFallthroughTest() -> int
 
     val list: pointer<TokenList> = makeABCList()
     val fsm: pointer<NormalizeFSM> = new NormalizeFSM(list)
-    val rulesSpace: blob[sizeof(pointer<NormalizeRule>) * 2]
-    val rules: pointer<pointer<NormalizeRule>> = rulesSpace as pointer<pointer<NormalizeRule>>
+    val rules: pointer<ArrayList> = new ArrayList(sizeof(NormalizeRule))
     val falseRule: pointer<NormalizeRule> = new NormalizeRule(
         1,
         NormalizeFSM.DEFAULT,
@@ -200,10 +198,10 @@ private fun actionFallthroughTest() -> int
     trueRule.addPattern(TOKEN_KIND_B, "b")
     trueRule.setPivot(0)
 
-    rules[0] = falseRule
-    rules[1] = trueRule
+    rules.push(falseRule)
+    rules.push(trueRule)
 
-    val result: pointer<TokenList> = fsm.apply(rules, 2)
+    val result: pointer<TokenList> = fsm.apply(rules)
 
     if result == null:
         return 1

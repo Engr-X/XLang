@@ -18,9 +18,7 @@ val banBefore: pointer<HashSet> = initBanBefore()
 
 
 var normalizerIsInit: bool = false
-val ruleLength: int = 12
-val rulesSpace: blob[sizeof(pointer<NormalizeRule>) * 12]
-val rulePtr: pointer<pointer<NormalizeRule>> = rulesSpace as pointer<pointer<NormalizeRule>>
+val rules: pointer<ArrayList> = new ArrayList(sizeof(NormalizeRule))
 
 
 private fun tokenKindEq(left: pointer<*>, right: pointer<*>) -> bool
@@ -345,53 +343,53 @@ private fun normalizerInit()
 {
     val rule0Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule0Patterns.push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN).getTokenRule())
-    rulePtr[0] = new NormalizeRule(0, NormalizeFSM.DEFAULT, enterParenthesis, rule0Patterns).setPivot(0)
+    rules.push(new NormalizeRule(0, NormalizeFSM.DEFAULT, enterParenthesis, rule0Patterns).setPivot(0))
     val rule1Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule1Patterns.push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN).getTokenRule())
-    rulePtr[1] = new NormalizeRule(1, NormalizeFSM.DEFAULT, exitParenthesis, rule1Patterns).setPivot(0)
+    rules.push(new NormalizeRule(1, NormalizeFSM.DEFAULT, exitParenthesis, rule1Patterns).setPivot(0))
     val rule2Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule2Patterns.push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACKET).getTokenRule())
-    rulePtr[2] = new NormalizeRule(2, NormalizeFSM.DEFAULT, enterBracket, rule2Patterns).setPivot(0)
+    rules.push(new NormalizeRule(2, NormalizeFSM.DEFAULT, enterBracket, rule2Patterns).setPivot(0))
     val rule3Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule3Patterns.push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACKET).getTokenRule())
-    rulePtr[3] = new NormalizeRule(3, NormalizeFSM.DEFAULT, exitBracket, rule3Patterns).setPivot(0)
+    rules.push(new NormalizeRule(3, NormalizeFSM.DEFAULT, exitBracket, rule3Patterns).setPivot(0))
     val rule4Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule4Patterns.push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR).getTokenRule())
-    rulePtr[4] = new NormalizeRule(4, NormalizeFSM.DEFAULT, deleteLineTerminatorInPair, rule4Patterns).setPivot(0)
+    rules.push(new NormalizeRule(4, NormalizeFSM.DEFAULT, deleteLineTerminatorInPair, rule4Patterns).setPivot(0))
     val rule5Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule5Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
     rule5Patterns.push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACE).getTokenRule())
     rule5Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
-    rulePtr[5] = new NormalizeRule(5, NormalizeFSM.DEFAULT, insertLineTerminatorAroundRightBrace, rule5Patterns).setPivot(0)
+    rules.push(new NormalizeRule(5, NormalizeFSM.DEFAULT, insertLineTerminatorAroundRightBrace, rule5Patterns).setPivot(0))
     val rule6Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule6Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
     rule6Patterns.push(RuleAtom.fromRegex(Tokenizer.KW_ELIF).getTokenRule())
-    rulePtr[6] = new NormalizeRule(6, NormalizeFSM.DEFAULT, insertLineTerminatorBeforeElif, rule6Patterns).setPivot(1)
+    rules.push(new NormalizeRule(6, NormalizeFSM.DEFAULT, insertLineTerminatorBeforeElif, rule6Patterns).setPivot(1))
     val rule7Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule7Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
     rule7Patterns.push(RuleAtom.fromRegex(Tokenizer.KW_ELSE).getTokenRule())
-    rulePtr[7] = new NormalizeRule(7, NormalizeFSM.DEFAULT, insertLineTerminatorBeforeElse, rule7Patterns).setPivot(1)
+    rules.push(new NormalizeRule(7, NormalizeFSM.DEFAULT, insertLineTerminatorBeforeElse, rule7Patterns).setPivot(1))
     val rule8Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule8Patterns.push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR).getTokenRule())
     rule8Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
-    rulePtr[8] = new NormalizeRule(8, NormalizeFSM.DEFAULT, deleteLineTerminatorBeforeBanToken, rule8Patterns).setPivot(0)
+    rules.push(new NormalizeRule(8, NormalizeFSM.DEFAULT, deleteLineTerminatorBeforeBanToken, rule8Patterns).setPivot(0))
     val rule9Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule9Patterns.push(RuleAtom.fromRegex(Tokenizer.DOT).getTokenRule())
     rule9Patterns.push(RuleAtom.fromRegex(Tokenizer.STAR).getTokenRule())
     rule9Patterns.push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR).getTokenRule())
     rule9Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
-    rulePtr[9] = new NormalizeRule(9, NormalizeFSM.DEFAULT, keepLineTerminator, rule9Patterns).setPivot(2)
+    rules.push(new NormalizeRule(9, NormalizeFSM.DEFAULT, keepLineTerminator, rule9Patterns).setPivot(2))
     val rule10Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule10Patterns.push(RuleAtom.fromRegex(Tokenizer.KW_IMPORT).getTokenRule())
     rule10Patterns.push(RuleAtom.fromRegex(Tokenizer.STAR).getTokenRule())
     rule10Patterns.push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR).getTokenRule())
     rule10Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
-    rulePtr[10] = new NormalizeRule(10, NormalizeFSM.DEFAULT, keepLineTerminator, rule10Patterns).setPivot(2)
+    rules.push(new NormalizeRule(10, NormalizeFSM.DEFAULT, keepLineTerminator, rule10Patterns).setPivot(2))
     val rule11Patterns: pointer<ArrayList> = new ArrayList(sizeof(RegexAtomRule))
     rule11Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
     rule11Patterns.push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR).getTokenRule())
     rule11Patterns.push(RuleAtom.fromRegex(Token.ANY_KIND).getTokenRule())
-    rulePtr[11] = new NormalizeRule(11, NormalizeFSM.DEFAULT, deleteLineTerminatorAfterBanToken, rule11Patterns).setPivot(1)
+    rules.push(new NormalizeRule(11, NormalizeFSM.DEFAULT, deleteLineTerminatorAfterBanToken, rule11Patterns).setPivot(1))
     normalizerIsInit = true
 }
 
@@ -403,7 +401,7 @@ fun normalize(list: pointer<TokenList>) -> pointer<TokenList>
 
     val normalized: pointer<TokenList> = canonicalize(list)
     val fsm: pointer<NormalizeFSM> = new NormalizeFSM(normalized)
-    val result: pointer<TokenList> = fsm.apply(rulePtr, ruleLength)
+    val result: pointer<TokenList> = fsm.apply(rules)
 
     return result
 }

@@ -162,3 +162,48 @@ else()
         COMMENT "No xlang test object files available to build executable"
     )
 endif()
+
+
+###############################################################
+
+# step 4: build standalone tokenizer benchmark executable
+
+set(XLANG_TOKENIZER_BENCHMARK_EXE
+    "${XLANG_TEST_DIR}/xlang-tokenizer-benchmark${CMAKE_EXECUTABLE_SUFFIX}"
+)
+set(XLANG_TOKENIZER_BENCHMARK_MAIN "xlang.benchmark.TokenizerBenchmark.main")
+
+if (XLANG_TEST_SRCS)
+    add_custom_command(
+        OUTPUT "${XLANG_TOKENIZER_BENCHMARK_EXE}"
+
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${XLANG_TEST_DIR}"
+        COMMAND ${XLANG}
+            --target=x64
+            -lib ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} ${XLANG_TEST_OBJS} ${XLANG_TEST_LIBS}
+            -d "${XLANG_TOKENIZER_BENCHMARK_EXE}"
+            "--include-runtime"
+            "--main=${XLANG_TOKENIZER_BENCHMARK_MAIN}"
+
+        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} ${XLANG_TEST_OBJS} cjson tiny-regex ${XLANG}
+
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+
+        COMMENT "Linking xlang-tokenizer-benchmark executable"
+        VERBATIM
+        COMMAND_EXPAND_LISTS
+    )
+
+    add_custom_target(xlang_tokenizer_benchmark_executable ALL
+        DEPENDS "${XLANG_TOKENIZER_BENCHMARK_EXE}"
+    )
+    add_dependencies(xlang_tokenizer_benchmark_executable
+        xlang_test_objects
+        xlang_c_objects
+        xlang_objects
+    )
+else()
+    add_custom_target(xlang_tokenizer_benchmark_executable
+        COMMENT "No xlang test object files available to build tokenizer benchmark"
+    )
+endif()

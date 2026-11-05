@@ -699,7 +699,11 @@ struct NormalizeFSM
      * @warning                 An invalid pivot, current index or pattern length may produce
      *                          an out-of-range sublist request.
      */
-    static fun window(rule: pointer<NormalizeRule>, tokens: pointer<TokenList>, currentIndex: int) -> pointer<ArrayList>
+    static fun window(
+        rule: pointer<NormalizeRule>,
+        tokens: pointer<TokenList>,
+        currentIndex: int
+    ) -> pointer<ArrayList>
     {
         if rule == null || tokens == null:
             return null
@@ -731,20 +735,13 @@ struct NormalizeFSM
      * Rules and rule actions may change the FSM state, delimiter balances
      * and receiver contents while scanning.
      *
-     * If rules is null or rulesLength is zero or negative, this function
-     * performs no scan.
+     * If rules is null or empty, this function performs no scan.
      *
-     * The caller must ensure that the rule array contains at least
-     * rulesLength accessible entries.
-     *
-     * @param rules             the array of normalization-rule pointers
-     * @param rulesLength       the number of entries in the rule array
-     *
-     * @warning                 An incorrect rulesLength may cause out-of-bounds memory access.
+     * @param rules             the normalization rules to apply
      */
-    private fun initReceiver(rules: pointer<pointer<NormalizeRule>>, rulesLength: int)
+    private fun initReceiver(rules: pointer<ArrayList>)
     {
-        if rules == null || rulesLength <= 0:
+        if rules == null || rules.length <= 0:
             return
 
         val tokenLength: int = this.list.length()
@@ -754,9 +751,10 @@ struct NormalizeFSM
 
         while this.currentIndex < tokenLength:
         {
-            for (var j = 0; j < rulesLength; j++):
+            for (var j = 0; j < rules.length; j++):
             {
-                val rule: pointer<NormalizeRule> = rules[j]
+                val rule: pointer<NormalizeRule> =
+                    rules.get(j) as pointer<NormalizeRule>
 
                 if rule == null:
                     continue
@@ -796,17 +794,16 @@ struct NormalizeFSM
      * The caller must provide a valid rule array and manage the returned
      * TokenList.
      *
-     * @param rules             the array of normalization-rule pointers
-     * @param rulesLength       the number of entries in the rule array
+     * @param rules             the normalization rules to apply
      *
      * @return                  a newly allocated normalized TokenList, or null if receiver application fails
      *
      * @note                    Calling apply multiple times on the same FSM reuses the existing
      *                          receiver, so modifications recorded by earlier calls remain active.
      */
-    fun apply(rules: pointer<pointer<NormalizeRule>>, rulesLength: int) -> pointer<TokenList>
+    fun apply(rules: pointer<ArrayList>) -> pointer<TokenList>
     {
-        this.initReceiver(rules, rulesLength)
+        this.initReceiver(rules)
         return this.receiver.apply(this.list)
     }
 

@@ -355,12 +355,9 @@ def getPostprocess(config: JsonObject) -> str:
 
 def genRules(rules: list[JsonObject], tabs: int) -> str:
     indent = " " * (tabs * 4)
-    slot_count = max(1, len(rules))
     lines: list[str] = [
         f"{indent}var normalizerIsInit: bool = false",
-        f"{indent}val ruleLength: int = {len(rules)}",
-        f"{indent}val rulesSpace: blob[sizeof(pointer<NormalizeRule>) * {slot_count}]",
-        f"{indent}val rulePtr: pointer<pointer<NormalizeRule>> = rulesSpace as pointer<pointer<NormalizeRule>>",
+        f"{indent}val rules: pointer<ArrayList> = new ArrayList(sizeof(NormalizeRule))",
     ]
 
     return "\n".join(lines) + "\n\n\n"
@@ -405,7 +402,7 @@ def genNormalizerInitFun(rules: list[JsonObject], tabs: int) -> str:
             )
 
         rule_expr += f".setPivot({rules[index]['pivot_index']})"
-        lines.append(f"{body_indent}rulePtr[{index}] = {rule_expr}")
+        lines.append(f"{body_indent}rules.push({rule_expr})")
 
     lines.append(f"{body_indent}normalizerIsInit = true")
     lines.append(f"{indent}}}")
@@ -427,7 +424,7 @@ def genNormalizeFun(preprocess: str, postprocess: str, tabs: int) -> str:
         "",
         f"{body_indent}val normalized: pointer<TokenList> = {source_expr}",
         f"{body_indent}val fsm: pointer<NormalizeFSM> = new NormalizeFSM(normalized)",
-        f"{body_indent}val result: pointer<TokenList> = fsm.apply(rulePtr, ruleLength)",
+        f"{body_indent}val result: pointer<TokenList> = fsm.apply(rules)",
         "",
         f"{body_indent}return {result_expr}",
         f"{indent}}}",
