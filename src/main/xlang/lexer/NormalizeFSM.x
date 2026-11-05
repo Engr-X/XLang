@@ -28,6 +28,7 @@ import xlang.parser.combinator.RegexAtomRule
 import xlang.parser.combinator.RuleAtom
 import xlang.util.ArrayList
 import xlang.util.LinkedList
+import xlang.util.LinkedListNode
 
 
 /**
@@ -448,11 +449,11 @@ struct NormalizeRule
 
 
     /**
-     * Tests whether this rule matches around a current token index.
+     * Tests whether this rule matches around a current token node.
      *
-     * currentIndex is aligned with the rule's pivot. The function calculates
-     * the start of the complete pattern sequence and verifies that the whole
-     * sequence fits inside the token list.
+     * currentToken is aligned with the rule's pivot. The function walks
+     * backward to the first pattern and then matches forward through the
+     * linked token sequence.
      *
      * Every RegexAtomRule must match the corresponding token.
      *
@@ -460,7 +461,7 @@ struct NormalizeRule
      * that check before calling match.
      *
      * @param tokens            the token list to inspect
-     * @param currentIndex      the index aligned with the rule's pivot
+     * @param currentToken      the token node aligned with the rule's pivot
      *
      * @return                  true if the complete pattern sequence matches; otherwise false
      *
@@ -468,23 +469,33 @@ struct NormalizeRule
      *
      * @warning                 The token list must contain valid Token elements.
      */
-    fun match(tokens: pointer<TokenList>, currentIndex: int) -> bool
+    fun match(
+        tokens: pointer<TokenList>,
+        currentToken: pointer<LinkedListNode>
+    ) -> bool
     {
-        if tokens == null || this.pivotIndex < 0:
+        if tokens == null || currentToken == null || this.pivotIndex < 0:
             return false
 
-        val start: int = currentIndex - this.pivotIndex
+        var tokenNode: pointer<LinkedListNode> =
+            currentToken.backward(this.pivotIndex)
 
-        if start < 0 || start + this.patterns.length > tokens.length():
+        if tokenNode == null:
             return false
 
         for (var i: int = 0; i < this.patterns.length; i++):
         {
+            if tokenNode == null:
+                return false
+
             val pattern: pointer<RegexAtomRule> =
                 this.patterns.get(i) as pointer<RegexAtomRule>
+            val token: pointer<Token> = tokenNode.value as pointer<Token>
 
-            if pattern == null || !pattern.canMatchToken(tokens.get(start + i)):
+            if pattern == null || !pattern.canMatchToken(token):
                 return false
+
+            tokenNode = tokenNode.next
         }
 
         return true
@@ -558,7 +569,8 @@ struct NormalizeFSM
     // Stores the index currently being examined.
     private var currentIndex: int
 
-    // private var currentTokenPtr: pointer<>
+    // Stores the token in linkedlist currently being examined.
+    private var currentToken: pointer<LinkedListNode>
 
     /**
      * Stores the number of rule actions that returned true.
@@ -611,6 +623,7 @@ struct NormalizeFSM
     {
         this.state = DEFAULT
         this.currentIndex = 0
+        this.currentToken = list.getHead()
         this.appliedRuleCount = 0
         this.list = list
         this.receiver = new NormalizeReceiver(list.length())
@@ -742,6 +755,7 @@ struct NormalizeFSM
         val tokenLength: int = this.list.length()
 
         this.currentIndex = 0
+        this.currentToken = this.list.getHead()
         this.appliedRuleCount = 0
 
         while this.currentIndex < tokenLength:
@@ -757,7 +771,7 @@ struct NormalizeFSM
                 if rule.state != this.state:
                     continue
 
-                if !rule.match(this.list, this.currentIndex):
+                if !rule.match(this.list, this.currentToken):
                     continue
 
                 val tokens: pointer<LinkedList> =
@@ -771,6 +785,7 @@ struct NormalizeFSM
             }
 
             this.currentIndex++
+            this.currentToken = this.currentToken.next
         }
     }
 
@@ -815,10 +830,8 @@ struct NormalizeFSM
      *
      * @note                    This function is intended to be called from a rule action.
      */
-    fun deleteToken()
-    {
+    fun deleteToken():
         this.receiver.deleteAt(this.currentIndex)
-    }
 
     
     /**
@@ -836,10 +849,8 @@ struct NormalizeFSM
      *
      * @note                    This function is intended to be called from a rule action.
      */
-    fun insertToken(token: pointer<Token>)
-    {
+    fun insertToken(token: pointer<Token>):
         this.receiver.insertAt(this.currentIndex, token)
-    }
 
 
     /**
@@ -858,10 +869,8 @@ struct NormalizeFSM
      *
      * @note                    An offset of zero is equivalent to insertToken(token).
      */
-    fun insertToken(offset: int, token: pointer<Token>)
-    {
+    fun insertToken(offset: int, token: pointer<Token>):
         this.receiver.insertAt(this.currentIndex + offset, token)
-    }
 
 
     /**

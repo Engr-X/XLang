@@ -33,6 +33,7 @@ import xlang.test.TestGroup
 import xlang.test.TestUnion
 import xlang.util.ArrayList
 import xlang.util.LinkedList
+import xlang.util.LinkedListNode
 import xlang.util.string.String
 
 
@@ -318,10 +319,14 @@ private fun ruleWindowTest() -> int
     rule.addPattern(TOKEN_KIND_C, "c")
     rule.setPivot(1)
 
-    if !rule.match(list, 1):
+    val firstNode: pointer<LinkedListNode> = list.getHead()
+    val pivotNode: pointer<LinkedListNode> = firstNode.next
+    val lastNode: pointer<LinkedListNode> = pivotNode.next
+
+    if !rule.match(list, pivotNode):
         return 1
 
-    if rule.match(list, 2):
+    if rule.match(list, lastNode):
         return 2
 
     val window: pointer<LinkedList> = NormalizeFSM.window(rule, list, 1)
@@ -360,16 +365,19 @@ private fun anyKindTest() -> int
     exactRule.addPattern(TOKEN_KIND_A, "b")
     exactRule.setPivot(0)
 
-    if exactRule.match(list, 1):
+    val firstNode: pointer<LinkedListNode> = list.getHead()
+    val secondNode: pointer<LinkedListNode> = firstNode.next
+
+    if exactRule.match(list, secondNode):
         return 1
 
     anyRule.addPattern(Token.ANY_KIND, "b")
     anyRule.setPivot(0)
 
-    if !anyRule.match(list, 1):
+    if !anyRule.match(list, secondNode):
         return 2
 
-    if anyRule.match(list, 0):
+    if anyRule.match(list, firstNode):
         return 3
 
     return 0

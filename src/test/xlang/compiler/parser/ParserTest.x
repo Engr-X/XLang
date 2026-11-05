@@ -682,7 +682,7 @@ private fun printTokenDump(title: pointer<char>, tokens: pointer<TokenList>)
 }
 
 
-private fun currentToken(tokens: pointer<TokenList>) -> pointer<Token> =
+private fun firstToken(tokens: pointer<TokenList>) -> pointer<Token> =
     if tokens != null && tokens.length() > 0:
         tokens.get(0)
     else:
@@ -691,7 +691,7 @@ private fun currentToken(tokens: pointer<TokenList>) -> pointer<Token> =
 
 private fun printProgramCheckpoint(path: pointer<char>, step: pointer<char>, tokens: pointer<TokenList>)
 {
-    printProgramFailure(path, step, currentToken(tokens))
+    printProgramFailure(path, step, firstToken(tokens))
     printTokenDump("remaining tokens: ", tokens)
 }
 
@@ -754,7 +754,7 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
 
     if program == null:
     {
-        printProgramFailure(path, "parseProgram returned null value", currentToken(tokens))
+        printProgramFailure(path, "parseProgram returned null value", firstToken(tokens))
         return false
     }
 
