@@ -57,66 +57,423 @@ import xlang.compiler.parser.statement.WhileStatement
 import xlang.compiler.parser.stmtexpr.Block
 import xlang.compiler.parser.stmtexpr.IfElseExpression
 import xlang.compiler.parser.stmtexpr.IfExpression
+import xlang.compiler.type.BlobType
+import xlang.compiler.type.FunctionType
+import xlang.compiler.type.NormalType
+import xlang.compiler.type.TempType
 import xlang.compiler.type.Type
 import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.lexer.TokenPosition
 import xlang.lexer.TokenizedFile
 import xlang.parser.ASTFile
+import xlang.parser.Parser
 import xlang.parser.ParserResult
-import xlang.parser.PrattParser
-import xlang.parser.combinator.InputRule
-import xlang.parser.combinator.InputRules
-import xlang.parser.combinator.ParserRule
-import xlang.parser.util.ParserRef
-import xlang.parser.util.ParserRefs
-import xlang.parser.util.PatternAtom
-import xlang.parser.util.PatternList
-import xlang.parser.util.Rule
+import xlang.parser.ParserUtil
+import xlang.parser.pratt.PrattParser
+import xlang.parser.recursive.ProceduralParser
+import xlang.parser.rule.InputRule
+import xlang.parser.rule.InputRules
+import xlang.parser.rule.ParserRule
+import xlang.parser.rule.RuleAtom
+import xlang.parser.rule.RuleExpression
 import xlang.util.ArrayList
 import xlang.util.HashSet
+import xlang.util.string.String
 
 
-val TYPE_PARSER: pointer<ParserRef> = ParserRef.fromType(1000)
+private val EXPRESSION_OPERATION_0: pointer<Operation> = new Operation(0, "$paren", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 220, null)
+private val EXPRESSION_OPERATION_1: pointer<Operation> = new Operation(1, "++", Operation.POSTFIX_TYPE, Operation.LEFT_ASSOC, 210, "succ")
+private val EXPRESSION_OPERATION_2: pointer<Operation> = new Operation(2, "--", Operation.POSTFIX_TYPE, Operation.LEFT_ASSOC, 210, "pred")
+private val EXPRESSION_OPERATION_3: pointer<Operation> = new Operation(3, "++", Operation.PREFIX_TYPE, Operation.LEFT_ASSOC, 200, "inc")
+private val EXPRESSION_OPERATION_4: pointer<Operation> = new Operation(4, "--", Operation.PREFIX_TYPE, Operation.LEFT_ASSOC, 200, "dec")
+private val EXPRESSION_OPERATION_5: pointer<Operation> = new Operation(5, "+", Operation.PREFIX_TYPE, Operation.RIGHT_ASSOC, 200, "pos")
+private val EXPRESSION_OPERATION_6: pointer<Operation> = new Operation(6, "-", Operation.PREFIX_TYPE, Operation.RIGHT_ASSOC, 200, "neg")
+private val EXPRESSION_OPERATION_7: pointer<Operation> = new Operation(7, "**", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 190, "pow")
+private val EXPRESSION_OPERATION_8: pointer<Operation> = new Operation(8, "*", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 180, "times")
+private val EXPRESSION_OPERATION_9: pointer<Operation> = new Operation(9, "/", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 180, "div")
+private val EXPRESSION_OPERATION_10: pointer<Operation> = new Operation(10, "%", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 180, "rem")
+private val EXPRESSION_OPERATION_11: pointer<Operation> = new Operation(11, "+", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 170, "plus")
+private val EXPRESSION_OPERATION_12: pointer<Operation> = new Operation(12, "-", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 170, "minus")
+private val EXPRESSION_OPERATION_13: pointer<Operation> = new Operation(13, "shl", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 160, "shl")
+private val EXPRESSION_OPERATION_14: pointer<Operation> = new Operation(14, "shr", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 160, "shr")
+private val EXPRESSION_OPERATION_15: pointer<Operation> = new Operation(15, "ushr", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 160, "ushr")
+private val EXPRESSION_OPERATION_16: pointer<Operation> = new Operation(16, ">", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 150, "greater")
+private val EXPRESSION_OPERATION_17: pointer<Operation> = new Operation(17, "<", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 150, "less")
+private val EXPRESSION_OPERATION_18: pointer<Operation> = new Operation(18, ">=", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 150, "greaterEqual")
+private val EXPRESSION_OPERATION_19: pointer<Operation> = new Operation(19, "<=", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 150, "lessEqual")
+private val EXPRESSION_OPERATION_20: pointer<Operation> = new Operation(20, "===", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 140, "refEquals")
+private val EXPRESSION_OPERATION_21: pointer<Operation> = new Operation(21, "==", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 140, "equals")
+private val EXPRESSION_OPERATION_22: pointer<Operation> = new Operation(22, "!==", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 140, "notRefEquals")
+private val EXPRESSION_OPERATION_23: pointer<Operation> = new Operation(23, "!=", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 140, "notEquals")
+private val EXPRESSION_OPERATION_24: pointer<Operation> = new Operation(24, "inv", Operation.PREFIX_TYPE, Operation.RIGHT_ASSOC, 130, "inv")
+private val EXPRESSION_OPERATION_25: pointer<Operation> = new Operation(25, "and", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 120, "bitwiseAnd")
+private val EXPRESSION_OPERATION_26: pointer<Operation> = new Operation(26, "nand", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 120, "bitwiseNand")
+private val EXPRESSION_OPERATION_27: pointer<Operation> = new Operation(27, "xor", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 110, "bitwiseXor")
+private val EXPRESSION_OPERATION_28: pointer<Operation> = new Operation(28, "xnor", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 110, "bitwiseXnor")
+private val EXPRESSION_OPERATION_29: pointer<Operation> = new Operation(29, "or", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 100, "bitwiseOr")
+private val EXPRESSION_OPERATION_30: pointer<Operation> = new Operation(30, "nor", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 100, "bitwiseNor")
+private val EXPRESSION_OPERATION_31: pointer<Operation> = new Operation(31, "implies", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 90, "implies")
+private val EXPRESSION_OPERATION_32: pointer<Operation> = new Operation(32, "nimplies", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 90, "nimplies")
+private val EXPRESSION_OPERATION_33: pointer<Operation> = new Operation(33, "iff", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 80, "iff")
+private val EXPRESSION_OPERATION_34: pointer<Operation> = new Operation(34, "niff", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 80, "niff")
+private val EXPRESSION_OPERATION_35: pointer<Operation> = new Operation(35, "!", Operation.PREFIX_TYPE, Operation.RIGHT_ASSOC, 70, "not")
+private val EXPRESSION_OPERATION_36: pointer<Operation> = new Operation(36, "&&", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 60, "logicalAnd")
+private val EXPRESSION_OPERATION_37: pointer<Operation> = new Operation(37, "!&&", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 60, "logicalNand")
+private val EXPRESSION_OPERATION_38: pointer<Operation> = new Operation(38, "^", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 50, "logicalXor")
+private val EXPRESSION_OPERATION_39: pointer<Operation> = new Operation(39, "!^", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 50, "logicalXnor")
+private val EXPRESSION_OPERATION_40: pointer<Operation> = new Operation(40, "||", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 40, "logicalOr")
+private val EXPRESSION_OPERATION_41: pointer<Operation> = new Operation(41, "!||", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 40, "logicalNor")
+private val EXPRESSION_OPERATION_42: pointer<Operation> = new Operation(42, "->", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 30, "logicalImplies")
+private val EXPRESSION_OPERATION_43: pointer<Operation> = new Operation(43, "!->", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 30, "logicalNimplies")
+private val EXPRESSION_OPERATION_44: pointer<Operation> = new Operation(44, "<->", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 20, "logicalIff")
+private val EXPRESSION_OPERATION_45: pointer<Operation> = new Operation(45, "!<->", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 20, "logicalNiff")
+private val EXPRESSION_OPERATION_46: pointer<Operation> = new Operation(46, "=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "assign")
+private val EXPRESSION_OPERATION_47: pointer<Operation> = new Operation(47, "**=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "powAssign")
+private val EXPRESSION_OPERATION_48: pointer<Operation> = new Operation(48, "*=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "timesAssign")
+private val EXPRESSION_OPERATION_49: pointer<Operation> = new Operation(49, "/=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "divAssign")
+private val EXPRESSION_OPERATION_50: pointer<Operation> = new Operation(50, "%=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "remAssign")
+private val EXPRESSION_OPERATION_51: pointer<Operation> = new Operation(51, "+=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "plusAssign")
+private val EXPRESSION_OPERATION_52: pointer<Operation> = new Operation(52, "-=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "minusAssign")
+private val EXPRESSION_OPERATION_53: pointer<Operation> = new Operation(53, "<<=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "shlAssign")
+private val EXPRESSION_OPERATION_54: pointer<Operation> = new Operation(54, ">>=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "shrAssign")
+private val EXPRESSION_OPERATION_55: pointer<Operation> = new Operation(55, "<<<=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "ushlAssign")
+private val EXPRESSION_OPERATION_56: pointer<Operation> = new Operation(56, ">>>=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "ushrAssign")
+private val EXPRESSION_OPERATION_57: pointer<Operation> = new Operation(57, "&=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "bitwiseAndAssign")
+private val EXPRESSION_OPERATION_58: pointer<Operation> = new Operation(58, "!&=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "bitwiseNandAssign")
+private val EXPRESSION_OPERATION_59: pointer<Operation> = new Operation(59, "|=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "bitwiseOrAssign")
+private val EXPRESSION_OPERATION_60: pointer<Operation> = new Operation(60, "!|=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "bitwiseNorAssign")
 
+private val PARSER_OPERATIONS: pointer<ArrayList> =
+    new ArrayList(sizeof(Operation))
+        .push(EXPRESSION_OPERATION_0)
+        .push(EXPRESSION_OPERATION_1)
+        .push(EXPRESSION_OPERATION_2)
+        .push(EXPRESSION_OPERATION_3)
+        .push(EXPRESSION_OPERATION_4)
+        .push(EXPRESSION_OPERATION_5)
+        .push(EXPRESSION_OPERATION_6)
+        .push(EXPRESSION_OPERATION_7)
+        .push(EXPRESSION_OPERATION_8)
+        .push(EXPRESSION_OPERATION_9)
+        .push(EXPRESSION_OPERATION_10)
+        .push(EXPRESSION_OPERATION_11)
+        .push(EXPRESSION_OPERATION_12)
+        .push(EXPRESSION_OPERATION_13)
+        .push(EXPRESSION_OPERATION_14)
+        .push(EXPRESSION_OPERATION_15)
+        .push(EXPRESSION_OPERATION_16)
+        .push(EXPRESSION_OPERATION_17)
+        .push(EXPRESSION_OPERATION_18)
+        .push(EXPRESSION_OPERATION_19)
+        .push(EXPRESSION_OPERATION_20)
+        .push(EXPRESSION_OPERATION_21)
+        .push(EXPRESSION_OPERATION_22)
+        .push(EXPRESSION_OPERATION_23)
+        .push(EXPRESSION_OPERATION_24)
+        .push(EXPRESSION_OPERATION_25)
+        .push(EXPRESSION_OPERATION_26)
+        .push(EXPRESSION_OPERATION_27)
+        .push(EXPRESSION_OPERATION_28)
+        .push(EXPRESSION_OPERATION_29)
+        .push(EXPRESSION_OPERATION_30)
+        .push(EXPRESSION_OPERATION_31)
+        .push(EXPRESSION_OPERATION_32)
+        .push(EXPRESSION_OPERATION_33)
+        .push(EXPRESSION_OPERATION_34)
+        .push(EXPRESSION_OPERATION_35)
+        .push(EXPRESSION_OPERATION_36)
+        .push(EXPRESSION_OPERATION_37)
+        .push(EXPRESSION_OPERATION_38)
+        .push(EXPRESSION_OPERATION_39)
+        .push(EXPRESSION_OPERATION_40)
+        .push(EXPRESSION_OPERATION_41)
+        .push(EXPRESSION_OPERATION_42)
+        .push(EXPRESSION_OPERATION_43)
+        .push(EXPRESSION_OPERATION_44)
+        .push(EXPRESSION_OPERATION_45)
+        .push(EXPRESSION_OPERATION_46)
+        .push(EXPRESSION_OPERATION_47)
+        .push(EXPRESSION_OPERATION_48)
+        .push(EXPRESSION_OPERATION_49)
+        .push(EXPRESSION_OPERATION_50)
+        .push(EXPRESSION_OPERATION_51)
+        .push(EXPRESSION_OPERATION_52)
+        .push(EXPRESSION_OPERATION_53)
+        .push(EXPRESSION_OPERATION_54)
+        .push(EXPRESSION_OPERATION_55)
+        .push(EXPRESSION_OPERATION_56)
+        .push(EXPRESSION_OPERATION_57)
+        .push(EXPRESSION_OPERATION_58)
+        .push(EXPRESSION_OPERATION_59)
+        .push(EXPRESSION_OPERATION_60)
 
-private val EXPRESSION_PARSER_ID: int = 100
-private val ATOM_PARSER_ID: int = 101
-private val SIZE_OF_PARSER_ID: int = 102
-private val EXPRESSION_TUPLE_PARSER_ID: int = 103
-private val LIST_LITERAL_PARSER_ID: int = 104
-private val STATEMENT_PARSER_ID: int = 105
-private val ELSE_STATEMENT_PARSER_ID: int = 106
-private val WHILE_STATEMENT_PARSER_ID: int = 107
-private val FOR_HEADER_PARSER_ID: int = 108
-private val FOR_STATEMENT_PARSER_ID: int = 109
-private val VARIABLE_DEFINE_PARSER_ID: int = 110
-private val RETURN_STATEMENT_PARSER_ID: int = 111
-private val BLOCK_PARSER_ID: int = 112
-private val IF_EXPRESSION_PARSER_ID: int = 113
-private val IF_ELSE_EXPRESSION_PARSER_ID: int = 114
-private val MODIFIER_PARSER_ID: int = 115
-private val MODIFIER_LIST_MAYBE_PARSER_ID: int = 116
-private val PREPROCESS_SETTING_PARSER_ID: int = 117
-private val ANNOTATION_PARSER_ID: int = 118
-private val ANNOTATIONS_MAYBE_PARSER_ID: int = 119
-private val QUALIFIED_NAME_PARSER_ID: int = 120
-private val PACKAGE_DECLARATION_MAYBE_PARSER_ID: int = 121
-private val NAMESPACE_IMPORT_PARSER_ID: int = 122
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_ID: int = 123
-private val IMPORTED_SYMBOL_PARSER_ID: int = 124
-private val SELECTIVE_IMPORTS_PARSER_ID: int = 125
-private val IMPORT_DECLARATION_PARSER_ID: int = 126
-private val IMPORT_DECLARATIONS_MAYBE_PARSER_ID: int = 127
-private val FUNCTION_PARAM_PARSER_ID: int = 128
-private val FUNCTION_PARAMS_MAYBE_PARSER_ID: int = 129
-private val FIELD_PARSER_ID: int = 130
-private val FUNCTION_PARSER_ID: int = 131
-private val STRUCT_CONSTRUCTOR_PARSER_ID: int = 132
-private val MEMBER_PARSER_ID: int = 133
-private val STRUCT_PARSER_ID: int = 134
-private val PROGRAM_PARSER_ID: int = 135
+private fun toOperation(
+    token: pointer<Token>,
+    fixity: int
+) -> pointer<Operation>
+{
+    if token == null || token.text == null:
+        return null
 
+    val operations: pointer<ArrayList> = PARSER_OPERATIONS
+
+    for (var i: int = 0; i < operations.length; i++):
+    {
+        val operation: pointer<Operation> =
+            operations.get(i) as pointer<Operation>
+        val symbol: pointer<char> =
+            if operation == null: null else: operation.getSymbol()
+
+        if operation != null && operation.fixity == fixity &&
+            String.streq(symbol, token.text):
+            return operation
+    }
+
+    return null
+}
+private fun preprocessTypeTokens(
+    tokens: pointer<TokenList>,
+    fromIndex: int
+) -> pointer<TokenList>
+{
+    if tokens == null || fromIndex < 0 || fromIndex + 1 >= tokens.length():
+        return tokens
+
+    val first: pointer<Token> = tokens.get(fromIndex)
+    val open: pointer<Token> = tokens.get(fromIndex + 1)
+
+    if first == null:
+        return tokens
+
+    if first.kind != Tokenizer.TK_IDENTIFIER &&
+        first.kind != Tokenizer.KW_POINTER:
+        return tokens
+
+    if open == null || open.kind != Tokenizer.LESS:
+        return tokens
+
+    val result: pointer<TokenList> =
+        tokens.subToken(0, fromIndex + 2)
+    var depth: int = 1
+    var index: int = fromIndex + 2
+
+    while index < tokens.length() && depth > 0:
+    {
+        val token: pointer<Token> = tokens.get(index)
+
+        if token.kind == Tokenizer.LESS:
+        {
+            depth++
+            result.push(token)
+        }
+        elif token.kind == Tokenizer.GREATER:
+        {
+            depth--
+            result.push(token)
+        }
+        else:
+        {
+            val split: pointer<TokenList> =
+                ParserUtil.splitRightAngleToken(token)
+
+            if split == null:
+                result.push(token)
+            else:
+            {
+                for (var j: int = 0; j < split.length(); j++):
+                {
+                    val splitToken: pointer<Token> = split.get(j)
+                    result.push(splitToken)
+
+                    if splitToken.kind == Tokenizer.GREATER:
+                        depth--
+                }
+            }
+        }
+
+        index++
+    }
+
+    val suffix: pointer<TokenList> =
+        tokens.subToken(index, tokens.length())
+    result.addAll(result.length(), suffix.toArray())
+
+    return result
+}
+
+private fun makeRawNormalType(qualifiedName: pointer<QualifiedName>) -> pointer<NormalType>
+{
+    val normalType: pointer<NormalType> = NormalType.unresolved(
+        qualifiedName.toPackageDecl().getQualifiedName())
+    val tokens: pointer<ArrayList> = qualifiedName.getAllTokens()
+
+    for (var i: int = 0; i < tokens.length; i++):
+        normalType.addToken(tokens.get(i) as pointer<Token>)
+
+    return normalType
+}
+
+private inline fun makeTypeFromQName(results: pointer<ArrayList>) -> pointer<*> =
+    new TempType(Type.fromNormal(makeRawNormalType(
+        getContainerValue(results, 0) as pointer<QualifiedName>)))
+
+private inline fun makeTypeFromKeyword(results: pointer<ArrayList>) -> pointer<*>
+{
+    val token: pointer<Token> =
+        getContainerValue(results, 0, false) as pointer<Token>
+    var normalType: pointer<NormalType> =
+        if token.kind == Tokenizer.KW_BOOL: NormalType.boolType()
+        elif token.kind == Tokenizer.KW_BYTE: NormalType.byteType()
+        elif token.kind == Tokenizer.KW_CHAR: NormalType.charType()
+        elif token.kind == Tokenizer.KW_DOUBLE: NormalType.doubleType()
+        elif token.kind == Tokenizer.KW_FLOAT: NormalType.floatType()
+        elif token.kind == Tokenizer.KW_INT: NormalType.intType()
+        elif token.kind == Tokenizer.KW_LONG: NormalType.longType()
+        elif token.kind == Tokenizer.KW_SHORT: NormalType.shortType()
+        elif token.kind == Tokenizer.KW_VOID: NormalType.voidType()
+        else: NormalType.unresolved(token.text)
+
+    normalType.addToken(token)
+    return new TempType(Type.fromNormal(normalType))
+}
+
+private fun makeGenericType(results: pointer<ArrayList>) -> pointer<*>
+{
+    val qualifiedName: pointer<QualifiedName> =
+        getContainerValue(results, 0) as pointer<QualifiedName>
+    val lessToken: pointer<Token> =
+        getContainerValue(results, 1, false) as pointer<Token>
+    val arguments: pointer<ArrayList> =
+        getContainerValue(results, 2) as pointer<ArrayList>
+    val greaterToken: pointer<Token> =
+        getContainerValue(results, 3, false) as pointer<Token>
+    val normalType: pointer<NormalType> = makeRawNormalType(qualifiedName)
+
+    normalType.addToken(lessToken)
+
+    for (var i: int = 0; i < arguments.length; i++):
+    {
+        normalType.addTypeArgument(
+            getContainerValue(arguments, i) as pointer<Type>)
+    }
+
+    val separatorTokens: pointer<ArrayList> =
+        getContainerTokens(results, 2)
+
+    for (var i: int = 0; i < separatorTokens.length; i++):
+        normalType.addToken(separatorTokens.get(i) as pointer<Token>)
+
+    normalType.addToken(greaterToken)
+    return new TempType(Type.fromNormal(normalType))
+}
+
+private fun makePointerType(results: pointer<ArrayList>) -> pointer<*>
+{
+    val pointerToken: pointer<Token> =
+        getContainerValue(results, 0, false) as pointer<Token>
+    val lessToken: pointer<Token> =
+        getContainerValue(results, 1, false) as pointer<Token>
+    val argument: pointer<Type> =
+        getContainerValue(results, 2) as pointer<Type>
+    val greaterToken: pointer<Token> =
+        getContainerValue(results, 3, false) as pointer<Token>
+    val normalType: pointer<NormalType> =
+        NormalType.unresolved(pointerToken.text)
+
+    normalType.addToken(pointerToken)
+    normalType.addToken(lessToken)
+    normalType.addTypeArgument(argument)
+    normalType.addToken(greaterToken)
+    return new TempType(Type.fromNormal(normalType))
+}
+
+private fun makeVoidPointerType(results: pointer<ArrayList>) -> pointer<*>
+{
+    val pointerToken: pointer<Token> =
+        getContainerValue(results, 0, false) as pointer<Token>
+    val lessToken: pointer<Token> =
+        getContainerValue(results, 1, false) as pointer<Token>
+    val starToken: pointer<Token> =
+        getContainerValue(results, 2, false) as pointer<Token>
+    val greaterToken: pointer<Token> =
+        getContainerValue(results, 3, false) as pointer<Token>
+    val argument: pointer<Type> = Type.fromNormal(
+        NormalType.unresolved("void").addToken(starToken))
+    val normalType: pointer<NormalType> =
+        NormalType.unresolved(pointerToken.text)
+
+    normalType.addToken(pointerToken)
+    normalType.addToken(lessToken)
+    normalType.addTypeArgument(argument)
+    normalType.addToken(greaterToken)
+    return new TempType(Type.fromNormal(normalType))
+}
+
+private fun makeFunctionType(results: pointer<ArrayList>) -> pointer<*>
+{
+    val leftParen: pointer<Token> =
+        getContainerValue(results, 0, false) as pointer<Token>
+    val parsedParameters: pointer<ArrayList> =
+        getContainerValue(results, 1) as pointer<ArrayList>
+    val rightParen: pointer<Token> =
+        getContainerValue(results, 2, false) as pointer<Token>
+    val arrow: pointer<Token> =
+        getContainerValue(results, 3, false) as pointer<Token>
+    val returnType: pointer<Type> =
+        getContainerValue(results, 4) as pointer<Type>
+    val parameters: pointer<ArrayList> = new ArrayList(sizeof(Type))
+
+    for (var i: int = 0; i < parsedParameters.length; i++):
+        parameters.push(getContainerValue(parsedParameters, i) as pointer<Type>)
+
+    val functionType: pointer<FunctionType> =
+        new FunctionType(parameters, returnType)
+
+    functionType.addExtraToken(leftParen)
+
+    val separatorTokens: pointer<ArrayList> =
+        getContainerTokens(results, 1)
+
+    for (var i: int = 0; i < separatorTokens.length; i++):
+        functionType.addExtraToken(separatorTokens.get(i) as pointer<Token>)
+
+    functionType.addExtraToken(rightParen)
+    functionType.addExtraToken(arrow)
+    return new TempType(Type.fromFunction(functionType))
+}
+
+private fun makeBlobType(results: pointer<ArrayList>) -> pointer<*>
+{
+    val blobToken: pointer<Token> =
+        getContainerValue(results, 0, false) as pointer<Token>
+    val leftBracket: pointer<Token> =
+        getContainerValue(results, 1, false) as pointer<Token>
+    val blobSize: pointer<Expression> =
+        getContainerValue(results, 2) as pointer<Expression>
+    val rightBracket: pointer<Token> =
+        getContainerValue(results, 3, false) as pointer<Token>
+    val blobType: pointer<BlobType> = new BlobType(blobSize, 0)
+
+    blobType.addExtraToken(blobToken)
+    blobType.addExtraToken(leftBracket)
+    blobType.addExtraToken(rightBracket)
+    return new TempType(Type.fromBlob(blobType))
+}
+
+private inline fun makeTypeFromTemp(results: pointer<ArrayList>) -> pointer<*>
+{
+    val wrapped: pointer<TempType> =
+        getContainerValue(results, 0) as pointer<TempType>
+    return wrapped.toType()
+}
+
+private inline fun makeTypeFromParenthesizedTemp(
+    results: pointer<ArrayList>
+) -> pointer<*>
+{
+    return getContainerValue(results, 1) as pointer<Type>
+}
 
 private inline fun getContainerValue(results: pointer<ArrayList>, index: int, unwrapContainer: bool) -> pointer<*>
 {
@@ -132,6 +489,13 @@ private inline fun getContainerValue(results: pointer<ArrayList>, index: int, un
 
 private inline fun getContainerValue(results: pointer<ArrayList>, index: int) -> pointer<*> =
     getContainerValue(results, index, true)
+
+private inline fun getContainerTokens(results: pointer<ArrayList>, index: int) -> pointer<ArrayList>
+{
+    val container: pointer<ParserResult> =
+        getContainerValue(results, index, false) as pointer<ParserResult>
+    return container.getTokens()
+}
 
 private fun makeExprFromPrefixWith(
     results: pointer<ArrayList>,
@@ -503,6 +867,7 @@ private fun makeExpressionTuple(results: pointer<ArrayList>) -> pointer<*>
 
     return new ExpressionTuple(expressions)
         .addExtraToken(leftParen)
+        .addExtraTokens(getContainerTokens(results, 1))
         .addExtraToken(rightParen)
 }
 
@@ -514,6 +879,7 @@ private fun makeListLiteral(results: pointer<ArrayList>) -> pointer<*>
 
     return new ListLiteral(expressions)
         .addExtraToken(leftBracket)
+        .addExtraTokens(getContainerTokens(results, 1))
         .addExtraToken(rightBracket)
 }
 
@@ -523,9 +889,9 @@ private inline fun makeStmtFrom_ExprStatement(results: pointer<ArrayList>) -> po
     return Statement.fromExprStatement(new ExprStatement(expression))
 }
 
-private inline fun makeStmtFrom_ExprListStatement(results: pointer<ArrayList>) -> pointer<*>
+private fun unwrapExprListStatement(results: pointer<ArrayList>, index: int) -> pointer<Statement>
 {
-    val parsedExpressions: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
+    val parsedExpressions: pointer<ArrayList> = getContainerValue(results, index) as pointer<ArrayList>
 
     if parsedExpressions == null || parsedExpressions.length <= 0:
         return null
@@ -541,8 +907,17 @@ private inline fun makeStmtFrom_ExprListStatement(results: pointer<ArrayList>) -
         exprStatement.addExpression(expression)
     }
 
+    val separatorTokens: pointer<ArrayList> =
+        getContainerTokens(results, index)
+
+    for (var i = 0; i < separatorTokens.length; i++):
+        exprStatement.addExtraToken(separatorTokens.get(i) as pointer<Token>)
+
     return Statement.fromExprListStatement(exprStatement)
 }
+
+private inline fun makeStmtFrom_ExprListStatement(results: pointer<ArrayList>) -> pointer<*>
+    = unwrapExprListStatement(results, 0)
 
 private fun unwrapVariableDefines(results: pointer<ArrayList>, index: int) -> pointer<VariableDefines>
 {
@@ -561,6 +936,12 @@ private fun unwrapVariableDefines(results: pointer<ArrayList>, index: int) -> po
 
         variableDefines.addDefine(variableDefine)
     }
+
+    val separatorTokens: pointer<ArrayList> =
+        getContainerTokens(results, index)
+
+    for (var i = 0; i < separatorTokens.length; i++):
+        variableDefines.addExtraToken(separatorTokens.get(i) as pointer<Token>)
 
     return variableDefines
 }
@@ -675,12 +1056,14 @@ private inline fun buildForHeader(
 private inline fun makeForHeaderICS(results: pointer<ArrayList>) -> pointer<*>
 {
     val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val initStmt: pointer<Statement> = getContainerValue(results, 1) as pointer<Statement>
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val condition: pointer<Expression> = getContainerValue(results, 3) as pointer<Expression>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
-    val stepStmt: pointer<Statement> = getContainerValue(results, 5) as pointer<Statement>
-    val rightParenToken: pointer<Token> = getContainerValue(results, 6, false) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 2)
+    val initStmt: pointer<Statement> = Statement.fromVariableDefines(variableDefines.markAsMut()).addExtraToken(varToken)
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val condition: pointer<Expression> = getContainerValue(results, 4) as pointer<Expression>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val stepStmt: pointer<Statement> = unwrapExprListStatement(results, 6)
+    val rightParenToken: pointer<Token> = getContainerValue(results, 7, false) as pointer<Token>
 
     return buildForHeader(initStmt, condition, stepStmt, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
@@ -688,11 +1071,13 @@ private inline fun makeForHeaderICS(results: pointer<ArrayList>) -> pointer<*>
 private inline fun makeForHeaderIC(results: pointer<ArrayList>) -> pointer<*>
 {
     val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val initStmt: pointer<Statement> = getContainerValue(results, 1) as pointer<Statement>
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val condition: pointer<Expression> = getContainerValue(results, 3) as pointer<Expression>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
-    val rightParenToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 2)
+    val initStmt: pointer<Statement> = Statement.fromVariableDefines(variableDefines.markAsMut()).addExtraToken(varToken)
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val condition: pointer<Expression> = getContainerValue(results, 4) as pointer<Expression>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 6, false) as pointer<Token>
 
     return buildForHeader(initStmt, condition, null, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
@@ -700,11 +1085,13 @@ private inline fun makeForHeaderIC(results: pointer<ArrayList>) -> pointer<*>
 private inline fun makeForHeaderIS(results: pointer<ArrayList>) -> pointer<*>
 {
     val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val initStmt: pointer<Statement> = getContainerValue(results, 1) as pointer<Statement>
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val stepStmt: pointer<Statement> = getContainerValue(results, 4) as pointer<Statement>
-    val rightParenToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 2)
+    val initStmt: pointer<Statement> = Statement.fromVariableDefines(variableDefines.markAsMut()).addExtraToken(varToken)
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val stepStmt: pointer<Statement> = unwrapExprListStatement(results, 5)
+    val rightParenToken: pointer<Token> = getContainerValue(results, 6, false) as pointer<Token>
 
     return buildForHeader(initStmt, null, stepStmt, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
@@ -715,7 +1102,7 @@ private inline fun makeForHeaderCS(results: pointer<ArrayList>) -> pointer<*>
     val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 2) as pointer<Expression>
     val secondSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val stepStmt: pointer<Statement> = getContainerValue(results, 4) as pointer<Statement>
+    val stepStmt: pointer<Statement> = unwrapExprListStatement(results, 4)
     val rightParenToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
 
     return buildForHeader(null, condition, stepStmt, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
@@ -724,10 +1111,12 @@ private inline fun makeForHeaderCS(results: pointer<ArrayList>) -> pointer<*>
 private inline fun makeForHeaderI(results: pointer<ArrayList>) -> pointer<*>
 {
     val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val initStmt: pointer<Statement> = getContainerValue(results, 1) as pointer<Statement>
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val rightParenToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 2)
+    val initStmt: pointer<Statement> = Statement.fromVariableDefines(variableDefines.markAsMut()).addExtraToken(varToken)
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
 
     return buildForHeader(initStmt, null, null, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
@@ -748,7 +1137,7 @@ private inline fun makeForHeaderS(results: pointer<ArrayList>) -> pointer<*>
     val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
     val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
     val secondSemicolonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val stepStmt: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
+    val stepStmt: pointer<Statement> = unwrapExprListStatement(results, 3)
     val rightParenToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
 
     return buildForHeader(null, null, stepStmt, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
@@ -1030,8 +1419,18 @@ private fun makeEmptyBlockExpr(results: pointer<ArrayList>) -> pointer<*>
 private fun makeBlockExpr(results: pointer<ArrayList>) -> pointer<*>
 {
     val leftBrace: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val statements: pointer<ArrayList> = getContainerValue(results, 1) as pointer<ArrayList>
+    val parsedStatements: pointer<ArrayList> = getContainerValue(results, 1) as pointer<ArrayList>
+    val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
     val rightBrace: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+
+    for (var i: int = 0; i < parsedStatements.length; i++):
+    {
+        val statement: pointer<Statement> =
+            getContainerValue(parsedStatements, i) as pointer<Statement>
+
+        if statement != null:
+            statements.push(statement)
+    }
 
     return new Block(statements)
        .addExtraToken(leftBrace).addExtraToken(rightBrace)
@@ -1495,6 +1894,11 @@ private inline fun makeFunctionParamsMaybe(results: pointer<ArrayList>) -> point
             params.push(getContainerValue(parsedParams, i) as pointer<FunctionParam>)
     }
 
+    val separatorTokens: pointer<ArrayList> = getContainerTokens(results, 0)
+
+    for (var i: int = 0; i < separatorTokens.length; i++):
+        params.addExtraToken(separatorTokens.get(i) as pointer<Token>)
+
     return new FunctionParamsMaybe(params)
 }
 
@@ -1680,8 +2084,12 @@ private inline fun makeStruct(results: pointer<ArrayList>) -> pointer<*>
     val structToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
     val nameToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
     val leftBrace: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val members: pointer<ArrayList> = getContainerValue(results, 4) as pointer<ArrayList>
+    val parsedMembers: pointer<ArrayList> = getContainerValue(results, 4) as pointer<ArrayList>
+    val members: pointer<ArrayList> = new ArrayList(sizeof(Member))
     val rightBrace: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+
+    for (var i: int = 0; i < parsedMembers.length; i++):
+        members.push(getContainerValue(parsedMembers, i) as pointer<Member>)
 
     return new Struct(nameToken.text, members)
         .setModifiers(modifiers.toModifierSet())
@@ -1710,31 +2118,35 @@ private inline fun makeProgram(results: pointer<ArrayList>) -> pointer<*>
 
 private inline fun parse(input: pointer<TokenList>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
 {
-    PROGRAM_PARSER.doParse(input)
+    val result: pointer<ParserResult> = PROGRAM_PARSER.parse(input, 0)
 
-    if PROGRAM_PARSER.getError() != null:
+    if result == null:
+        return null
+
+    if result.hasError():
     {
-         diagnostics.push(PROGRAM_PARSER.getError())
-         return null
+        diagnostics.pushAll(result.getDiagnostics())
+        return null
     }
 
-    val result: pointer<ParserResult> = PROGRAM_PARSER.getResult()
     return result.getValue() as pointer<Program>
 }
 
 fun parse(input: pointer<TokenizedFile>, diagnostics: pointer<Diagnostics>) -> pointer<ASTFile>
 {
-    PROGRAM_PARSER.doParse(input.getTokens())
+    val result: pointer<ParserResult> =
+        PROGRAM_PARSER.parse(input.getTokens(), 0)
 
-    if PROGRAM_PARSER.getError() != null:
+    if result == null:
+        return null
+
+    if result.hasError():
     {
-         diagnostics.push(PROGRAM_PARSER.getError())
-         return null
+        diagnostics.pushAll(result.getDiagnostics())
+        return null
     }
 
-    val program: pointer<ParserResult> = PROGRAM_PARSER.getResult()
-    val result: pointer<ASTFile> = new ASTFile(input.getPath(), program.getValue())
-    return result
+    return new ASTFile(input.getPath(), result.getValue())
 }
 
 private inline fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
@@ -1756,1432 +2168,5233 @@ private inline fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostic
 
     return parse(tokenFile, diagnostics)
 }
+private inline fun parserRuleResult(
+    results: pointer<ArrayList>
+) -> pointer<*> = results
 
+private inline fun parserRuleIdentity(
+    tokens: pointer<TokenList>, index: int
+) -> pointer<TokenList> = tokens
 
-private val EXPRESSION_PARSER_SPECIFIC: pointer<PrattParser> = new PrattParser()
-val EXPRESSION_PARSER: pointer<ParserRef> = ParserRef.fromPratt(EXPRESSION_PARSER_ID, EXPRESSION_PARSER_SPECIFIC)
-
-private val ATOM_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(ATOM_PARSER_ID)
-val ATOM_PARSER_RULE: pointer<ParserRule> = new ParserRule(ATOM_PARSER_INPUT_RULES, null)
-val ATOM_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(ATOM_PARSER_ID)
-
-private val SIZE_OF_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(SIZE_OF_PARSER_ID)
-val SIZE_OF_PARSER_RULE: pointer<ParserRule> = new ParserRule(SIZE_OF_PARSER_INPUT_RULES, null)
-val SIZE_OF_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(SIZE_OF_PARSER_ID)
-
-private val EXPRESSION_TUPLE_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_TUPLE_PARSER_ID)
-val EXPRESSION_TUPLE_PARSER_RULE: pointer<ParserRule> = new ParserRule(EXPRESSION_TUPLE_PARSER_INPUT_RULES, null)
-val EXPRESSION_TUPLE_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(EXPRESSION_TUPLE_PARSER_ID)
-
-private val LIST_LITERAL_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(LIST_LITERAL_PARSER_ID)
-val LIST_LITERAL_PARSER_RULE: pointer<ParserRule> = new ParserRule(LIST_LITERAL_PARSER_INPUT_RULES, null)
-val LIST_LITERAL_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(LIST_LITERAL_PARSER_ID)
-
-private val STATEMENT_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(STATEMENT_PARSER_ID)
-val STATEMENT_PARSER_RULE: pointer<ParserRule> = new ParserRule(STATEMENT_PARSER_INPUT_RULES, null)
-val STATEMENT_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(STATEMENT_PARSER_ID)
-
-private val ELSE_STATEMENT_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(ELSE_STATEMENT_PARSER_ID)
-val ELSE_STATEMENT_PARSER_RULE: pointer<ParserRule> = new ParserRule(ELSE_STATEMENT_PARSER_INPUT_RULES, null)
-val ELSE_STATEMENT_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(ELSE_STATEMENT_PARSER_ID)
-
-private val WHILE_STATEMENT_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(WHILE_STATEMENT_PARSER_ID)
-val WHILE_STATEMENT_PARSER_RULE: pointer<ParserRule> = new ParserRule(WHILE_STATEMENT_PARSER_INPUT_RULES, null)
-val WHILE_STATEMENT_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(WHILE_STATEMENT_PARSER_ID)
-
-private val FOR_HEADER_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(FOR_HEADER_PARSER_ID)
-val FOR_HEADER_PARSER_RULE: pointer<ParserRule> = new ParserRule(FOR_HEADER_PARSER_INPUT_RULES, null)
-val FOR_HEADER_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(FOR_HEADER_PARSER_ID)
-
-private val FOR_STATEMENT_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(FOR_STATEMENT_PARSER_ID)
-val FOR_STATEMENT_PARSER_RULE: pointer<ParserRule> = new ParserRule(FOR_STATEMENT_PARSER_INPUT_RULES, null)
-val FOR_STATEMENT_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(FOR_STATEMENT_PARSER_ID)
-
-private val VARIABLE_DEFINE_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(VARIABLE_DEFINE_PARSER_ID)
-val VARIABLE_DEFINE_PARSER_RULE: pointer<ParserRule> = new ParserRule(VARIABLE_DEFINE_PARSER_INPUT_RULES, null)
-val VARIABLE_DEFINE_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(VARIABLE_DEFINE_PARSER_ID)
-
-private val RETURN_STATEMENT_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(RETURN_STATEMENT_PARSER_ID)
-val RETURN_STATEMENT_PARSER_RULE: pointer<ParserRule> = new ParserRule(RETURN_STATEMENT_PARSER_INPUT_RULES, null)
-val RETURN_STATEMENT_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(RETURN_STATEMENT_PARSER_ID)
-
-private val BLOCK_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(BLOCK_PARSER_ID)
-val BLOCK_PARSER_RULE: pointer<ParserRule> = new ParserRule(BLOCK_PARSER_INPUT_RULES, null)
-val BLOCK_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(BLOCK_PARSER_ID)
-
-private val IF_EXPRESSION_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(IF_EXPRESSION_PARSER_ID)
-val IF_EXPRESSION_PARSER_RULE: pointer<ParserRule> = new ParserRule(IF_EXPRESSION_PARSER_INPUT_RULES, null)
-val IF_EXPRESSION_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(IF_EXPRESSION_PARSER_ID)
-
-private val IF_ELSE_EXPRESSION_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(IF_ELSE_EXPRESSION_PARSER_ID)
-val IF_ELSE_EXPRESSION_PARSER_RULE: pointer<ParserRule> = new ParserRule(IF_ELSE_EXPRESSION_PARSER_INPUT_RULES, null)
-val IF_ELSE_EXPRESSION_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(IF_ELSE_EXPRESSION_PARSER_ID)
-
-private val MODIFIER_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(MODIFIER_PARSER_ID)
-val MODIFIER_PARSER_RULE: pointer<ParserRule> = new ParserRule(MODIFIER_PARSER_INPUT_RULES, null)
-val MODIFIER_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(MODIFIER_PARSER_ID)
-
-private val MODIFIER_LIST_MAYBE_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(MODIFIER_LIST_MAYBE_PARSER_ID)
-val MODIFIER_LIST_MAYBE_PARSER_RULE: pointer<ParserRule> = new ParserRule(MODIFIER_LIST_MAYBE_PARSER_INPUT_RULES, null)
-val MODIFIER_LIST_MAYBE_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(MODIFIER_LIST_MAYBE_PARSER_ID)
-
-private val PREPROCESS_SETTING_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(PREPROCESS_SETTING_PARSER_ID)
-val PREPROCESS_SETTING_PARSER_RULE: pointer<ParserRule> = new ParserRule(PREPROCESS_SETTING_PARSER_INPUT_RULES, null)
-val PREPROCESS_SETTING_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(PREPROCESS_SETTING_PARSER_ID)
-
-private val ANNOTATION_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(ANNOTATION_PARSER_ID)
-val ANNOTATION_PARSER_RULE: pointer<ParserRule> = new ParserRule(ANNOTATION_PARSER_INPUT_RULES, null)
-val ANNOTATION_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(ANNOTATION_PARSER_ID)
-
-private val ANNOTATIONS_MAYBE_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(ANNOTATIONS_MAYBE_PARSER_ID)
-val ANNOTATIONS_MAYBE_PARSER_RULE: pointer<ParserRule> = new ParserRule(ANNOTATIONS_MAYBE_PARSER_INPUT_RULES, null)
-val ANNOTATIONS_MAYBE_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(ANNOTATIONS_MAYBE_PARSER_ID)
-
-private val QUALIFIED_NAME_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(QUALIFIED_NAME_PARSER_ID)
-val QUALIFIED_NAME_PARSER_RULE: pointer<ParserRule> = new ParserRule(QUALIFIED_NAME_PARSER_INPUT_RULES, null)
-val QUALIFIED_NAME_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(QUALIFIED_NAME_PARSER_ID)
-
-private val PACKAGE_DECLARATION_MAYBE_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(PACKAGE_DECLARATION_MAYBE_PARSER_ID)
-val PACKAGE_DECLARATION_MAYBE_PARSER_RULE: pointer<ParserRule> = new ParserRule(PACKAGE_DECLARATION_MAYBE_PARSER_INPUT_RULES, null)
-val PACKAGE_DECLARATION_MAYBE_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(PACKAGE_DECLARATION_MAYBE_PARSER_ID)
-
-private val NAMESPACE_IMPORT_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(NAMESPACE_IMPORT_PARSER_ID)
-val NAMESPACE_IMPORT_PARSER_RULE: pointer<ParserRule> = new ParserRule(NAMESPACE_IMPORT_PARSER_INPUT_RULES, null)
-val NAMESPACE_IMPORT_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(NAMESPACE_IMPORT_PARSER_ID)
-
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_ID)
-val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE: pointer<ParserRule> = new ParserRule(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_INPUT_RULES, null)
-val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_ID)
-
-private val IMPORTED_SYMBOL_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(IMPORTED_SYMBOL_PARSER_ID)
-val IMPORTED_SYMBOL_PARSER_RULE: pointer<ParserRule> = new ParserRule(IMPORTED_SYMBOL_PARSER_INPUT_RULES, null)
-val IMPORTED_SYMBOL_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(IMPORTED_SYMBOL_PARSER_ID)
-
-private val SELECTIVE_IMPORTS_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(SELECTIVE_IMPORTS_PARSER_ID)
-val SELECTIVE_IMPORTS_PARSER_RULE: pointer<ParserRule> = new ParserRule(SELECTIVE_IMPORTS_PARSER_INPUT_RULES, null)
-val SELECTIVE_IMPORTS_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(SELECTIVE_IMPORTS_PARSER_ID)
-
-private val IMPORT_DECLARATION_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(IMPORT_DECLARATION_PARSER_ID)
-val IMPORT_DECLARATION_PARSER_RULE: pointer<ParserRule> = new ParserRule(IMPORT_DECLARATION_PARSER_INPUT_RULES, null)
-val IMPORT_DECLARATION_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(IMPORT_DECLARATION_PARSER_ID)
-
-private val IMPORT_DECLARATIONS_MAYBE_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(IMPORT_DECLARATIONS_MAYBE_PARSER_ID)
-val IMPORT_DECLARATIONS_MAYBE_PARSER_RULE: pointer<ParserRule> = new ParserRule(IMPORT_DECLARATIONS_MAYBE_PARSER_INPUT_RULES, null)
-val IMPORT_DECLARATIONS_MAYBE_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(IMPORT_DECLARATIONS_MAYBE_PARSER_ID)
-
-private val FUNCTION_PARAM_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(FUNCTION_PARAM_PARSER_ID)
-val FUNCTION_PARAM_PARSER_RULE: pointer<ParserRule> = new ParserRule(FUNCTION_PARAM_PARSER_INPUT_RULES, null)
-val FUNCTION_PARAM_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(FUNCTION_PARAM_PARSER_ID)
-
-private val FUNCTION_PARAMS_MAYBE_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(FUNCTION_PARAMS_MAYBE_PARSER_ID)
-val FUNCTION_PARAMS_MAYBE_PARSER_RULE: pointer<ParserRule> = new ParserRule(FUNCTION_PARAMS_MAYBE_PARSER_INPUT_RULES, null)
-val FUNCTION_PARAMS_MAYBE_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(FUNCTION_PARAMS_MAYBE_PARSER_ID)
-
-private val FIELD_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(FIELD_PARSER_ID)
-val FIELD_PARSER_RULE: pointer<ParserRule> = new ParserRule(FIELD_PARSER_INPUT_RULES, null)
-val FIELD_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(FIELD_PARSER_ID)
-
-private val FUNCTION_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(FUNCTION_PARSER_ID)
-val FUNCTION_PARSER_RULE: pointer<ParserRule> = new ParserRule(FUNCTION_PARSER_INPUT_RULES, null)
-val FUNCTION_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(FUNCTION_PARSER_ID)
-
-private val STRUCT_CONSTRUCTOR_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(STRUCT_CONSTRUCTOR_PARSER_ID)
-val STRUCT_CONSTRUCTOR_PARSER_RULE: pointer<ParserRule> = new ParserRule(STRUCT_CONSTRUCTOR_PARSER_INPUT_RULES, null)
-val STRUCT_CONSTRUCTOR_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(STRUCT_CONSTRUCTOR_PARSER_ID)
-
-private val MEMBER_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(MEMBER_PARSER_ID)
-val MEMBER_PARSER_RULE: pointer<ParserRule> = new ParserRule(MEMBER_PARSER_INPUT_RULES, null)
-val MEMBER_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(MEMBER_PARSER_ID)
-
-private val STRUCT_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(STRUCT_PARSER_ID)
-val STRUCT_PARSER_RULE: pointer<ParserRule> = new ParserRule(STRUCT_PARSER_INPUT_RULES, null)
-val STRUCT_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(STRUCT_PARSER_ID)
-
-private val PROGRAM_PARSER_INPUT_RULES: pointer<InputRules> = new InputRules(PROGRAM_PARSER_ID)
-val PROGRAM_PARSER_RULE: pointer<ParserRule> = new ParserRule(PROGRAM_PARSER_INPUT_RULES, null)
-val PROGRAM_PARSER: pointer<ParserRef> = ParserRef.fromRecursiveDown(PROGRAM_PARSER_ID)
-
-val OP_PAREN: pointer<Operation> = new Operation(0, "$paren", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 220, null)
-val OP_SUCC: pointer<Operation> = new Operation(1, "++", Operation.POSTFIX_TYPE, Operation.LEFT_ASSOC, 210, "succ")
-val OP_PRED: pointer<Operation> = new Operation(2, "--", Operation.POSTFIX_TYPE, Operation.LEFT_ASSOC, 210, "pred")
-val OP_INC: pointer<Operation> = new Operation(3, "++", Operation.PREFIX_TYPE, Operation.LEFT_ASSOC, 200, "inc")
-val OP_DEC: pointer<Operation> = new Operation(4, "--", Operation.PREFIX_TYPE, Operation.LEFT_ASSOC, 200, "dec")
-val OP_POS: pointer<Operation> = new Operation(5, "+", Operation.PREFIX_TYPE, Operation.RIGHT_ASSOC, 200, "pos")
-val OP_NEG: pointer<Operation> = new Operation(6, "-", Operation.PREFIX_TYPE, Operation.RIGHT_ASSOC, 200, "neg")
-val OP_POW: pointer<Operation> = new Operation(7, "**", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 190, "pow")
-val OP_TIMES: pointer<Operation> = new Operation(8, "*", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 180, "times")
-val OP_DIV: pointer<Operation> = new Operation(9, "/", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 180, "div")
-val OP_REM: pointer<Operation> = new Operation(10, "%", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 180, "rem")
-val OP_PLUS: pointer<Operation> = new Operation(11, "+", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 170, "plus")
-val OP_MINUS: pointer<Operation> = new Operation(12, "-", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 170, "minus")
-val OP_SHL: pointer<Operation> = new Operation(13, "shl", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 160, "shl")
-val OP_SHR: pointer<Operation> = new Operation(14, "shr", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 160, "shr")
-val OP_USHR: pointer<Operation> = new Operation(15, "ushr", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 160, "ushr")
-val OP_GREATER: pointer<Operation> = new Operation(16, ">", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 150, "greater")
-val OP_LESS: pointer<Operation> = new Operation(17, "<", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 150, "less")
-val OP_GREATER_EQUAL: pointer<Operation> = new Operation(18, ">=", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 150, "greaterEqual")
-val OP_LESS_EQUAL: pointer<Operation> = new Operation(19, "<=", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 150, "lessEqual")
-val OP_REF_EQUALS: pointer<Operation> = new Operation(20, "===", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 140, "refEquals")
-val OP_EQUALS: pointer<Operation> = new Operation(21, "==", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 140, "equals")
-val OP_NOT_REF_EQUALS: pointer<Operation> = new Operation(22, "!==", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 140, "notRefEquals")
-val OP_NOT_EQUALS: pointer<Operation> = new Operation(23, "!=", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 140, "notEquals")
-val OP_INV: pointer<Operation> = new Operation(24, "inv", Operation.PREFIX_TYPE, Operation.RIGHT_ASSOC, 130, "inv")
-val OP_BITWISE_AND: pointer<Operation> = new Operation(25, "and", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 120, "bitwiseAnd")
-val OP_BITWISE_NAND: pointer<Operation> = new Operation(26, "nand", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 120, "bitwiseNand")
-val OP_BITWISE_XOR: pointer<Operation> = new Operation(27, "xor", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 110, "bitwiseXor")
-val OP_BITWISE_XNOR: pointer<Operation> = new Operation(28, "xnor", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 110, "bitwiseXnor")
-val OP_BITWISE_OR: pointer<Operation> = new Operation(29, "or", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 100, "bitwiseOr")
-val OP_BITWISE_NOR: pointer<Operation> = new Operation(30, "nor", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 100, "bitwiseNor")
-val OP_IMPLIES: pointer<Operation> = new Operation(31, "implies", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 90, "implies")
-val OP_NIMPLIES: pointer<Operation> = new Operation(32, "nimplies", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 90, "nimplies")
-val OP_IFF: pointer<Operation> = new Operation(33, "iff", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 80, "iff")
-val OP_NIFF: pointer<Operation> = new Operation(34, "niff", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 80, "niff")
-val OP_NOT: pointer<Operation> = new Operation(35, "!", Operation.PREFIX_TYPE, Operation.RIGHT_ASSOC, 70, "not")
-val OP_LOGICAL_AND: pointer<Operation> = new Operation(36, "&&", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 60, "logicalAnd")
-val OP_LOGICAL_NAND: pointer<Operation> = new Operation(37, "!&&", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 60, "logicalNand")
-val OP_LOGICAL_XOR: pointer<Operation> = new Operation(38, "^", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 50, "logicalXor")
-val OP_LOGICAL_XNOR: pointer<Operation> = new Operation(39, "!^", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 50, "logicalXnor")
-val OP_LOGICAL_OR: pointer<Operation> = new Operation(40, "||", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 40, "logicalOr")
-val OP_LOGICAL_NOR: pointer<Operation> = new Operation(41, "!||", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 40, "logicalNor")
-val OP_LOGICAL_IMPLIES: pointer<Operation> = new Operation(42, "->", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 30, "logicalImplies")
-val OP_LOGICAL_NIMPLIES: pointer<Operation> = new Operation(43, "!->", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 30, "logicalNimplies")
-val OP_LOGICAL_IFF: pointer<Operation> = new Operation(44, "<->", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 20, "logicalIff")
-val OP_LOGICAL_NIFF: pointer<Operation> = new Operation(45, "!<->", Operation.INFIX_TYPE, Operation.LEFT_ASSOC, 20, "logicalNiff")
-val OP_ASSIGN: pointer<Operation> = new Operation(46, "=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "assign")
-val OP_POW_ASSIGN: pointer<Operation> = new Operation(47, "**=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "powAssign")
-val OP_TIMES_ASSIGN: pointer<Operation> = new Operation(48, "*=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "timesAssign")
-val OP_DIV_ASSIGN: pointer<Operation> = new Operation(49, "/=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "divAssign")
-val OP_REM_ASSIGN: pointer<Operation> = new Operation(50, "%=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "remAssign")
-val OP_PLUS_ASSIGN: pointer<Operation> = new Operation(51, "+=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "plusAssign")
-val OP_MINUS_ASSIGN: pointer<Operation> = new Operation(52, "-=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "minusAssign")
-val OP_SHL_ASSIGN: pointer<Operation> = new Operation(53, "<<=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "shlAssign")
-val OP_SHR_ASSIGN: pointer<Operation> = new Operation(54, ">>=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "shrAssign")
-val OP_USHL_ASSIGN: pointer<Operation> = new Operation(55, "<<<=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "ushlAssign")
-val OP_USHR_ASSIGN: pointer<Operation> = new Operation(56, ">>>=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "ushrAssign")
-val OP_BITWISE_AND_ASSIGN: pointer<Operation> = new Operation(57, "&=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "bitwiseAndAssign")
-val OP_BITWISE_NAND_ASSIGN: pointer<Operation> = new Operation(58, "!&=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "bitwiseNandAssign")
-val OP_BITWISE_OR_ASSIGN: pointer<Operation> = new Operation(59, "|=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "bitwiseOrAssign")
-val OP_BITWISE_NOR_ASSIGN: pointer<Operation> = new Operation(60, "!|=", Operation.INFIX_TYPE, Operation.RIGHT_ASSOC, 10, "bitwiseNorAssign")
-
-private fun toOperation(token: pointer<Token>, fixity: int) -> pointer<Operation>
+private fun createCombinatorRegex(
+    tokenKind: int, ruleIndex: int
+) -> pointer<RuleExpression>
 {
-    if token == null:
-        return null
-
-    if token.kind == Tokenizer.LEFT_PAREN && fixity == Operation.INFIX_TYPE:
-        return OP_PAREN
-
-    if token.kind == Tokenizer.PLUS && fixity == Operation.PREFIX_TYPE:
-        return OP_POS
-
-    if token.kind == Tokenizer.MINUS && fixity == Operation.PREFIX_TYPE:
-        return OP_NEG
-
-    if token.kind == Tokenizer.DOUBLE_PLUS && fixity == Operation.PREFIX_TYPE:
-        return OP_INC
-
-    if token.kind == Tokenizer.DOUBLE_MINUS && fixity == Operation.PREFIX_TYPE:
-        return OP_DEC
-
-    if token.kind == Tokenizer.KW_INV && fixity == Operation.PREFIX_TYPE:
-        return OP_INV
-
-    if token.kind == Tokenizer.BANG && fixity == Operation.PREFIX_TYPE:
-        return OP_NOT
-
-    if token.kind == Tokenizer.DOUBLE_PLUS && fixity == Operation.POSTFIX_TYPE:
-        return OP_SUCC
-
-    if token.kind == Tokenizer.DOUBLE_MINUS && fixity == Operation.POSTFIX_TYPE:
-        return OP_PRED
-
-    if token.kind == Tokenizer.DOUBLE_STAR && fixity == Operation.INFIX_TYPE:
-        return OP_POW
-
-    if token.kind == Tokenizer.STAR && fixity == Operation.INFIX_TYPE:
-        return OP_TIMES
-
-    if token.kind == Tokenizer.SLASH && fixity == Operation.INFIX_TYPE:
-        return OP_DIV
-
-    if token.kind == Tokenizer.PERCENT && fixity == Operation.INFIX_TYPE:
-        return OP_REM
-
-    if token.kind == Tokenizer.PLUS && fixity == Operation.INFIX_TYPE:
-        return OP_PLUS
-
-    if token.kind == Tokenizer.MINUS && fixity == Operation.INFIX_TYPE:
-        return OP_MINUS
-
-    if token.kind == Tokenizer.KW_SHL && fixity == Operation.INFIX_TYPE:
-        return OP_SHL
-
-    if token.kind == Tokenizer.KW_SHR && fixity == Operation.INFIX_TYPE:
-        return OP_SHR
-
-    if token.kind == Tokenizer.KW_USHR && fixity == Operation.INFIX_TYPE:
-        return OP_USHR
-
-    if token.kind == Tokenizer.GREATER && fixity == Operation.INFIX_TYPE:
-        return OP_GREATER
-
-    if token.kind == Tokenizer.LESS && fixity == Operation.INFIX_TYPE:
-        return OP_LESS
-
-    if token.kind == Tokenizer.GREATER_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_GREATER_EQUAL
-
-    if token.kind == Tokenizer.LESS_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_LESS_EQUAL
-
-    if token.kind == Tokenizer.TRIPLE_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_REF_EQUALS
-
-    if token.kind == Tokenizer.DOUBLE_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_EQUALS
-
-    if token.kind == Tokenizer.BANG_DOUBLE_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_REF_EQUALS
-
-    if token.kind == Tokenizer.NOT_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_EQUALS
-
-    if token.kind == Tokenizer.KW_AND && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_AND
-
-    if token.kind == Tokenizer.KW_NAND && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_NAND
-
-    if token.kind == Tokenizer.KW_XOR && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_XOR
-
-    if token.kind == Tokenizer.KW_XNOR && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_XNOR
-
-    if token.kind == Tokenizer.KW_OR && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_OR
-
-    if token.kind == Tokenizer.KW_NOR && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_NOR
-
-    if token.kind == Tokenizer.KW_IMPLIES && fixity == Operation.INFIX_TYPE:
-        return OP_IMPLIES
-
-    if token.kind == Tokenizer.KW_NIMPLIES && fixity == Operation.INFIX_TYPE:
-        return OP_NIMPLIES
-
-    if token.kind == Tokenizer.KW_IFF && fixity == Operation.INFIX_TYPE:
-        return OP_IFF
-
-    if token.kind == Tokenizer.KW_NIFF && fixity == Operation.INFIX_TYPE:
-        return OP_NIFF
-
-    if token.kind == Tokenizer.DOUBLE_AMPERSAND && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_AND
-
-    if token.kind == Tokenizer.BANG_DOUBLE_AMPERSAND && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_NAND
-
-    if token.kind == Tokenizer.CARET && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_XOR
-
-    if token.kind == Tokenizer.BANG_CARET && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_XNOR
-
-    if token.kind == Tokenizer.DOUBLE_PIPE && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_OR
-
-    if token.kind == Tokenizer.BANG_DOUBLE_PIPE && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_NOR
-
-    if token.kind == Tokenizer.ARROW && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_IMPLIES
-
-    if token.kind == Tokenizer.NOT_ARROW && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_NIMPLIES
-
-    if token.kind == Tokenizer.DOUBLE_ARROW && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_IFF
-
-    if token.kind == Tokenizer.BANG_DOUBLE_ARROW && fixity == Operation.INFIX_TYPE:
-        return OP_LOGICAL_NIFF
-
-    if token.kind == Tokenizer.EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_ASSIGN
-
-    if token.kind == Tokenizer.DOUBLE_STAR_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_POW_ASSIGN
-
-    if token.kind == Tokenizer.STAR_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_TIMES_ASSIGN
-
-    if token.kind == Tokenizer.SLASH_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_DIV_ASSIGN
-
-    if token.kind == Tokenizer.PERCENT_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_REM_ASSIGN
-
-    if token.kind == Tokenizer.PLUS_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_PLUS_ASSIGN
-
-    if token.kind == Tokenizer.MINUS_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_MINUS_ASSIGN
-
-    if token.kind == Tokenizer.DOUBLE_LESS_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_SHL_ASSIGN
-
-    if token.kind == Tokenizer.DOUBLE_GREATER_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_SHR_ASSIGN
-
-    if token.kind == Tokenizer.TRIPLE_LESS_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_USHL_ASSIGN
-
-    if token.kind == Tokenizer.TRIPLE_GREATER_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_USHR_ASSIGN
-
-    if token.kind == Tokenizer.AMPERSAND_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_AND_ASSIGN
-
-    if token.kind == Tokenizer.BANG_AMPERSAND_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_NAND_ASSIGN
-
-    if token.kind == Tokenizer.PIPE_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_OR_ASSIGN
-
-    if token.kind == Tokenizer.BANG_PIPE_EQUAL && fixity == Operation.INFIX_TYPE:
-        return OP_BITWISE_NOR_ASSIGN
-
-    return null
+    val expression: pointer<RuleExpression> =
+        RuleExpression.fromRegexAtom(tokenKind)
+    expression.getAtomRule().getTokenRule().addRuleId(ruleIndex)
+    return expression
 }
 
-private val EXPRESSION_RULE0_INPUT: pointer<InputRule> = new InputRule(250, makeExprFromNewFunc)
-private val EXPRESSION_RULE0_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE0_INPUT)
-private val EXPRESSION_RULE0: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE0_INPUT_RULES, null)
-private val EXPRESSION_RULE1_INPUT: pointer<InputRule> = new InputRule(240, makeExprFromNewIdent)
-private val EXPRESSION_RULE1_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE1_INPUT)
-private val EXPRESSION_RULE1: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE1_INPUT_RULES, null)
-private val EXPRESSION_RULE2_INPUT: pointer<InputRule> = new InputRule(240, makeExprFromSizeOf)
-private val EXPRESSION_RULE2_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE2_INPUT)
-private val EXPRESSION_RULE2: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE2_INPUT_RULES, null)
-private val EXPRESSION_RULE3_INPUT: pointer<InputRule> = new InputRule(240, makeExprFromFuncCall)
-private val EXPRESSION_RULE3_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE3_INPUT)
-private val EXPRESSION_RULE3: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE3_INPUT_RULES, null)
-private val EXPRESSION_RULE4_INPUT: pointer<InputRule> = new InputRule(240, makeExprFromIfElseExpr)
-private val EXPRESSION_RULE4_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE4_INPUT)
-private val EXPRESSION_RULE4: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE4_INPUT_RULES, null)
-private val EXPRESSION_RULE5_INPUT: pointer<InputRule> = new InputRule(230, makeExprFromIfExpr)
-private val EXPRESSION_RULE5_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE5_INPUT)
-private val EXPRESSION_RULE5: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE5_INPUT_RULES, null)
-private val EXPRESSION_RULE6_INPUT: pointer<InputRule> = new InputRule(230, makeExprFromBlockExpr)
-private val EXPRESSION_RULE6_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE6_INPUT)
-private val EXPRESSION_RULE6: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE6_INPUT_RULES, null)
-private val EXPRESSION_RULE7_INPUT: pointer<InputRule> = new InputRule(230, makeExprFromAtom)
-private val EXPRESSION_RULE7_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE7_INPUT)
-private val EXPRESSION_RULE7: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE7_INPUT_RULES, null)
-private val EXPRESSION_RULE8_INPUT: pointer<InputRule> = new InputRule(OP_PAREN, makeExprFromParen)
-private val EXPRESSION_RULE8_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE8_INPUT)
-private val EXPRESSION_RULE8: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE8_INPUT_RULES, null)
-private val EXPRESSION_RULE9_INPUT: pointer<InputRule> = new InputRule(OP_POS, makeExprFromPrefix)
-private val EXPRESSION_RULE9_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE9_INPUT)
-private val EXPRESSION_RULE9: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE9_INPUT_RULES, null)
-private val EXPRESSION_RULE10_INPUT: pointer<InputRule> = new InputRule(OP_NEG, makeExprFromPrefix)
-private val EXPRESSION_RULE10_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE10_INPUT)
-private val EXPRESSION_RULE10: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE10_INPUT_RULES, null)
-private val EXPRESSION_RULE11_INPUT: pointer<InputRule> = new InputRule(OP_INC, makeExprFromPrefix)
-private val EXPRESSION_RULE11_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE11_INPUT)
-private val EXPRESSION_RULE11: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE11_INPUT_RULES, null)
-private val EXPRESSION_RULE12_INPUT: pointer<InputRule> = new InputRule(OP_DEC, makeExprFromPrefix)
-private val EXPRESSION_RULE12_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE12_INPUT)
-private val EXPRESSION_RULE12: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE12_INPUT_RULES, null)
-private val EXPRESSION_RULE13_INPUT: pointer<InputRule> = new InputRule(OP_INV, makeExprFromPrefix)
-private val EXPRESSION_RULE13_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE13_INPUT)
-private val EXPRESSION_RULE13: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE13_INPUT_RULES, null)
-private val EXPRESSION_RULE14_INPUT: pointer<InputRule> = new InputRule(OP_NOT, makeExprFromPrefix)
-private val EXPRESSION_RULE14_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE14_INPUT)
-private val EXPRESSION_RULE14: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE14_INPUT_RULES, null)
-private val EXPRESSION_RULE15_INPUT: pointer<InputRule> = new InputRule(230, makeExprFromIndexAccess)
-private val EXPRESSION_RULE15_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE15_INPUT)
-private val EXPRESSION_RULE15: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE15_INPUT_RULES, null)
-private val EXPRESSION_RULE16_INPUT: pointer<InputRule> = new InputRule(230, makeExprFromMethodCall)
-private val EXPRESSION_RULE16_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE16_INPUT)
-private val EXPRESSION_RULE16: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE16_INPUT_RULES, null)
-private val EXPRESSION_RULE17_INPUT: pointer<InputRule> = new InputRule(220, makeExprFromFieldAccess)
-private val EXPRESSION_RULE17_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE17_INPUT)
-private val EXPRESSION_RULE17: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE17_INPUT_RULES, null)
-private val EXPRESSION_RULE18_INPUT: pointer<InputRule> = new InputRule(OP_SUCC, makeExprFromPostfix)
-private val EXPRESSION_RULE18_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE18_INPUT)
-private val EXPRESSION_RULE18: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE18_INPUT_RULES, null)
-private val EXPRESSION_RULE19_INPUT: pointer<InputRule> = new InputRule(OP_PRED, makeExprFromPostfix)
-private val EXPRESSION_RULE19_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE19_INPUT)
-private val EXPRESSION_RULE19: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE19_INPUT_RULES, null)
-private val EXPRESSION_RULE20_INPUT: pointer<InputRule> = new InputRule(200, makeExprFromTypeCast)
-private val EXPRESSION_RULE20_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE20_INPUT)
-private val EXPRESSION_RULE20: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE20_INPUT_RULES, null)
-private val EXPRESSION_RULE21_INPUT: pointer<InputRule> = new InputRule(OP_POW, makeExprFromInfix)
-private val EXPRESSION_RULE21_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE21_INPUT)
-private val EXPRESSION_RULE21: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE21_INPUT_RULES, null)
-private val EXPRESSION_RULE22_INPUT: pointer<InputRule> = new InputRule(OP_TIMES, makeExprFromInfix)
-private val EXPRESSION_RULE22_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE22_INPUT)
-private val EXPRESSION_RULE22: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE22_INPUT_RULES, null)
-private val EXPRESSION_RULE23_INPUT: pointer<InputRule> = new InputRule(OP_DIV, makeExprFromInfix)
-private val EXPRESSION_RULE23_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE23_INPUT)
-private val EXPRESSION_RULE23: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE23_INPUT_RULES, null)
-private val EXPRESSION_RULE24_INPUT: pointer<InputRule> = new InputRule(OP_REM, makeExprFromInfix)
-private val EXPRESSION_RULE24_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE24_INPUT)
-private val EXPRESSION_RULE24: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE24_INPUT_RULES, null)
-private val EXPRESSION_RULE25_INPUT: pointer<InputRule> = new InputRule(OP_PLUS, makeExprFromInfix)
-private val EXPRESSION_RULE25_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE25_INPUT)
-private val EXPRESSION_RULE25: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE25_INPUT_RULES, null)
-private val EXPRESSION_RULE26_INPUT: pointer<InputRule> = new InputRule(OP_MINUS, makeExprFromInfix)
-private val EXPRESSION_RULE26_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE26_INPUT)
-private val EXPRESSION_RULE26: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE26_INPUT_RULES, null)
-private val EXPRESSION_RULE27_INPUT: pointer<InputRule> = new InputRule(OP_SHL, makeExprFromInfix)
-private val EXPRESSION_RULE27_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE27_INPUT)
-private val EXPRESSION_RULE27: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE27_INPUT_RULES, null)
-private val EXPRESSION_RULE28_INPUT: pointer<InputRule> = new InputRule(OP_SHR, makeExprFromInfix)
-private val EXPRESSION_RULE28_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE28_INPUT)
-private val EXPRESSION_RULE28: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE28_INPUT_RULES, null)
-private val EXPRESSION_RULE29_INPUT: pointer<InputRule> = new InputRule(OP_USHR, makeExprFromInfix)
-private val EXPRESSION_RULE29_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE29_INPUT)
-private val EXPRESSION_RULE29: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE29_INPUT_RULES, null)
-private val EXPRESSION_RULE30_INPUT: pointer<InputRule> = new InputRule(OP_GREATER, makeExprFromCompare)
-private val EXPRESSION_RULE30_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE30_INPUT)
-private val EXPRESSION_RULE30: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE30_INPUT_RULES, null)
-private val EXPRESSION_RULE31_INPUT: pointer<InputRule> = new InputRule(OP_LESS, makeExprFromCompare)
-private val EXPRESSION_RULE31_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE31_INPUT)
-private val EXPRESSION_RULE31: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE31_INPUT_RULES, null)
-private val EXPRESSION_RULE32_INPUT: pointer<InputRule> = new InputRule(OP_GREATER_EQUAL, makeExprFromCompare)
-private val EXPRESSION_RULE32_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE32_INPUT)
-private val EXPRESSION_RULE32: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE32_INPUT_RULES, null)
-private val EXPRESSION_RULE33_INPUT: pointer<InputRule> = new InputRule(OP_LESS_EQUAL, makeExprFromCompare)
-private val EXPRESSION_RULE33_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE33_INPUT)
-private val EXPRESSION_RULE33: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE33_INPUT_RULES, null)
-private val EXPRESSION_RULE34_INPUT: pointer<InputRule> = new InputRule(OP_REF_EQUALS, makeExprFromInfix)
-private val EXPRESSION_RULE34_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE34_INPUT)
-private val EXPRESSION_RULE34: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE34_INPUT_RULES, null)
-private val EXPRESSION_RULE35_INPUT: pointer<InputRule> = new InputRule(OP_EQUALS, makeExprFromInfix)
-private val EXPRESSION_RULE35_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE35_INPUT)
-private val EXPRESSION_RULE35: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE35_INPUT_RULES, null)
-private val EXPRESSION_RULE36_INPUT: pointer<InputRule> = new InputRule(OP_REF_EQUALS, makeExprFromNotRefEqual)
-private val EXPRESSION_RULE36_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE36_INPUT)
-private val EXPRESSION_RULE36: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE36_INPUT_RULES, null)
-private val EXPRESSION_RULE37_INPUT: pointer<InputRule> = new InputRule(OP_EQUALS, makeExprFromNotEqual)
-private val EXPRESSION_RULE37_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE37_INPUT)
-private val EXPRESSION_RULE37: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE37_INPUT_RULES, null)
-private val EXPRESSION_RULE38_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_AND, makeExprFromInfix)
-private val EXPRESSION_RULE38_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE38_INPUT)
-private val EXPRESSION_RULE38: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE38_INPUT_RULES, null)
-private val EXPRESSION_RULE39_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_NAND, makeExprFromBitwiseNand)
-private val EXPRESSION_RULE39_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE39_INPUT)
-private val EXPRESSION_RULE39: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE39_INPUT_RULES, null)
-private val EXPRESSION_RULE40_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_XOR, makeExprFromBitwiseXor)
-private val EXPRESSION_RULE40_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE40_INPUT)
-private val EXPRESSION_RULE40: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE40_INPUT_RULES, null)
-private val EXPRESSION_RULE41_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_XNOR, makeExprFromBitwiseXnor)
-private val EXPRESSION_RULE41_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE41_INPUT)
-private val EXPRESSION_RULE41: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE41_INPUT_RULES, null)
-private val EXPRESSION_RULE42_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_OR, makeExprFromInfix)
-private val EXPRESSION_RULE42_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE42_INPUT)
-private val EXPRESSION_RULE42: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE42_INPUT_RULES, null)
-private val EXPRESSION_RULE43_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_NOR, makeExprFromBitwiseNor)
-private val EXPRESSION_RULE43_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE43_INPUT)
-private val EXPRESSION_RULE43: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE43_INPUT_RULES, null)
-private val EXPRESSION_RULE44_INPUT: pointer<InputRule> = new InputRule(OP_IMPLIES, makeExprFromImplies)
-private val EXPRESSION_RULE44_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE44_INPUT)
-private val EXPRESSION_RULE44: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE44_INPUT_RULES, null)
-private val EXPRESSION_RULE45_INPUT: pointer<InputRule> = new InputRule(OP_NIMPLIES, makeExprFromNimplies)
-private val EXPRESSION_RULE45_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE45_INPUT)
-private val EXPRESSION_RULE45: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE45_INPUT_RULES, null)
-private val EXPRESSION_RULE46_INPUT: pointer<InputRule> = new InputRule(OP_IFF, makeExprFromIff)
-private val EXPRESSION_RULE46_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE46_INPUT)
-private val EXPRESSION_RULE46: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE46_INPUT_RULES, null)
-private val EXPRESSION_RULE47_INPUT: pointer<InputRule> = new InputRule(OP_NIFF, makeExprFromNiff)
-private val EXPRESSION_RULE47_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE47_INPUT)
-private val EXPRESSION_RULE47: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE47_INPUT_RULES, null)
-private val EXPRESSION_RULE48_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_AND, makeExprFromInfix)
-private val EXPRESSION_RULE48_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE48_INPUT)
-private val EXPRESSION_RULE48: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE48_INPUT_RULES, null)
-private val EXPRESSION_RULE49_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_NAND, makeExprFromLogicalNand)
-private val EXPRESSION_RULE49_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE49_INPUT)
-private val EXPRESSION_RULE49: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE49_INPUT_RULES, null)
-private val EXPRESSION_RULE50_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_XOR, makeExprFromLogicalXor)
-private val EXPRESSION_RULE50_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE50_INPUT)
-private val EXPRESSION_RULE50: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE50_INPUT_RULES, null)
-private val EXPRESSION_RULE51_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_XNOR, makeExprFromLogicalXnor)
-private val EXPRESSION_RULE51_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE51_INPUT)
-private val EXPRESSION_RULE51: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE51_INPUT_RULES, null)
-private val EXPRESSION_RULE52_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_OR, makeExprFromInfix)
-private val EXPRESSION_RULE52_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE52_INPUT)
-private val EXPRESSION_RULE52: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE52_INPUT_RULES, null)
-private val EXPRESSION_RULE53_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_NOR, makeExprFromLogicalNor)
-private val EXPRESSION_RULE53_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE53_INPUT)
-private val EXPRESSION_RULE53: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE53_INPUT_RULES, null)
-private val EXPRESSION_RULE54_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_IMPLIES, makeExprFromLogicalImplies)
-private val EXPRESSION_RULE54_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE54_INPUT)
-private val EXPRESSION_RULE54: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE54_INPUT_RULES, null)
-private val EXPRESSION_RULE55_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_NIMPLIES, makeExprFromLogicalNimplies)
-private val EXPRESSION_RULE55_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE55_INPUT)
-private val EXPRESSION_RULE55: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE55_INPUT_RULES, null)
-private val EXPRESSION_RULE56_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_IFF, makeExprFromLogicalIff)
-private val EXPRESSION_RULE56_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE56_INPUT)
-private val EXPRESSION_RULE56: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE56_INPUT_RULES, null)
-private val EXPRESSION_RULE57_INPUT: pointer<InputRule> = new InputRule(OP_LOGICAL_NIFF, makeExprFromLogicalNiff)
-private val EXPRESSION_RULE57_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE57_INPUT)
-private val EXPRESSION_RULE57: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE57_INPUT_RULES, null)
-private val EXPRESSION_RULE58_INPUT: pointer<InputRule> = new InputRule(OP_ASSIGN, makeExprFromAssign)
-private val EXPRESSION_RULE58_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE58_INPUT)
-private val EXPRESSION_RULE58: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE58_INPUT_RULES, null)
-private val EXPRESSION_RULE59_INPUT: pointer<InputRule> = new InputRule(OP_POW_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE59_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE59_INPUT)
-private val EXPRESSION_RULE59: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE59_INPUT_RULES, null)
-private val EXPRESSION_RULE60_INPUT: pointer<InputRule> = new InputRule(OP_TIMES_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE60_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE60_INPUT)
-private val EXPRESSION_RULE60: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE60_INPUT_RULES, null)
-private val EXPRESSION_RULE61_INPUT: pointer<InputRule> = new InputRule(OP_DIV_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE61_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE61_INPUT)
-private val EXPRESSION_RULE61: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE61_INPUT_RULES, null)
-private val EXPRESSION_RULE62_INPUT: pointer<InputRule> = new InputRule(OP_REM_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE62_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE62_INPUT)
-private val EXPRESSION_RULE62: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE62_INPUT_RULES, null)
-private val EXPRESSION_RULE63_INPUT: pointer<InputRule> = new InputRule(OP_PLUS_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE63_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE63_INPUT)
-private val EXPRESSION_RULE63: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE63_INPUT_RULES, null)
-private val EXPRESSION_RULE64_INPUT: pointer<InputRule> = new InputRule(OP_MINUS_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE64_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE64_INPUT)
-private val EXPRESSION_RULE64: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE64_INPUT_RULES, null)
-private val EXPRESSION_RULE65_INPUT: pointer<InputRule> = new InputRule(OP_SHL_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE65_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE65_INPUT)
-private val EXPRESSION_RULE65: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE65_INPUT_RULES, null)
-private val EXPRESSION_RULE66_INPUT: pointer<InputRule> = new InputRule(OP_SHR_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE66_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE66_INPUT)
-private val EXPRESSION_RULE66: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE66_INPUT_RULES, null)
-private val EXPRESSION_RULE67_INPUT: pointer<InputRule> = new InputRule(OP_USHL_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE67_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE67_INPUT)
-private val EXPRESSION_RULE67: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE67_INPUT_RULES, null)
-private val EXPRESSION_RULE68_INPUT: pointer<InputRule> = new InputRule(OP_USHR_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE68_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE68_INPUT)
-private val EXPRESSION_RULE68: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE68_INPUT_RULES, null)
-private val EXPRESSION_RULE69_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_AND_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE69_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE69_INPUT)
-private val EXPRESSION_RULE69: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE69_INPUT_RULES, null)
-private val EXPRESSION_RULE70_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_NAND_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE70_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE70_INPUT)
-private val EXPRESSION_RULE70: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE70_INPUT_RULES, null)
-private val EXPRESSION_RULE71_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_OR_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE71_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE71_INPUT)
-private val EXPRESSION_RULE71: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE71_INPUT_RULES, null)
-private val EXPRESSION_RULE72_INPUT: pointer<InputRule> = new InputRule(OP_BITWISE_NOR_ASSIGN, makeExprFromInfix)
-private val EXPRESSION_RULE72_INPUT_RULES: pointer<InputRules> = new InputRules(EXPRESSION_PARSER_ID).push(EXPRESSION_RULE72_INPUT)
-private val EXPRESSION_RULE72: pointer<ParserRule> = new ParserRule(EXPRESSION_RULE72_INPUT_RULES, null)
-
-private val ATOM_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE4_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE5_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE6_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE7_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE8_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE9_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-private val ATOM_RULE10_INPUT: pointer<InputRule> = new InputRule(0, makeAtom)
-
-private val SIZE_OF_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeSizeOf)
-
-private val EXPRESSION_TUPLE_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeExpressionTuple)
-
-private val LIST_LITERAL_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeListLiteral)
-
-private val STATEMENT_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_VariableDefines)
-private val STATEMENT_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_VariableDefines)
-private val STATEMENT_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_WhileStmt)
-private val STATEMENT_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_ForStmt)
-private val STATEMENT_RULE4_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_ReturnStmt)
-private val STATEMENT_RULE5_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_BreakStmt)
-private val STATEMENT_RULE6_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_ContinueStmt)
-private val STATEMENT_RULE7_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_PassStmt)
-private val STATEMENT_RULE8_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_ExprStatement)
-private val STATEMENT_RULE9_INPUT: pointer<InputRule> = new InputRule(0, makeStmtFrom_ExprListStatement)
-
-private val ELSE_STATEMENT_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeElseStmtFromBlock)
-private val ELSE_STATEMENT_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeElseStmtFromStmt)
-private val ELSE_STATEMENT_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeElseStmtFromExpr)
-
-private val WHILE_STATEMENT_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeLoopStmtFromBlockElse)
-private val WHILE_STATEMENT_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeLoopStmtFromStmtElse)
-private val WHILE_STATEMENT_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeLoopStmtFromBlock)
-private val WHILE_STATEMENT_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeLoopStmtFromStmt)
-private val WHILE_STATEMENT_RULE4_INPUT: pointer<InputRule> = new InputRule(0, makeWhileStmtFromBlockElse)
-private val WHILE_STATEMENT_RULE5_INPUT: pointer<InputRule> = new InputRule(0, makeWhileStmtFromStmtElse)
-private val WHILE_STATEMENT_RULE6_INPUT: pointer<InputRule> = new InputRule(0, makeWhileStmtFromBlock)
-private val WHILE_STATEMENT_RULE7_INPUT: pointer<InputRule> = new InputRule(0, makeWhileStmtFromStmt)
-
-private val FOR_HEADER_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeEmptyForHeader)
-private val FOR_HEADER_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeForHeaderS)
-private val FOR_HEADER_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeForHeaderC)
-private val FOR_HEADER_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeForHeaderCS)
-private val FOR_HEADER_RULE4_INPUT: pointer<InputRule> = new InputRule(0, makeForHeaderI)
-private val FOR_HEADER_RULE5_INPUT: pointer<InputRule> = new InputRule(0, makeForHeaderIS)
-private val FOR_HEADER_RULE6_INPUT: pointer<InputRule> = new InputRule(0, makeForHeaderIC)
-private val FOR_HEADER_RULE7_INPUT: pointer<InputRule> = new InputRule(0, makeForHeaderICS)
-
-private val FOR_STATEMENT_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeForStmtFromBlockElse)
-private val FOR_STATEMENT_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeForStmtFromStmtElse)
-private val FOR_STATEMENT_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeForStmtFromBlock)
-private val FOR_STATEMENT_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeForStmtFromStmt)
-private val FOR_STATEMENT_RULE4_INPUT: pointer<InputRule> = new InputRule(0, makeForStmtFromEmpty)
-
-private val VARIABLE_DEFINE_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeVariableDefine)
-private val VARIABLE_DEFINE_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeVariableDefineWithType)
-private val VARIABLE_DEFINE_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeVarDefWithTypeWithoutInitValue)
-private val VARIABLE_DEFINE_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeVarDefWithoutInitValue)
-
-private val RETURN_STATEMENT_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeReturnStmt)
-private val RETURN_STATEMENT_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeReturnStmt)
-
-private val BLOCK_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeEmptyBlockExpr)
-private val BLOCK_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeBlockExpr)
-
-private val IF_EXPRESSION_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeIfExprFromStmts)
-private val IF_EXPRESSION_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeIfExprFromStmt, prependLineTerminator)
-
-private val IF_ELSE_EXPRESSION_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprFinalB)
-private val IF_ELSE_EXPRESSION_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprFinalS)
-private val IF_ELSE_EXPRESSION_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprFinalE)
-private val IF_ELSE_EXPRESSION_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprItB)
-private val IF_ELSE_EXPRESSION_RULE4_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprItS)
-private val IF_ELSE_EXPRESSION_RULE5_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprItE)
-private val IF_ELSE_EXPRESSION_RULE6_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprFromElseB)
-private val IF_ELSE_EXPRESSION_RULE7_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprFromElseS, prependLineTerminator)
-private val IF_ELSE_EXPRESSION_RULE8_INPUT: pointer<InputRule> = new InputRule(0, makeElseStmtFromExpr)
-private val IF_ELSE_EXPRESSION_RULE9_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprFromElifB)
-private val IF_ELSE_EXPRESSION_RULE10_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprFromElifS, prependLineTerminator)
-private val IF_ELSE_EXPRESSION_RULE11_INPUT: pointer<InputRule> = new InputRule(0, makeIfElseExprFromElifE)
-
-private val MODIFIER_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeModifier)
-private val MODIFIER_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeModifier)
-private val MODIFIER_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeModifier)
-private val MODIFIER_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeModifier)
-private val MODIFIER_RULE4_INPUT: pointer<InputRule> = new InputRule(0, makeModifier)
-private val MODIFIER_RULE5_INPUT: pointer<InputRule> = new InputRule(0, makeModifier)
-private val MODIFIER_RULE6_INPUT: pointer<InputRule> = new InputRule(0, makeModifier)
-private val MODIFIER_RULE7_INPUT: pointer<InputRule> = new InputRule(0, makeModifier)
-
-private val MODIFIER_LIST_MAYBE_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeModifierListMaybe)
-private val MODIFIER_LIST_MAYBE_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeEmptyModifierListMaybe)
-
-private val PREPROCESS_SETTING_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makePreprocessSetting)
-
-private val ANNOTATION_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeAnnotationWithValues)
-private val ANNOTATION_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeAnnotation)
-
-private val ANNOTATIONS_MAYBE_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeAnnotationsMaybe)
-private val ANNOTATIONS_MAYBE_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeEmptyAnnotationsMaybe)
-
-private val QUALIFIED_NAME_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeQualifiedNameIt)
-private val QUALIFIED_NAME_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeQualifiedName)
-
-private val PACKAGE_DECLARATION_MAYBE_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makePackageDeclarationMaybe)
-private val PACKAGE_DECLARATION_MAYBE_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeEmptyPackageDeclarationMaybe)
-
-private val NAMESPACE_IMPORT_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeAllNamespaceImport)
-private val NAMESPACE_IMPORT_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeNamespaceImport)
-
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeImportedFunctionAliasMaybe)
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeEmptyImportedFunctionAliasMaybe)
-
-private val IMPORTED_SYMBOL_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeImportedFunction)
-private val IMPORTED_SYMBOL_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeImportedVariable)
-
-private val SELECTIVE_IMPORTS_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeAllSelectiveImport)
-private val SELECTIVE_IMPORTS_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeSelectiveImports)
-private val SELECTIVE_IMPORTS_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeSelectiveImports)
-private val SELECTIVE_IMPORTS_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeSelectiveImport)
-
-private val IMPORT_DECLARATION_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeImportFromNamespace)
-private val IMPORT_DECLARATION_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeImportFromSelective)
-
-private val IMPORT_DECLARATIONS_MAYBE_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeImportDeclarationsMaybe)
-private val IMPORT_DECLARATIONS_MAYBE_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeEmptyImportDeclarationsMaybe)
-
-private val FUNCTION_PARAM_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeFunctionParam)
-private val FUNCTION_PARAM_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeMutFunctionParam)
-
-private val FUNCTION_PARAMS_MAYBE_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeFunctionParamsMaybe)
-private val FUNCTION_PARAMS_MAYBE_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeEmptyFunctionParamsMaybe)
-
-private val FIELD_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeFieldWithInitialValue)
-private val FIELD_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeFieldWithInitialValue)
-private val FIELD_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeField)
-private val FIELD_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeField)
-
-private val FUNCTION_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeFunction)
-private val FUNCTION_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeFunction)
-private val FUNCTION_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeFunctionFromBlock)
-private val FUNCTION_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeFunctionFromEmptyBlock)
-private val FUNCTION_RULE4_INPUT: pointer<InputRule> = new InputRule(0, makeVoidFunction)
-private val FUNCTION_RULE5_INPUT: pointer<InputRule> = new InputRule(0, makeVoidFunctionFromBlock)
-private val FUNCTION_RULE6_INPUT: pointer<InputRule> = new InputRule(0, makeVoidFunctionFromEmptyBlock)
-
-private val STRUCT_CONSTRUCTOR_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeStructConstructor)
-private val STRUCT_CONSTRUCTOR_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeStructConstructorFromBlock)
-
-private val MEMBER_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeMemberFromField)
-private val MEMBER_RULE1_INPUT: pointer<InputRule> = new InputRule(0, makeMemberFromFunction)
-private val MEMBER_RULE2_INPUT: pointer<InputRule> = new InputRule(0, makeMemberFromStructConstructor)
-private val MEMBER_RULE3_INPUT: pointer<InputRule> = new InputRule(0, makeMemberFromStruct)
-
-private val STRUCT_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeStruct)
-
-private val PROGRAM_RULE0_INPUT: pointer<InputRule> = new InputRule(0, makeProgram)
-
-private val EXPRESSION_PARSER_SETUP: pointer<PrattParser> = EXPRESSION_PARSER_SPECIFIC.addStarterRule(EXPRESSION_RULE0).addStarterRule(EXPRESSION_RULE1).addStarterRule(EXPRESSION_RULE2).addStarterRule(EXPRESSION_RULE3).addStarterRule(EXPRESSION_RULE4).addStarterRule(EXPRESSION_RULE5).addStarterRule(EXPRESSION_RULE6).addStarterRule(EXPRESSION_RULE7).addStarterRule(EXPRESSION_RULE8).addStarterRule(EXPRESSION_RULE9).addStarterRule(EXPRESSION_RULE10).addStarterRule(EXPRESSION_RULE11).addStarterRule(EXPRESSION_RULE12).addStarterRule(EXPRESSION_RULE13).addStarterRule(EXPRESSION_RULE14).addContinuationRule(EXPRESSION_RULE15).addContinuationRule(EXPRESSION_RULE16).addContinuationRule(EXPRESSION_RULE17).addContinuationRule(EXPRESSION_RULE18).addContinuationRule(EXPRESSION_RULE19).addContinuationRule(EXPRESSION_RULE20).addContinuationRule(EXPRESSION_RULE21).addContinuationRule(EXPRESSION_RULE22).addContinuationRule(EXPRESSION_RULE23).addContinuationRule(EXPRESSION_RULE24).addContinuationRule(EXPRESSION_RULE25).addContinuationRule(EXPRESSION_RULE26).addContinuationRule(EXPRESSION_RULE27).addContinuationRule(EXPRESSION_RULE28).addContinuationRule(EXPRESSION_RULE29).addContinuationRule(EXPRESSION_RULE30).addContinuationRule(EXPRESSION_RULE31).addContinuationRule(EXPRESSION_RULE32).addContinuationRule(EXPRESSION_RULE33).addContinuationRule(EXPRESSION_RULE34).addContinuationRule(EXPRESSION_RULE35).addContinuationRule(EXPRESSION_RULE36).addContinuationRule(EXPRESSION_RULE37).addContinuationRule(EXPRESSION_RULE38).addContinuationRule(EXPRESSION_RULE39).addContinuationRule(EXPRESSION_RULE40).addContinuationRule(EXPRESSION_RULE41).addContinuationRule(EXPRESSION_RULE42).addContinuationRule(EXPRESSION_RULE43).addContinuationRule(EXPRESSION_RULE44).addContinuationRule(EXPRESSION_RULE45).addContinuationRule(EXPRESSION_RULE46).addContinuationRule(EXPRESSION_RULE47).addContinuationRule(EXPRESSION_RULE48).addContinuationRule(EXPRESSION_RULE49).addContinuationRule(EXPRESSION_RULE50).addContinuationRule(EXPRESSION_RULE51).addContinuationRule(EXPRESSION_RULE52).addContinuationRule(EXPRESSION_RULE53).addContinuationRule(EXPRESSION_RULE54).addContinuationRule(EXPRESSION_RULE55).addContinuationRule(EXPRESSION_RULE56).addContinuationRule(EXPRESSION_RULE57).addContinuationRule(EXPRESSION_RULE58).addContinuationRule(EXPRESSION_RULE59).addContinuationRule(EXPRESSION_RULE60).addContinuationRule(EXPRESSION_RULE61).addContinuationRule(EXPRESSION_RULE62).addContinuationRule(EXPRESSION_RULE63).addContinuationRule(EXPRESSION_RULE64).addContinuationRule(EXPRESSION_RULE65).addContinuationRule(EXPRESSION_RULE66).addContinuationRule(EXPRESSION_RULE67).addContinuationRule(EXPRESSION_RULE68).addContinuationRule(EXPRESSION_RULE69).addContinuationRule(EXPRESSION_RULE70).addContinuationRule(EXPRESSION_RULE71).addContinuationRule(EXPRESSION_RULE72)
-private val ATOM_PARSER_INPUT_SETUP: pointer<InputRules> = ATOM_PARSER_INPUT_RULES.push(ATOM_RULE0_INPUT).push(ATOM_RULE1_INPUT).push(ATOM_RULE2_INPUT).push(ATOM_RULE3_INPUT).push(ATOM_RULE4_INPUT).push(ATOM_RULE5_INPUT).push(ATOM_RULE6_INPUT).push(ATOM_RULE7_INPUT).push(ATOM_RULE8_INPUT).push(ATOM_RULE9_INPUT).push(ATOM_RULE10_INPUT)
-private val ATOM_PARSER_SETUP: pointer<ParserRef> = ATOM_PARSER.addRule(ATOM_PARSER_RULE)
-private val SIZE_OF_PARSER_INPUT_SETUP: pointer<InputRules> = SIZE_OF_PARSER_INPUT_RULES.push(SIZE_OF_RULE0_INPUT)
-private val SIZE_OF_PARSER_SETUP: pointer<ParserRef> = SIZE_OF_PARSER.addRule(SIZE_OF_PARSER_RULE)
-private val EXPRESSION_TUPLE_PARSER_INPUT_SETUP: pointer<InputRules> = EXPRESSION_TUPLE_PARSER_INPUT_RULES.push(EXPRESSION_TUPLE_RULE0_INPUT)
-private val EXPRESSION_TUPLE_PARSER_SETUP: pointer<ParserRef> = EXPRESSION_TUPLE_PARSER.addRule(EXPRESSION_TUPLE_PARSER_RULE)
-private val LIST_LITERAL_PARSER_INPUT_SETUP: pointer<InputRules> = LIST_LITERAL_PARSER_INPUT_RULES.push(LIST_LITERAL_RULE0_INPUT)
-private val LIST_LITERAL_PARSER_SETUP: pointer<ParserRef> = LIST_LITERAL_PARSER.addRule(LIST_LITERAL_PARSER_RULE)
-private val STATEMENT_PARSER_INPUT_SETUP: pointer<InputRules> = STATEMENT_PARSER_INPUT_RULES.push(STATEMENT_RULE0_INPUT).push(STATEMENT_RULE1_INPUT).push(STATEMENT_RULE2_INPUT).push(STATEMENT_RULE3_INPUT).push(STATEMENT_RULE4_INPUT).push(STATEMENT_RULE5_INPUT).push(STATEMENT_RULE6_INPUT).push(STATEMENT_RULE7_INPUT).push(STATEMENT_RULE8_INPUT).push(STATEMENT_RULE9_INPUT)
-private val STATEMENT_PARSER_SETUP: pointer<ParserRef> = STATEMENT_PARSER.addRule(STATEMENT_PARSER_RULE)
-private val ELSE_STATEMENT_PARSER_INPUT_SETUP: pointer<InputRules> = ELSE_STATEMENT_PARSER_INPUT_RULES.push(ELSE_STATEMENT_RULE0_INPUT).push(ELSE_STATEMENT_RULE1_INPUT).push(ELSE_STATEMENT_RULE2_INPUT)
-private val ELSE_STATEMENT_PARSER_SETUP: pointer<ParserRef> = ELSE_STATEMENT_PARSER.addRule(ELSE_STATEMENT_PARSER_RULE)
-private val WHILE_STATEMENT_PARSER_INPUT_SETUP: pointer<InputRules> = WHILE_STATEMENT_PARSER_INPUT_RULES.push(WHILE_STATEMENT_RULE0_INPUT).push(WHILE_STATEMENT_RULE1_INPUT).push(WHILE_STATEMENT_RULE2_INPUT).push(WHILE_STATEMENT_RULE3_INPUT).push(WHILE_STATEMENT_RULE4_INPUT).push(WHILE_STATEMENT_RULE5_INPUT).push(WHILE_STATEMENT_RULE6_INPUT).push(WHILE_STATEMENT_RULE7_INPUT)
-private val WHILE_STATEMENT_PARSER_SETUP: pointer<ParserRef> = WHILE_STATEMENT_PARSER.addRule(WHILE_STATEMENT_PARSER_RULE)
-private val FOR_HEADER_PARSER_INPUT_SETUP: pointer<InputRules> = FOR_HEADER_PARSER_INPUT_RULES.push(FOR_HEADER_RULE0_INPUT).push(FOR_HEADER_RULE1_INPUT).push(FOR_HEADER_RULE2_INPUT).push(FOR_HEADER_RULE3_INPUT).push(FOR_HEADER_RULE4_INPUT).push(FOR_HEADER_RULE5_INPUT).push(FOR_HEADER_RULE6_INPUT).push(FOR_HEADER_RULE7_INPUT)
-private val FOR_HEADER_PARSER_SETUP: pointer<ParserRef> = FOR_HEADER_PARSER.addRule(FOR_HEADER_PARSER_RULE)
-private val FOR_STATEMENT_PARSER_INPUT_SETUP: pointer<InputRules> = FOR_STATEMENT_PARSER_INPUT_RULES.push(FOR_STATEMENT_RULE0_INPUT).push(FOR_STATEMENT_RULE1_INPUT).push(FOR_STATEMENT_RULE2_INPUT).push(FOR_STATEMENT_RULE3_INPUT).push(FOR_STATEMENT_RULE4_INPUT)
-private val FOR_STATEMENT_PARSER_SETUP: pointer<ParserRef> = FOR_STATEMENT_PARSER.addRule(FOR_STATEMENT_PARSER_RULE)
-private val VARIABLE_DEFINE_PARSER_INPUT_SETUP: pointer<InputRules> = VARIABLE_DEFINE_PARSER_INPUT_RULES.push(VARIABLE_DEFINE_RULE0_INPUT).push(VARIABLE_DEFINE_RULE1_INPUT).push(VARIABLE_DEFINE_RULE2_INPUT).push(VARIABLE_DEFINE_RULE3_INPUT)
-private val VARIABLE_DEFINE_PARSER_SETUP: pointer<ParserRef> = VARIABLE_DEFINE_PARSER.addRule(VARIABLE_DEFINE_PARSER_RULE)
-private val RETURN_STATEMENT_PARSER_INPUT_SETUP: pointer<InputRules> = RETURN_STATEMENT_PARSER_INPUT_RULES.push(RETURN_STATEMENT_RULE0_INPUT).push(RETURN_STATEMENT_RULE1_INPUT)
-private val RETURN_STATEMENT_PARSER_SETUP: pointer<ParserRef> = RETURN_STATEMENT_PARSER.addRule(RETURN_STATEMENT_PARSER_RULE)
-private val BLOCK_PARSER_INPUT_SETUP: pointer<InputRules> = BLOCK_PARSER_INPUT_RULES.push(BLOCK_RULE0_INPUT).push(BLOCK_RULE1_INPUT)
-private val BLOCK_PARSER_SETUP: pointer<ParserRef> = BLOCK_PARSER.addRule(BLOCK_PARSER_RULE)
-private val IF_EXPRESSION_PARSER_INPUT_SETUP: pointer<InputRules> = IF_EXPRESSION_PARSER_INPUT_RULES.push(IF_EXPRESSION_RULE0_INPUT).push(IF_EXPRESSION_RULE1_INPUT)
-private val IF_EXPRESSION_PARSER_SETUP: pointer<ParserRef> = IF_EXPRESSION_PARSER.addRule(IF_EXPRESSION_PARSER_RULE)
-private val IF_ELSE_EXPRESSION_PARSER_INPUT_SETUP: pointer<InputRules> = IF_ELSE_EXPRESSION_PARSER_INPUT_RULES.push(IF_ELSE_EXPRESSION_RULE0_INPUT).push(IF_ELSE_EXPRESSION_RULE1_INPUT).push(IF_ELSE_EXPRESSION_RULE2_INPUT).push(IF_ELSE_EXPRESSION_RULE3_INPUT).push(IF_ELSE_EXPRESSION_RULE4_INPUT).push(IF_ELSE_EXPRESSION_RULE5_INPUT).push(IF_ELSE_EXPRESSION_RULE6_INPUT).push(IF_ELSE_EXPRESSION_RULE7_INPUT).push(IF_ELSE_EXPRESSION_RULE8_INPUT).push(IF_ELSE_EXPRESSION_RULE9_INPUT).push(IF_ELSE_EXPRESSION_RULE10_INPUT).push(IF_ELSE_EXPRESSION_RULE11_INPUT)
-private val IF_ELSE_EXPRESSION_PARSER_SETUP: pointer<ParserRef> = IF_ELSE_EXPRESSION_PARSER.addRule(IF_ELSE_EXPRESSION_PARSER_RULE)
-private val MODIFIER_PARSER_INPUT_SETUP: pointer<InputRules> = MODIFIER_PARSER_INPUT_RULES.push(MODIFIER_RULE0_INPUT).push(MODIFIER_RULE1_INPUT).push(MODIFIER_RULE2_INPUT).push(MODIFIER_RULE3_INPUT).push(MODIFIER_RULE4_INPUT).push(MODIFIER_RULE5_INPUT).push(MODIFIER_RULE6_INPUT).push(MODIFIER_RULE7_INPUT)
-private val MODIFIER_PARSER_SETUP: pointer<ParserRef> = MODIFIER_PARSER.addRule(MODIFIER_PARSER_RULE)
-private val MODIFIER_LIST_MAYBE_PARSER_INPUT_SETUP: pointer<InputRules> = MODIFIER_LIST_MAYBE_PARSER_INPUT_RULES.push(MODIFIER_LIST_MAYBE_RULE0_INPUT).push(MODIFIER_LIST_MAYBE_RULE1_INPUT)
-private val MODIFIER_LIST_MAYBE_PARSER_SETUP: pointer<ParserRef> = MODIFIER_LIST_MAYBE_PARSER.addRule(MODIFIER_LIST_MAYBE_PARSER_RULE)
-private val PREPROCESS_SETTING_PARSER_INPUT_SETUP: pointer<InputRules> = PREPROCESS_SETTING_PARSER_INPUT_RULES.push(PREPROCESS_SETTING_RULE0_INPUT)
-private val PREPROCESS_SETTING_PARSER_SETUP: pointer<ParserRef> = PREPROCESS_SETTING_PARSER.addRule(PREPROCESS_SETTING_PARSER_RULE)
-private val ANNOTATION_PARSER_INPUT_SETUP: pointer<InputRules> = ANNOTATION_PARSER_INPUT_RULES.push(ANNOTATION_RULE0_INPUT).push(ANNOTATION_RULE1_INPUT)
-private val ANNOTATION_PARSER_SETUP: pointer<ParserRef> = ANNOTATION_PARSER.addRule(ANNOTATION_PARSER_RULE)
-private val ANNOTATIONS_MAYBE_PARSER_INPUT_SETUP: pointer<InputRules> = ANNOTATIONS_MAYBE_PARSER_INPUT_RULES.push(ANNOTATIONS_MAYBE_RULE0_INPUT).push(ANNOTATIONS_MAYBE_RULE1_INPUT)
-private val ANNOTATIONS_MAYBE_PARSER_SETUP: pointer<ParserRef> = ANNOTATIONS_MAYBE_PARSER.addRule(ANNOTATIONS_MAYBE_PARSER_RULE)
-private val QUALIFIED_NAME_PARSER_INPUT_SETUP: pointer<InputRules> = QUALIFIED_NAME_PARSER_INPUT_RULES.push(QUALIFIED_NAME_RULE0_INPUT).push(QUALIFIED_NAME_RULE1_INPUT)
-private val QUALIFIED_NAME_PARSER_SETUP: pointer<ParserRef> = QUALIFIED_NAME_PARSER.addRule(QUALIFIED_NAME_PARSER_RULE)
-private val PACKAGE_DECLARATION_MAYBE_PARSER_INPUT_SETUP: pointer<InputRules> = PACKAGE_DECLARATION_MAYBE_PARSER_INPUT_RULES.push(PACKAGE_DECLARATION_MAYBE_RULE0_INPUT).push(PACKAGE_DECLARATION_MAYBE_RULE1_INPUT)
-private val PACKAGE_DECLARATION_MAYBE_PARSER_SETUP: pointer<ParserRef> = PACKAGE_DECLARATION_MAYBE_PARSER.addRule(PACKAGE_DECLARATION_MAYBE_PARSER_RULE)
-private val NAMESPACE_IMPORT_PARSER_INPUT_SETUP: pointer<InputRules> = NAMESPACE_IMPORT_PARSER_INPUT_RULES.push(NAMESPACE_IMPORT_RULE0_INPUT).push(NAMESPACE_IMPORT_RULE1_INPUT)
-private val NAMESPACE_IMPORT_PARSER_SETUP: pointer<ParserRef> = NAMESPACE_IMPORT_PARSER.addRule(NAMESPACE_IMPORT_PARSER_RULE)
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_INPUT_SETUP: pointer<InputRules> = IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_INPUT_RULES.push(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE0_INPUT).push(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE1_INPUT)
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_SETUP: pointer<ParserRef> = IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.addRule(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE)
-private val IMPORTED_SYMBOL_PARSER_INPUT_SETUP: pointer<InputRules> = IMPORTED_SYMBOL_PARSER_INPUT_RULES.push(IMPORTED_SYMBOL_RULE0_INPUT).push(IMPORTED_SYMBOL_RULE1_INPUT)
-private val IMPORTED_SYMBOL_PARSER_SETUP: pointer<ParserRef> = IMPORTED_SYMBOL_PARSER.addRule(IMPORTED_SYMBOL_PARSER_RULE)
-private val SELECTIVE_IMPORTS_PARSER_INPUT_SETUP: pointer<InputRules> = SELECTIVE_IMPORTS_PARSER_INPUT_RULES.push(SELECTIVE_IMPORTS_RULE0_INPUT).push(SELECTIVE_IMPORTS_RULE1_INPUT).push(SELECTIVE_IMPORTS_RULE2_INPUT).push(SELECTIVE_IMPORTS_RULE3_INPUT)
-private val SELECTIVE_IMPORTS_PARSER_SETUP: pointer<ParserRef> = SELECTIVE_IMPORTS_PARSER.addRule(SELECTIVE_IMPORTS_PARSER_RULE)
-private val IMPORT_DECLARATION_PARSER_INPUT_SETUP: pointer<InputRules> = IMPORT_DECLARATION_PARSER_INPUT_RULES.push(IMPORT_DECLARATION_RULE0_INPUT).push(IMPORT_DECLARATION_RULE1_INPUT)
-private val IMPORT_DECLARATION_PARSER_SETUP: pointer<ParserRef> = IMPORT_DECLARATION_PARSER.addRule(IMPORT_DECLARATION_PARSER_RULE)
-private val IMPORT_DECLARATIONS_MAYBE_PARSER_INPUT_SETUP: pointer<InputRules> = IMPORT_DECLARATIONS_MAYBE_PARSER_INPUT_RULES.push(IMPORT_DECLARATIONS_MAYBE_RULE0_INPUT).push(IMPORT_DECLARATIONS_MAYBE_RULE1_INPUT)
-private val IMPORT_DECLARATIONS_MAYBE_PARSER_SETUP: pointer<ParserRef> = IMPORT_DECLARATIONS_MAYBE_PARSER.addRule(IMPORT_DECLARATIONS_MAYBE_PARSER_RULE)
-private val FUNCTION_PARAM_PARSER_INPUT_SETUP: pointer<InputRules> = FUNCTION_PARAM_PARSER_INPUT_RULES.push(FUNCTION_PARAM_RULE0_INPUT).push(FUNCTION_PARAM_RULE1_INPUT)
-private val FUNCTION_PARAM_PARSER_SETUP: pointer<ParserRef> = FUNCTION_PARAM_PARSER.addRule(FUNCTION_PARAM_PARSER_RULE)
-private val FUNCTION_PARAMS_MAYBE_PARSER_INPUT_SETUP: pointer<InputRules> = FUNCTION_PARAMS_MAYBE_PARSER_INPUT_RULES.push(FUNCTION_PARAMS_MAYBE_RULE0_INPUT).push(FUNCTION_PARAMS_MAYBE_RULE1_INPUT)
-private val FUNCTION_PARAMS_MAYBE_PARSER_SETUP: pointer<ParserRef> = FUNCTION_PARAMS_MAYBE_PARSER.addRule(FUNCTION_PARAMS_MAYBE_PARSER_RULE)
-private val FIELD_PARSER_INPUT_SETUP: pointer<InputRules> = FIELD_PARSER_INPUT_RULES.push(FIELD_RULE0_INPUT).push(FIELD_RULE1_INPUT).push(FIELD_RULE2_INPUT).push(FIELD_RULE3_INPUT)
-private val FIELD_PARSER_SETUP: pointer<ParserRef> = FIELD_PARSER.addRule(FIELD_PARSER_RULE)
-private val FUNCTION_PARSER_INPUT_SETUP: pointer<InputRules> = FUNCTION_PARSER_INPUT_RULES.push(FUNCTION_RULE0_INPUT).push(FUNCTION_RULE1_INPUT).push(FUNCTION_RULE2_INPUT).push(FUNCTION_RULE3_INPUT).push(FUNCTION_RULE4_INPUT).push(FUNCTION_RULE5_INPUT).push(FUNCTION_RULE6_INPUT)
-private val FUNCTION_PARSER_SETUP: pointer<ParserRef> = FUNCTION_PARSER.addRule(FUNCTION_PARSER_RULE)
-private val STRUCT_CONSTRUCTOR_PARSER_INPUT_SETUP: pointer<InputRules> = STRUCT_CONSTRUCTOR_PARSER_INPUT_RULES.push(STRUCT_CONSTRUCTOR_RULE0_INPUT).push(STRUCT_CONSTRUCTOR_RULE1_INPUT)
-private val STRUCT_CONSTRUCTOR_PARSER_SETUP: pointer<ParserRef> = STRUCT_CONSTRUCTOR_PARSER.addRule(STRUCT_CONSTRUCTOR_PARSER_RULE)
-private val MEMBER_PARSER_INPUT_SETUP: pointer<InputRules> = MEMBER_PARSER_INPUT_RULES.push(MEMBER_RULE0_INPUT).push(MEMBER_RULE1_INPUT).push(MEMBER_RULE2_INPUT).push(MEMBER_RULE3_INPUT)
-private val MEMBER_PARSER_SETUP: pointer<ParserRef> = MEMBER_PARSER.addRule(MEMBER_PARSER_RULE)
-private val STRUCT_PARSER_INPUT_SETUP: pointer<InputRules> = STRUCT_PARSER_INPUT_RULES.push(STRUCT_RULE0_INPUT)
-private val STRUCT_PARSER_SETUP: pointer<ParserRef> = STRUCT_PARSER.addRule(STRUCT_PARSER_RULE)
-private val PROGRAM_PARSER_INPUT_SETUP: pointer<InputRules> = PROGRAM_PARSER_INPUT_RULES.push(PROGRAM_RULE0_INPUT)
-private val PROGRAM_PARSER_SETUP: pointer<ParserRef> = PROGRAM_PARSER.addRule(PROGRAM_PARSER_RULE)
-
-
-fun parseExpression(input: pointer<TokenList>) -> pointer<Expression>
+private fun createCombinatorRegex(
+    tokenKind: int, regex: pointer<char>, ruleIndex: int
+) -> pointer<RuleExpression>
 {
-    if input == null:
-        return null
+    val expression: pointer<RuleExpression> =
+        RuleExpression.createRegex(tokenKind, regex)
+    expression.getAtomRule().getTokenRule().addRuleId(ruleIndex)
+    return expression
+}
+val TYPE_TEMP_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val TYPE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val EXPRESSION_PARSER: pointer<Parser> = Parser.fromPratt(null)
+val ATOM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val SIZE_OF_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val EXPRESSION_TUPLE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val LIST_LITERAL_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val ELSE_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val WHILE_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FOR_HEADER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FOR_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val VARIABLE_DEFINE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val RETURN_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val BLOCK_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IF_EXPRESSION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IF_ELSE_EXPRESSION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val MODIFIER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val MODIFIER_LIST_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val PREPROCESS_SETTING_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val ANNOTATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val ANNOTATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val QUALIFIED_NAME_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val PACKAGE_DECLARATION_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val NAMESPACE_IMPORT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORTED_SYMBOL_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val SELECTIVE_IMPORTS_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORT_DECLARATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORT_DECLARATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FUNCTION_PARAM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FUNCTION_PARAMS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FIELD_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FUNCTION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val STRUCT_CONSTRUCTOR_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val MEMBER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val STRUCT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val PROGRAM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 
-    if EXPRESSION_PARSER_SETUP.doParse(input) < 0:
-        return null
+private val TYPE_TEMP_RULE: pointer<InputRules> =
+    new InputRules(100, preprocessTypeTokens)
 
-    val result: pointer<ParserResult> = EXPRESSION_PARSER_SETUP.getResult()
+private val TYPE_TEMP_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        TYPE_TEMP_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
-    if result == null || result.isKind(EXPRESSION_PARSER_ID) == false:
-        return null
+private var TYPE_TEMP_RULE_0: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_0: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_1: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_1: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_2: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_2: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_3: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_3: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_4: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_4: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_5: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_5: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_6: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_6: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_7: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_7: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_8: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_8: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_9: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_9: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_10: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_10: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_11: pointer<InputRule> = null
+private var TYPE_TEMP_RULE_11_SPLIT_1_PARSER_RULE: pointer<ParserRule> = null
+private var TYPE_TEMP_CRULE_11: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_12: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_12: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_13: pointer<InputRule> = null
+private var TYPE_TEMP_RULE_13_SPLIT_2_PARSER_RULE: pointer<ParserRule> = null
+private var TYPE_TEMP_CRULE_13: pointer<ParserRule> = null
+private var TYPE_TEMP_RULE_14: pointer<InputRule> = null
+private var TYPE_TEMP_CRULE_14: pointer<ParserRule> = null
+private var TYPE_TEMP_CRULE: pointer<RuleExpression> = null
 
-    return result.getValue() as pointer<Expression>
+private val TYPE_RULE: pointer<InputRules> =
+    new InputRules(101)
+
+private val TYPE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        TYPE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var TYPE_RULE_0: pointer<InputRule> = null
+private var TYPE_CRULE_0: pointer<ParserRule> = null
+private var TYPE_RULE_1: pointer<InputRule> = null
+private var TYPE_CRULE_1: pointer<ParserRule> = null
+private var TYPE_CRULE: pointer<RuleExpression> = null
+
+private val EXPRESSION_RULE: pointer<InputRules> =
+    new InputRules(102)
+
+private val EXPRESSION_STARTER_RULE: pointer<InputRules> =
+    new InputRules(102)
+
+private val EXPRESSION_CONTINUATION_RULE: pointer<InputRules> =
+    new InputRules(102)
+
+private val EXPRESSION_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        EXPRESSION_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var EXPRESSION_RULE_0: pointer<InputRule> = null
+private var EXPRESSION_CRULE_0: pointer<ParserRule> = null
+private var EXPRESSION_RULE_1: pointer<InputRule> = null
+private var EXPRESSION_CRULE_1: pointer<ParserRule> = null
+private var EXPRESSION_RULE_2: pointer<InputRule> = null
+private var EXPRESSION_CRULE_2: pointer<ParserRule> = null
+private var EXPRESSION_RULE_3: pointer<InputRule> = null
+private var EXPRESSION_CRULE_3: pointer<ParserRule> = null
+private var EXPRESSION_RULE_4: pointer<InputRule> = null
+private var EXPRESSION_CRULE_4: pointer<ParserRule> = null
+private var EXPRESSION_RULE_5: pointer<InputRule> = null
+private var EXPRESSION_CRULE_5: pointer<ParserRule> = null
+private var EXPRESSION_RULE_6: pointer<InputRule> = null
+private var EXPRESSION_CRULE_6: pointer<ParserRule> = null
+private var EXPRESSION_RULE_7: pointer<InputRule> = null
+private var EXPRESSION_CRULE_7: pointer<ParserRule> = null
+private var EXPRESSION_RULE_8: pointer<InputRule> = null
+private var EXPRESSION_CRULE_8: pointer<ParserRule> = null
+private var EXPRESSION_RULE_9: pointer<InputRule> = null
+private var EXPRESSION_CRULE_9: pointer<ParserRule> = null
+private var EXPRESSION_RULE_10: pointer<InputRule> = null
+private var EXPRESSION_CRULE_10: pointer<ParserRule> = null
+private var EXPRESSION_RULE_11: pointer<InputRule> = null
+private var EXPRESSION_CRULE_11: pointer<ParserRule> = null
+private var EXPRESSION_RULE_12: pointer<InputRule> = null
+private var EXPRESSION_CRULE_12: pointer<ParserRule> = null
+private var EXPRESSION_RULE_13: pointer<InputRule> = null
+private var EXPRESSION_CRULE_13: pointer<ParserRule> = null
+private var EXPRESSION_RULE_14: pointer<InputRule> = null
+private var EXPRESSION_CRULE_14: pointer<ParserRule> = null
+private var EXPRESSION_RULE_15: pointer<InputRule> = null
+private var EXPRESSION_CRULE_15: pointer<ParserRule> = null
+private var EXPRESSION_RULE_16: pointer<InputRule> = null
+private var EXPRESSION_CRULE_16: pointer<ParserRule> = null
+private var EXPRESSION_RULE_17: pointer<InputRule> = null
+private var EXPRESSION_CRULE_17: pointer<ParserRule> = null
+private var EXPRESSION_RULE_18: pointer<InputRule> = null
+private var EXPRESSION_CRULE_18: pointer<ParserRule> = null
+private var EXPRESSION_RULE_19: pointer<InputRule> = null
+private var EXPRESSION_CRULE_19: pointer<ParserRule> = null
+private var EXPRESSION_RULE_20: pointer<InputRule> = null
+private var EXPRESSION_CRULE_20: pointer<ParserRule> = null
+private var EXPRESSION_RULE_21: pointer<InputRule> = null
+private var EXPRESSION_CRULE_21: pointer<ParserRule> = null
+private var EXPRESSION_RULE_22: pointer<InputRule> = null
+private var EXPRESSION_CRULE_22: pointer<ParserRule> = null
+private var EXPRESSION_RULE_23: pointer<InputRule> = null
+private var EXPRESSION_CRULE_23: pointer<ParserRule> = null
+private var EXPRESSION_RULE_24: pointer<InputRule> = null
+private var EXPRESSION_CRULE_24: pointer<ParserRule> = null
+private var EXPRESSION_RULE_25: pointer<InputRule> = null
+private var EXPRESSION_CRULE_25: pointer<ParserRule> = null
+private var EXPRESSION_RULE_26: pointer<InputRule> = null
+private var EXPRESSION_CRULE_26: pointer<ParserRule> = null
+private var EXPRESSION_RULE_27: pointer<InputRule> = null
+private var EXPRESSION_CRULE_27: pointer<ParserRule> = null
+private var EXPRESSION_RULE_28: pointer<InputRule> = null
+private var EXPRESSION_CRULE_28: pointer<ParserRule> = null
+private var EXPRESSION_RULE_29: pointer<InputRule> = null
+private var EXPRESSION_CRULE_29: pointer<ParserRule> = null
+private var EXPRESSION_RULE_30: pointer<InputRule> = null
+private var EXPRESSION_CRULE_30: pointer<ParserRule> = null
+private var EXPRESSION_RULE_31: pointer<InputRule> = null
+private var EXPRESSION_CRULE_31: pointer<ParserRule> = null
+private var EXPRESSION_RULE_32: pointer<InputRule> = null
+private var EXPRESSION_CRULE_32: pointer<ParserRule> = null
+private var EXPRESSION_RULE_33: pointer<InputRule> = null
+private var EXPRESSION_CRULE_33: pointer<ParserRule> = null
+private var EXPRESSION_RULE_34: pointer<InputRule> = null
+private var EXPRESSION_CRULE_34: pointer<ParserRule> = null
+private var EXPRESSION_RULE_35: pointer<InputRule> = null
+private var EXPRESSION_CRULE_35: pointer<ParserRule> = null
+private var EXPRESSION_RULE_36: pointer<InputRule> = null
+private var EXPRESSION_CRULE_36: pointer<ParserRule> = null
+private var EXPRESSION_RULE_37: pointer<InputRule> = null
+private var EXPRESSION_CRULE_37: pointer<ParserRule> = null
+private var EXPRESSION_RULE_38: pointer<InputRule> = null
+private var EXPRESSION_CRULE_38: pointer<ParserRule> = null
+private var EXPRESSION_RULE_39: pointer<InputRule> = null
+private var EXPRESSION_CRULE_39: pointer<ParserRule> = null
+private var EXPRESSION_RULE_40: pointer<InputRule> = null
+private var EXPRESSION_CRULE_40: pointer<ParserRule> = null
+private var EXPRESSION_RULE_41: pointer<InputRule> = null
+private var EXPRESSION_CRULE_41: pointer<ParserRule> = null
+private var EXPRESSION_RULE_42: pointer<InputRule> = null
+private var EXPRESSION_CRULE_42: pointer<ParserRule> = null
+private var EXPRESSION_RULE_43: pointer<InputRule> = null
+private var EXPRESSION_CRULE_43: pointer<ParserRule> = null
+private var EXPRESSION_RULE_44: pointer<InputRule> = null
+private var EXPRESSION_CRULE_44: pointer<ParserRule> = null
+private var EXPRESSION_RULE_45: pointer<InputRule> = null
+private var EXPRESSION_CRULE_45: pointer<ParserRule> = null
+private var EXPRESSION_RULE_46: pointer<InputRule> = null
+private var EXPRESSION_CRULE_46: pointer<ParserRule> = null
+private var EXPRESSION_RULE_47: pointer<InputRule> = null
+private var EXPRESSION_CRULE_47: pointer<ParserRule> = null
+private var EXPRESSION_RULE_48: pointer<InputRule> = null
+private var EXPRESSION_CRULE_48: pointer<ParserRule> = null
+private var EXPRESSION_RULE_49: pointer<InputRule> = null
+private var EXPRESSION_CRULE_49: pointer<ParserRule> = null
+private var EXPRESSION_RULE_50: pointer<InputRule> = null
+private var EXPRESSION_CRULE_50: pointer<ParserRule> = null
+private var EXPRESSION_RULE_51: pointer<InputRule> = null
+private var EXPRESSION_CRULE_51: pointer<ParserRule> = null
+private var EXPRESSION_RULE_52: pointer<InputRule> = null
+private var EXPRESSION_CRULE_52: pointer<ParserRule> = null
+private var EXPRESSION_RULE_53: pointer<InputRule> = null
+private var EXPRESSION_CRULE_53: pointer<ParserRule> = null
+private var EXPRESSION_RULE_54: pointer<InputRule> = null
+private var EXPRESSION_CRULE_54: pointer<ParserRule> = null
+private var EXPRESSION_RULE_55: pointer<InputRule> = null
+private var EXPRESSION_CRULE_55: pointer<ParserRule> = null
+private var EXPRESSION_RULE_56: pointer<InputRule> = null
+private var EXPRESSION_CRULE_56: pointer<ParserRule> = null
+private var EXPRESSION_RULE_57: pointer<InputRule> = null
+private var EXPRESSION_CRULE_57: pointer<ParserRule> = null
+private var EXPRESSION_RULE_58: pointer<InputRule> = null
+private var EXPRESSION_CRULE_58: pointer<ParserRule> = null
+private var EXPRESSION_RULE_59: pointer<InputRule> = null
+private var EXPRESSION_CRULE_59: pointer<ParserRule> = null
+private var EXPRESSION_RULE_60: pointer<InputRule> = null
+private var EXPRESSION_CRULE_60: pointer<ParserRule> = null
+private var EXPRESSION_RULE_61: pointer<InputRule> = null
+private var EXPRESSION_CRULE_61: pointer<ParserRule> = null
+private var EXPRESSION_RULE_62: pointer<InputRule> = null
+private var EXPRESSION_CRULE_62: pointer<ParserRule> = null
+private var EXPRESSION_RULE_63: pointer<InputRule> = null
+private var EXPRESSION_CRULE_63: pointer<ParserRule> = null
+private var EXPRESSION_RULE_64: pointer<InputRule> = null
+private var EXPRESSION_CRULE_64: pointer<ParserRule> = null
+private var EXPRESSION_RULE_65: pointer<InputRule> = null
+private var EXPRESSION_CRULE_65: pointer<ParserRule> = null
+private var EXPRESSION_RULE_66: pointer<InputRule> = null
+private var EXPRESSION_CRULE_66: pointer<ParserRule> = null
+private var EXPRESSION_RULE_67: pointer<InputRule> = null
+private var EXPRESSION_CRULE_67: pointer<ParserRule> = null
+private var EXPRESSION_RULE_68: pointer<InputRule> = null
+private var EXPRESSION_CRULE_68: pointer<ParserRule> = null
+private var EXPRESSION_RULE_69: pointer<InputRule> = null
+private var EXPRESSION_CRULE_69: pointer<ParserRule> = null
+private var EXPRESSION_RULE_70: pointer<InputRule> = null
+private var EXPRESSION_CRULE_70: pointer<ParserRule> = null
+private var EXPRESSION_RULE_71: pointer<InputRule> = null
+private var EXPRESSION_CRULE_71: pointer<ParserRule> = null
+private var EXPRESSION_RULE_72: pointer<InputRule> = null
+private var EXPRESSION_CRULE_72: pointer<ParserRule> = null
+private var EXPRESSION_CRULE: pointer<RuleExpression> = null
+private var EXPRESSION_STARTER_PARSER_RULE: pointer<ParserRule> = null
+private var EXPRESSION_CONTINUATION_PARSER_RULE: pointer<ParserRule> = null
+
+private val ATOM_RULE: pointer<InputRules> =
+    new InputRules(103)
+
+private val ATOM_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        ATOM_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var ATOM_RULE_0: pointer<InputRule> = null
+private var ATOM_CRULE_0: pointer<ParserRule> = null
+private var ATOM_RULE_1: pointer<InputRule> = null
+private var ATOM_CRULE_1: pointer<ParserRule> = null
+private var ATOM_RULE_2: pointer<InputRule> = null
+private var ATOM_CRULE_2: pointer<ParserRule> = null
+private var ATOM_RULE_3: pointer<InputRule> = null
+private var ATOM_CRULE_3: pointer<ParserRule> = null
+private var ATOM_RULE_4: pointer<InputRule> = null
+private var ATOM_CRULE_4: pointer<ParserRule> = null
+private var ATOM_RULE_5: pointer<InputRule> = null
+private var ATOM_CRULE_5: pointer<ParserRule> = null
+private var ATOM_RULE_6: pointer<InputRule> = null
+private var ATOM_CRULE_6: pointer<ParserRule> = null
+private var ATOM_RULE_7: pointer<InputRule> = null
+private var ATOM_CRULE_7: pointer<ParserRule> = null
+private var ATOM_RULE_8: pointer<InputRule> = null
+private var ATOM_CRULE_8: pointer<ParserRule> = null
+private var ATOM_RULE_9: pointer<InputRule> = null
+private var ATOM_CRULE_9: pointer<ParserRule> = null
+private var ATOM_RULE_10: pointer<InputRule> = null
+private var ATOM_CRULE_10: pointer<ParserRule> = null
+private var ATOM_CRULE: pointer<RuleExpression> = null
+
+private val SIZE_OF_RULE: pointer<InputRules> =
+    new InputRules(104)
+
+private val SIZE_OF_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        SIZE_OF_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var SIZE_OF_RULE_0: pointer<InputRule> = null
+private var SIZE_OF_CRULE_0: pointer<ParserRule> = null
+private var SIZE_OF_CRULE: pointer<RuleExpression> = null
+
+private val EXPRESSION_TUPLE_RULE: pointer<InputRules> =
+    new InputRules(105)
+
+private val EXPRESSION_TUPLE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        EXPRESSION_TUPLE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var EXPRESSION_TUPLE_RULE_0: pointer<InputRule> = null
+private var EXPRESSION_TUPLE_RULE_0_SPLIT_1_PARSER_RULE: pointer<ParserRule> = null
+private var EXPRESSION_TUPLE_CRULE_0: pointer<ParserRule> = null
+private var EXPRESSION_TUPLE_CRULE: pointer<RuleExpression> = null
+
+private val LIST_LITERAL_RULE: pointer<InputRules> =
+    new InputRules(106)
+
+private val LIST_LITERAL_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        LIST_LITERAL_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var LIST_LITERAL_RULE_0: pointer<InputRule> = null
+private var LIST_LITERAL_RULE_0_SPLIT_1_PARSER_RULE: pointer<ParserRule> = null
+private var LIST_LITERAL_CRULE_0: pointer<ParserRule> = null
+private var LIST_LITERAL_CRULE: pointer<RuleExpression> = null
+
+private val STATEMENT_RULE: pointer<InputRules> =
+    new InputRules(107)
+
+private val STATEMENT_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        STATEMENT_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var STATEMENT_RULE_0: pointer<InputRule> = null
+private var STATEMENT_RULE_0_SPLIT_1_PARSER_RULE: pointer<ParserRule> = null
+private var STATEMENT_CRULE_0: pointer<ParserRule> = null
+private var STATEMENT_RULE_1: pointer<InputRule> = null
+private var STATEMENT_RULE_1_SPLIT_1_PARSER_RULE: pointer<ParserRule> = null
+private var STATEMENT_CRULE_1: pointer<ParserRule> = null
+private var STATEMENT_RULE_2: pointer<InputRule> = null
+private var STATEMENT_CRULE_2: pointer<ParserRule> = null
+private var STATEMENT_RULE_3: pointer<InputRule> = null
+private var STATEMENT_CRULE_3: pointer<ParserRule> = null
+private var STATEMENT_RULE_4: pointer<InputRule> = null
+private var STATEMENT_CRULE_4: pointer<ParserRule> = null
+private var STATEMENT_RULE_5: pointer<InputRule> = null
+private var STATEMENT_CRULE_5: pointer<ParserRule> = null
+private var STATEMENT_RULE_6: pointer<InputRule> = null
+private var STATEMENT_CRULE_6: pointer<ParserRule> = null
+private var STATEMENT_RULE_7: pointer<InputRule> = null
+private var STATEMENT_CRULE_7: pointer<ParserRule> = null
+private var STATEMENT_RULE_8: pointer<InputRule> = null
+private var STATEMENT_CRULE_8: pointer<ParserRule> = null
+private var STATEMENT_RULE_9: pointer<InputRule> = null
+private var STATEMENT_RULE_9_SPLIT_0_PARSER_RULE: pointer<ParserRule> = null
+private var STATEMENT_CRULE_9: pointer<ParserRule> = null
+private var STATEMENT_CRULE: pointer<RuleExpression> = null
+
+private val ELSE_STATEMENT_RULE: pointer<InputRules> =
+    new InputRules(108)
+
+private val ELSE_STATEMENT_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        ELSE_STATEMENT_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var ELSE_STATEMENT_RULE_0: pointer<InputRule> = null
+private var ELSE_STATEMENT_CRULE_0: pointer<ParserRule> = null
+private var ELSE_STATEMENT_RULE_1: pointer<InputRule> = null
+private var ELSE_STATEMENT_CRULE_1: pointer<ParserRule> = null
+private var ELSE_STATEMENT_RULE_2: pointer<InputRule> = null
+private var ELSE_STATEMENT_CRULE_2: pointer<ParserRule> = null
+private var ELSE_STATEMENT_CRULE: pointer<RuleExpression> = null
+
+private val WHILE_STATEMENT_RULE: pointer<InputRules> =
+    new InputRules(109)
+
+private val WHILE_STATEMENT_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        WHILE_STATEMENT_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var WHILE_STATEMENT_RULE_0: pointer<InputRule> = null
+private var WHILE_STATEMENT_CRULE_0: pointer<ParserRule> = null
+private var WHILE_STATEMENT_RULE_1: pointer<InputRule> = null
+private var WHILE_STATEMENT_CRULE_1: pointer<ParserRule> = null
+private var WHILE_STATEMENT_RULE_2: pointer<InputRule> = null
+private var WHILE_STATEMENT_CRULE_2: pointer<ParserRule> = null
+private var WHILE_STATEMENT_RULE_3: pointer<InputRule> = null
+private var WHILE_STATEMENT_CRULE_3: pointer<ParserRule> = null
+private var WHILE_STATEMENT_RULE_4: pointer<InputRule> = null
+private var WHILE_STATEMENT_CRULE_4: pointer<ParserRule> = null
+private var WHILE_STATEMENT_RULE_5: pointer<InputRule> = null
+private var WHILE_STATEMENT_CRULE_5: pointer<ParserRule> = null
+private var WHILE_STATEMENT_RULE_6: pointer<InputRule> = null
+private var WHILE_STATEMENT_CRULE_6: pointer<ParserRule> = null
+private var WHILE_STATEMENT_RULE_7: pointer<InputRule> = null
+private var WHILE_STATEMENT_CRULE_7: pointer<ParserRule> = null
+private var WHILE_STATEMENT_CRULE: pointer<RuleExpression> = null
+
+private val FOR_HEADER_RULE: pointer<InputRules> =
+    new InputRules(110)
+
+private val FOR_HEADER_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        FOR_HEADER_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var FOR_HEADER_RULE_0: pointer<InputRule> = null
+private var FOR_HEADER_CRULE_0: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_1: pointer<InputRule> = null
+private var FOR_HEADER_RULE_1_SPLIT_3_PARSER_RULE: pointer<ParserRule> = null
+private var FOR_HEADER_CRULE_1: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_2: pointer<InputRule> = null
+private var FOR_HEADER_CRULE_2: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_3: pointer<InputRule> = null
+private var FOR_HEADER_RULE_3_SPLIT_4_PARSER_RULE: pointer<ParserRule> = null
+private var FOR_HEADER_CRULE_3: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_4: pointer<InputRule> = null
+private var FOR_HEADER_RULE_4_SPLIT_2_PARSER_RULE: pointer<ParserRule> = null
+private var FOR_HEADER_CRULE_4: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_5: pointer<InputRule> = null
+private var FOR_HEADER_RULE_5_SPLIT_2_PARSER_RULE: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_5_SPLIT_5_PARSER_RULE: pointer<ParserRule> = null
+private var FOR_HEADER_CRULE_5: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_6: pointer<InputRule> = null
+private var FOR_HEADER_RULE_6_SPLIT_2_PARSER_RULE: pointer<ParserRule> = null
+private var FOR_HEADER_CRULE_6: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_7: pointer<InputRule> = null
+private var FOR_HEADER_RULE_7_SPLIT_2_PARSER_RULE: pointer<ParserRule> = null
+private var FOR_HEADER_RULE_7_SPLIT_6_PARSER_RULE: pointer<ParserRule> = null
+private var FOR_HEADER_CRULE_7: pointer<ParserRule> = null
+private var FOR_HEADER_CRULE: pointer<RuleExpression> = null
+
+private val FOR_STATEMENT_RULE: pointer<InputRules> =
+    new InputRules(111)
+
+private val FOR_STATEMENT_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        FOR_STATEMENT_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var FOR_STATEMENT_RULE_0: pointer<InputRule> = null
+private var FOR_STATEMENT_CRULE_0: pointer<ParserRule> = null
+private var FOR_STATEMENT_RULE_1: pointer<InputRule> = null
+private var FOR_STATEMENT_CRULE_1: pointer<ParserRule> = null
+private var FOR_STATEMENT_RULE_2: pointer<InputRule> = null
+private var FOR_STATEMENT_CRULE_2: pointer<ParserRule> = null
+private var FOR_STATEMENT_RULE_3: pointer<InputRule> = null
+private var FOR_STATEMENT_CRULE_3: pointer<ParserRule> = null
+private var FOR_STATEMENT_RULE_4: pointer<InputRule> = null
+private var FOR_STATEMENT_CRULE_4: pointer<ParserRule> = null
+private var FOR_STATEMENT_CRULE: pointer<RuleExpression> = null
+
+private val VARIABLE_DEFINE_RULE: pointer<InputRules> =
+    new InputRules(112)
+
+private val VARIABLE_DEFINE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        VARIABLE_DEFINE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var VARIABLE_DEFINE_RULE_0: pointer<InputRule> = null
+private var VARIABLE_DEFINE_CRULE_0: pointer<ParserRule> = null
+private var VARIABLE_DEFINE_RULE_1: pointer<InputRule> = null
+private var VARIABLE_DEFINE_CRULE_1: pointer<ParserRule> = null
+private var VARIABLE_DEFINE_RULE_2: pointer<InputRule> = null
+private var VARIABLE_DEFINE_CRULE_2: pointer<ParserRule> = null
+private var VARIABLE_DEFINE_RULE_3: pointer<InputRule> = null
+private var VARIABLE_DEFINE_CRULE_3: pointer<ParserRule> = null
+private var VARIABLE_DEFINE_CRULE: pointer<RuleExpression> = null
+
+private val RETURN_STATEMENT_RULE: pointer<InputRules> =
+    new InputRules(113)
+
+private val RETURN_STATEMENT_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        RETURN_STATEMENT_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var RETURN_STATEMENT_RULE_0: pointer<InputRule> = null
+private var RETURN_STATEMENT_CRULE_0: pointer<ParserRule> = null
+private var RETURN_STATEMENT_RULE_1: pointer<InputRule> = null
+private var RETURN_STATEMENT_CRULE_1: pointer<ParserRule> = null
+private var RETURN_STATEMENT_CRULE: pointer<RuleExpression> = null
+
+private val BLOCK_RULE: pointer<InputRules> =
+    new InputRules(114)
+
+private val BLOCK_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        BLOCK_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var BLOCK_RULE_0: pointer<InputRule> = null
+private var BLOCK_CRULE_0: pointer<ParserRule> = null
+private var BLOCK_RULE_1: pointer<InputRule> = null
+private var BLOCK_CRULE_1: pointer<ParserRule> = null
+private var BLOCK_CRULE: pointer<RuleExpression> = null
+
+private val IF_EXPRESSION_RULE: pointer<InputRules> =
+    new InputRules(115)
+
+private val IF_EXPRESSION_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        IF_EXPRESSION_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var IF_EXPRESSION_RULE_0: pointer<InputRule> = null
+private var IF_EXPRESSION_CRULE_0: pointer<ParserRule> = null
+private var IF_EXPRESSION_RULE_1: pointer<InputRule> = null
+private var IF_EXPRESSION_CRULE_1: pointer<ParserRule> = null
+private var IF_EXPRESSION_CRULE: pointer<RuleExpression> = null
+
+private val IF_ELSE_EXPRESSION_RULE: pointer<InputRules> =
+    new InputRules(116)
+
+private val IF_ELSE_EXPRESSION_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        IF_ELSE_EXPRESSION_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var IF_ELSE_EXPRESSION_RULE_0: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_0: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_1: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_1: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_2: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_2: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_3: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_3: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_4: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_4: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_5: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_5: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_6: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_6: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_7: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_7: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_8: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_8: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_9: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_9: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_10: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_10: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_RULE_11: pointer<InputRule> = null
+private var IF_ELSE_EXPRESSION_CRULE_11: pointer<ParserRule> = null
+private var IF_ELSE_EXPRESSION_CRULE: pointer<RuleExpression> = null
+
+private val MODIFIER_RULE: pointer<InputRules> =
+    new InputRules(117)
+
+private val MODIFIER_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        MODIFIER_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var MODIFIER_RULE_0: pointer<InputRule> = null
+private var MODIFIER_CRULE_0: pointer<ParserRule> = null
+private var MODIFIER_RULE_1: pointer<InputRule> = null
+private var MODIFIER_CRULE_1: pointer<ParserRule> = null
+private var MODIFIER_RULE_2: pointer<InputRule> = null
+private var MODIFIER_CRULE_2: pointer<ParserRule> = null
+private var MODIFIER_RULE_3: pointer<InputRule> = null
+private var MODIFIER_CRULE_3: pointer<ParserRule> = null
+private var MODIFIER_RULE_4: pointer<InputRule> = null
+private var MODIFIER_CRULE_4: pointer<ParserRule> = null
+private var MODIFIER_RULE_5: pointer<InputRule> = null
+private var MODIFIER_CRULE_5: pointer<ParserRule> = null
+private var MODIFIER_RULE_6: pointer<InputRule> = null
+private var MODIFIER_CRULE_6: pointer<ParserRule> = null
+private var MODIFIER_RULE_7: pointer<InputRule> = null
+private var MODIFIER_CRULE_7: pointer<ParserRule> = null
+private var MODIFIER_CRULE: pointer<RuleExpression> = null
+
+private val MODIFIER_LIST_MAYBE_RULE: pointer<InputRules> =
+    new InputRules(118)
+
+private val MODIFIER_LIST_MAYBE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        MODIFIER_LIST_MAYBE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var MODIFIER_LIST_MAYBE_RULE_0: pointer<InputRule> = null
+private var MODIFIER_LIST_MAYBE_CRULE_0: pointer<ParserRule> = null
+private var MODIFIER_LIST_MAYBE_RULE_1: pointer<InputRule> = null
+private var MODIFIER_LIST_MAYBE_CRULE_1: pointer<ParserRule> = null
+private var MODIFIER_LIST_MAYBE_CRULE: pointer<RuleExpression> = null
+
+private val PREPROCESS_SETTING_RULE: pointer<InputRules> =
+    new InputRules(119)
+
+private val PREPROCESS_SETTING_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        PREPROCESS_SETTING_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var PREPROCESS_SETTING_RULE_0: pointer<InputRule> = null
+private var PREPROCESS_SETTING_RULE_0_SPLIT_3_PARSER_RULE: pointer<ParserRule> = null
+private var PREPROCESS_SETTING_CRULE_0: pointer<ParserRule> = null
+private var PREPROCESS_SETTING_CRULE: pointer<RuleExpression> = null
+
+private val ANNOTATION_RULE: pointer<InputRules> =
+    new InputRules(120)
+
+private val ANNOTATION_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        ANNOTATION_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var ANNOTATION_RULE_0: pointer<InputRule> = null
+private var ANNOTATION_RULE_0_SPLIT_3_PARSER_RULE: pointer<ParserRule> = null
+private var ANNOTATION_CRULE_0: pointer<ParserRule> = null
+private var ANNOTATION_RULE_1: pointer<InputRule> = null
+private var ANNOTATION_CRULE_1: pointer<ParserRule> = null
+private var ANNOTATION_CRULE: pointer<RuleExpression> = null
+
+private val ANNOTATIONS_MAYBE_RULE: pointer<InputRules> =
+    new InputRules(121)
+
+private val ANNOTATIONS_MAYBE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        ANNOTATIONS_MAYBE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var ANNOTATIONS_MAYBE_RULE_0: pointer<InputRule> = null
+private var ANNOTATIONS_MAYBE_CRULE_0: pointer<ParserRule> = null
+private var ANNOTATIONS_MAYBE_RULE_1: pointer<InputRule> = null
+private var ANNOTATIONS_MAYBE_CRULE_1: pointer<ParserRule> = null
+private var ANNOTATIONS_MAYBE_CRULE: pointer<RuleExpression> = null
+
+private val QUALIFIED_NAME_RULE: pointer<InputRules> =
+    new InputRules(122)
+
+private val QUALIFIED_NAME_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        QUALIFIED_NAME_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var QUALIFIED_NAME_RULE_0: pointer<InputRule> = null
+private var QUALIFIED_NAME_CRULE_0: pointer<ParserRule> = null
+private var QUALIFIED_NAME_RULE_1: pointer<InputRule> = null
+private var QUALIFIED_NAME_CRULE_1: pointer<ParserRule> = null
+private var QUALIFIED_NAME_CRULE: pointer<RuleExpression> = null
+
+private val PACKAGE_DECLARATION_MAYBE_RULE: pointer<InputRules> =
+    new InputRules(123)
+
+private val PACKAGE_DECLARATION_MAYBE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        PACKAGE_DECLARATION_MAYBE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var PACKAGE_DECLARATION_MAYBE_RULE_0: pointer<InputRule> = null
+private var PACKAGE_DECLARATION_MAYBE_CRULE_0: pointer<ParserRule> = null
+private var PACKAGE_DECLARATION_MAYBE_RULE_1: pointer<InputRule> = null
+private var PACKAGE_DECLARATION_MAYBE_CRULE_1: pointer<ParserRule> = null
+private var PACKAGE_DECLARATION_MAYBE_CRULE: pointer<RuleExpression> = null
+
+private val NAMESPACE_IMPORT_RULE: pointer<InputRules> =
+    new InputRules(124)
+
+private val NAMESPACE_IMPORT_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        NAMESPACE_IMPORT_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var NAMESPACE_IMPORT_RULE_0: pointer<InputRule> = null
+private var NAMESPACE_IMPORT_CRULE_0: pointer<ParserRule> = null
+private var NAMESPACE_IMPORT_RULE_1: pointer<InputRule> = null
+private var NAMESPACE_IMPORT_CRULE_1: pointer<ParserRule> = null
+private var NAMESPACE_IMPORT_CRULE: pointer<RuleExpression> = null
+
+private val IMPORTED_SYMBOL_ALIAS_MAYBE_RULE: pointer<InputRules> =
+    new InputRules(125)
+
+private val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        IMPORTED_SYMBOL_ALIAS_MAYBE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_0: pointer<InputRule> = null
+private var IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_0: pointer<ParserRule> = null
+private var IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_1: pointer<InputRule> = null
+private var IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_1: pointer<ParserRule> = null
+private var IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE: pointer<RuleExpression> = null
+
+private val IMPORTED_SYMBOL_RULE: pointer<InputRules> =
+    new InputRules(126)
+
+private val IMPORTED_SYMBOL_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        IMPORTED_SYMBOL_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var IMPORTED_SYMBOL_RULE_0: pointer<InputRule> = null
+private var IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE: pointer<ParserRule> = null
+private var IMPORTED_SYMBOL_CRULE_0: pointer<ParserRule> = null
+private var IMPORTED_SYMBOL_RULE_1: pointer<InputRule> = null
+private var IMPORTED_SYMBOL_CRULE_1: pointer<ParserRule> = null
+private var IMPORTED_SYMBOL_CRULE: pointer<RuleExpression> = null
+
+private val SELECTIVE_IMPORTS_RULE: pointer<InputRules> =
+    new InputRules(127)
+
+private val SELECTIVE_IMPORTS_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        SELECTIVE_IMPORTS_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var SELECTIVE_IMPORTS_RULE_0: pointer<InputRule> = null
+private var SELECTIVE_IMPORTS_CRULE_0: pointer<ParserRule> = null
+private var SELECTIVE_IMPORTS_RULE_1: pointer<InputRule> = null
+private var SELECTIVE_IMPORTS_RULE_1_SPLIT_4_PARSER_RULE: pointer<ParserRule> = null
+private var SELECTIVE_IMPORTS_CRULE_1: pointer<ParserRule> = null
+private var SELECTIVE_IMPORTS_RULE_2: pointer<InputRule> = null
+private var SELECTIVE_IMPORTS_RULE_2_SPLIT_4_PARSER_RULE: pointer<ParserRule> = null
+private var SELECTIVE_IMPORTS_CRULE_2: pointer<ParserRule> = null
+private var SELECTIVE_IMPORTS_RULE_3: pointer<InputRule> = null
+private var SELECTIVE_IMPORTS_CRULE_3: pointer<ParserRule> = null
+private var SELECTIVE_IMPORTS_CRULE: pointer<RuleExpression> = null
+
+private val IMPORT_DECLARATION_RULE: pointer<InputRules> =
+    new InputRules(128)
+
+private val IMPORT_DECLARATION_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        IMPORT_DECLARATION_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var IMPORT_DECLARATION_RULE_0: pointer<InputRule> = null
+private var IMPORT_DECLARATION_CRULE_0: pointer<ParserRule> = null
+private var IMPORT_DECLARATION_RULE_1: pointer<InputRule> = null
+private var IMPORT_DECLARATION_CRULE_1: pointer<ParserRule> = null
+private var IMPORT_DECLARATION_CRULE: pointer<RuleExpression> = null
+
+private val IMPORT_DECLARATIONS_MAYBE_RULE: pointer<InputRules> =
+    new InputRules(129)
+
+private val IMPORT_DECLARATIONS_MAYBE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        IMPORT_DECLARATIONS_MAYBE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var IMPORT_DECLARATIONS_MAYBE_RULE_0: pointer<InputRule> = null
+private var IMPORT_DECLARATIONS_MAYBE_CRULE_0: pointer<ParserRule> = null
+private var IMPORT_DECLARATIONS_MAYBE_RULE_1: pointer<InputRule> = null
+private var IMPORT_DECLARATIONS_MAYBE_CRULE_1: pointer<ParserRule> = null
+private var IMPORT_DECLARATIONS_MAYBE_CRULE: pointer<RuleExpression> = null
+
+private val FUNCTION_PARAM_RULE: pointer<InputRules> =
+    new InputRules(130)
+
+private val FUNCTION_PARAM_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        FUNCTION_PARAM_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var FUNCTION_PARAM_RULE_0: pointer<InputRule> = null
+private var FUNCTION_PARAM_CRULE_0: pointer<ParserRule> = null
+private var FUNCTION_PARAM_RULE_1: pointer<InputRule> = null
+private var FUNCTION_PARAM_CRULE_1: pointer<ParserRule> = null
+private var FUNCTION_PARAM_CRULE: pointer<RuleExpression> = null
+
+private val FUNCTION_PARAMS_MAYBE_RULE: pointer<InputRules> =
+    new InputRules(131)
+
+private val FUNCTION_PARAMS_MAYBE_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        FUNCTION_PARAMS_MAYBE_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var FUNCTION_PARAMS_MAYBE_RULE_0: pointer<InputRule> = null
+private var FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE: pointer<ParserRule> = null
+private var FUNCTION_PARAMS_MAYBE_CRULE_0: pointer<ParserRule> = null
+private var FUNCTION_PARAMS_MAYBE_RULE_1: pointer<InputRule> = null
+private var FUNCTION_PARAMS_MAYBE_CRULE_1: pointer<ParserRule> = null
+private var FUNCTION_PARAMS_MAYBE_CRULE: pointer<RuleExpression> = null
+
+private val FIELD_RULE: pointer<InputRules> =
+    new InputRules(132)
+
+private val FIELD_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        FIELD_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var FIELD_RULE_0: pointer<InputRule> = null
+private var FIELD_CRULE_0: pointer<ParserRule> = null
+private var FIELD_RULE_1: pointer<InputRule> = null
+private var FIELD_CRULE_1: pointer<ParserRule> = null
+private var FIELD_RULE_2: pointer<InputRule> = null
+private var FIELD_CRULE_2: pointer<ParserRule> = null
+private var FIELD_RULE_3: pointer<InputRule> = null
+private var FIELD_CRULE_3: pointer<ParserRule> = null
+private var FIELD_CRULE: pointer<RuleExpression> = null
+
+private val FUNCTION_RULE: pointer<InputRules> =
+    new InputRules(133)
+
+private val FUNCTION_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        FUNCTION_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var FUNCTION_RULE_0: pointer<InputRule> = null
+private var FUNCTION_CRULE_0: pointer<ParserRule> = null
+private var FUNCTION_RULE_1: pointer<InputRule> = null
+private var FUNCTION_CRULE_1: pointer<ParserRule> = null
+private var FUNCTION_RULE_2: pointer<InputRule> = null
+private var FUNCTION_CRULE_2: pointer<ParserRule> = null
+private var FUNCTION_RULE_3: pointer<InputRule> = null
+private var FUNCTION_CRULE_3: pointer<ParserRule> = null
+private var FUNCTION_RULE_4: pointer<InputRule> = null
+private var FUNCTION_CRULE_4: pointer<ParserRule> = null
+private var FUNCTION_RULE_5: pointer<InputRule> = null
+private var FUNCTION_CRULE_5: pointer<ParserRule> = null
+private var FUNCTION_RULE_6: pointer<InputRule> = null
+private var FUNCTION_CRULE_6: pointer<ParserRule> = null
+private var FUNCTION_CRULE: pointer<RuleExpression> = null
+
+private val STRUCT_CONSTRUCTOR_RULE: pointer<InputRules> =
+    new InputRules(134)
+
+private val STRUCT_CONSTRUCTOR_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        STRUCT_CONSTRUCTOR_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var STRUCT_CONSTRUCTOR_RULE_0: pointer<InputRule> = null
+private var STRUCT_CONSTRUCTOR_CRULE_0: pointer<ParserRule> = null
+private var STRUCT_CONSTRUCTOR_RULE_1: pointer<InputRule> = null
+private var STRUCT_CONSTRUCTOR_CRULE_1: pointer<ParserRule> = null
+private var STRUCT_CONSTRUCTOR_CRULE: pointer<RuleExpression> = null
+
+private val MEMBER_RULE: pointer<InputRules> =
+    new InputRules(135)
+
+private val MEMBER_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        MEMBER_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var MEMBER_RULE_0: pointer<InputRule> = null
+private var MEMBER_CRULE_0: pointer<ParserRule> = null
+private var MEMBER_RULE_1: pointer<InputRule> = null
+private var MEMBER_CRULE_1: pointer<ParserRule> = null
+private var MEMBER_RULE_2: pointer<InputRule> = null
+private var MEMBER_CRULE_2: pointer<ParserRule> = null
+private var MEMBER_RULE_3: pointer<InputRule> = null
+private var MEMBER_CRULE_3: pointer<ParserRule> = null
+private var MEMBER_CRULE: pointer<RuleExpression> = null
+
+private val STRUCT_RULE: pointer<InputRules> =
+    new InputRules(136)
+
+private val STRUCT_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        STRUCT_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var STRUCT_RULE_0: pointer<InputRule> = null
+private var STRUCT_CRULE_0: pointer<ParserRule> = null
+private var STRUCT_CRULE: pointer<RuleExpression> = null
+
+private val PROGRAM_RULE: pointer<InputRules> =
+    new InputRules(137)
+
+private val PROGRAM_PARSER_RULE: pointer<ParserRule> =
+    new ParserRule(
+        PROGRAM_RULE,
+        RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
+
+private var PROGRAM_RULE_0: pointer<InputRule> = null
+private var PROGRAM_CRULE_0: pointer<ParserRule> = null
+private var PROGRAM_CRULE: pointer<RuleExpression> = null
+private fun initializeParserGraph() -> bool
+{
+    TYPE_TEMP_RULE_11_SPLIT_1_PARSER_RULE =
+        new ParserRule(
+            new InputRules(100)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.COMMA, 11)))))
+
+    TYPE_TEMP_RULE_13_SPLIT_2_PARSER_RULE =
+        new ParserRule(
+            new InputRules(100)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.COMMA, 13)))))
+
+    EXPRESSION_TUPLE_RULE_0_SPLIT_1_PARSER_RULE =
+        new ParserRule(
+            new InputRules(105)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_TUPLE_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    LIST_LITERAL_RULE_0_SPLIT_1_PARSER_RULE =
+        new ParserRule(
+            new InputRules(106)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(LIST_LITERAL_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    STATEMENT_RULE_0_SPLIT_1_PARSER_RULE =
+        new ParserRule(
+            new InputRules(107)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    STATEMENT_RULE_1_SPLIT_1_PARSER_RULE =
+        new ParserRule(
+            new InputRules(107)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.COMMA, 1)))))
+
+    STATEMENT_RULE_9_SPLIT_0_PARSER_RULE =
+        new ParserRule(
+            new InputRules(107)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.COMMA, 9)))))
+
+    FOR_HEADER_RULE_1_SPLIT_3_PARSER_RULE =
+        new ParserRule(
+            new InputRules(110)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.COMMA, 1)))))
+
+    FOR_HEADER_RULE_3_SPLIT_4_PARSER_RULE =
+        new ParserRule(
+            new InputRules(110)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.COMMA, 3)))))
+
+    FOR_HEADER_RULE_4_SPLIT_2_PARSER_RULE =
+        new ParserRule(
+            new InputRules(110)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.COMMA, 4)))))
+
+    FOR_HEADER_RULE_5_SPLIT_2_PARSER_RULE =
+        new ParserRule(
+            new InputRules(110)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.COMMA, 5)))))
+
+    FOR_HEADER_RULE_5_SPLIT_5_PARSER_RULE =
+        new ParserRule(
+            new InputRules(110)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.COMMA, 5)))))
+
+    FOR_HEADER_RULE_6_SPLIT_2_PARSER_RULE =
+        new ParserRule(
+            new InputRules(110)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.COMMA, 6)))))
+
+    FOR_HEADER_RULE_7_SPLIT_2_PARSER_RULE =
+        new ParserRule(
+            new InputRules(110)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.COMMA, 7)))))
+
+    FOR_HEADER_RULE_7_SPLIT_6_PARSER_RULE =
+        new ParserRule(
+            new InputRules(110)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.COMMA, 7)))))
+
+    PREPROCESS_SETTING_RULE_0_SPLIT_3_PARSER_RULE =
+        new ParserRule(
+            new InputRules(119)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    ANNOTATION_RULE_0_SPLIT_3_PARSER_RULE =
+        new ParserRule(
+            new InputRules(120)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE =
+        new ParserRule(
+            new InputRules(126)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    SELECTIVE_IMPORTS_RULE_1_SPLIT_4_PARSER_RULE =
+        new ParserRule(
+            new InputRules(127)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.COMMA, 1)))))
+
+    SELECTIVE_IMPORTS_RULE_2_SPLIT_4_PARSER_RULE =
+        new ParserRule(
+            new InputRules(127)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.COMMA, 2)))))
+
+    FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE =
+        new ParserRule(
+            new InputRules(131)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_PARAMS_MAYBE_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    TYPE_TEMP_RULE_0 =
+        new InputRule(makeVoidPointerType)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_POINTER))
+            .push(RuleAtom.fromRegex(Tokenizer.LESS))
+            .push(RuleAtom.fromRegex(Tokenizer.STAR))
+            .push(RuleAtom.fromRegex(Tokenizer.GREATER))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_0)
+
+    TYPE_TEMP_RULE_1 =
+        new InputRule(makePointerType)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_POINTER))
+            .push(RuleAtom.fromRegex(Tokenizer.LESS))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.GREATER))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_1)
+
+    TYPE_TEMP_RULE_2 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_BOOL))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_2)
+
+    TYPE_TEMP_RULE_3 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_BYTE))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_3)
+
+    TYPE_TEMP_RULE_4 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_CHAR))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_4)
+
+    TYPE_TEMP_RULE_5 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_DOUBLE))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_5)
+
+    TYPE_TEMP_RULE_6 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FLOAT))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_6)
+
+    TYPE_TEMP_RULE_7 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_INT))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_7)
+
+    TYPE_TEMP_RULE_8 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_LONG))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_8)
+
+    TYPE_TEMP_RULE_9 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_SHORT))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_9)
+
+    TYPE_TEMP_RULE_10 =
+        new InputRule(makeTypeFromKeyword)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VOID))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_10)
+
+    TYPE_TEMP_RULE_11 =
+        new InputRule(makeFunctionType)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.createLoop(TYPE_PARSER, Parser.createProcedural(TYPE_TEMP_RULE_11_SPLIT_1_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.ARROW))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_11)
+
+    TYPE_TEMP_RULE_12 =
+        new InputRule(makeBlobType)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_BLOB))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACKET))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACKET))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_12)
+
+    TYPE_TEMP_RULE_13 =
+        new InputRule(makeGenericType)
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.LESS))
+            .push(RuleAtom.createLoop(TYPE_PARSER, Parser.createProcedural(TYPE_TEMP_RULE_13_SPLIT_2_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.GREATER))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_13)
+
+    TYPE_TEMP_RULE_14 =
+        new InputRule(makeTypeFromQName)
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+    TYPE_TEMP_RULE.push(TYPE_TEMP_RULE_14)
+
+    TYPE_RULE_0 =
+        new InputRule(makeTypeFromTemp)
+            .push(RuleAtom.fromParserRef(TYPE_TEMP_PARSER))
+    TYPE_RULE.push(TYPE_RULE_0)
+
+    TYPE_RULE_1 =
+        new InputRule(makeTypeFromParenthesizedTemp)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    TYPE_RULE.push(TYPE_RULE_1)
+
+    EXPRESSION_RULE_0 =
+        new InputRule(250, null, makeExprFromNewFunc, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_NEW))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromParserRef(EXPRESSION_TUPLE_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_0)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_0)
+
+    EXPRESSION_RULE_1 =
+        new InputRule(240, null, makeExprFromNewIdent, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_NEW))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_1)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_1)
+
+    EXPRESSION_RULE_2 =
+        new InputRule(240, null, makeExprFromSizeOf, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(SIZE_OF_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_2)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_2)
+
+    EXPRESSION_RULE_3 =
+        new InputRule(240, null, makeExprFromFuncCall, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromParserRef(EXPRESSION_TUPLE_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_3)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_3)
+
+    EXPRESSION_RULE_4 =
+        new InputRule(240, null, makeExprFromIfElseExpr, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(IF_ELSE_EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_4)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_4)
+
+    EXPRESSION_RULE_5 =
+        new InputRule(230, null, makeExprFromIfExpr, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(IF_EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_5)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_5)
+
+    EXPRESSION_RULE_6 =
+        new InputRule(230, null, makeExprFromBlockExpr, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_6)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_6)
+
+    EXPRESSION_RULE_7 =
+        new InputRule(230, null, makeExprFromAtom, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(ATOM_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_7)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_7)
+
+    EXPRESSION_RULE_8 =
+        new InputRule(EXPRESSION_OPERATION_0, makeExprFromParen, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_8)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_8)
+
+    EXPRESSION_RULE_9 =
+        new InputRule(EXPRESSION_OPERATION_5, makeExprFromPrefix, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.PLUS))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_9)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_9)
+
+    EXPRESSION_RULE_10 =
+        new InputRule(EXPRESSION_OPERATION_6, makeExprFromPrefix, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.MINUS))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_10)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_10)
+
+    EXPRESSION_RULE_11 =
+        new InputRule(EXPRESSION_OPERATION_3, makeExprFromPrefix, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_PLUS))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_11)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_11)
+
+    EXPRESSION_RULE_12 =
+        new InputRule(EXPRESSION_OPERATION_4, makeExprFromPrefix, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_MINUS))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_12)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_12)
+
+    EXPRESSION_RULE_13 =
+        new InputRule(EXPRESSION_OPERATION_24, makeExprFromPrefix, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_INV))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_13)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_13)
+
+    EXPRESSION_RULE_14 =
+        new InputRule(EXPRESSION_OPERATION_35, makeExprFromPrefix, parserRuleIdentity)
+            .push(RuleAtom.fromRegex(Tokenizer.BANG))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_14)
+    EXPRESSION_STARTER_RULE.push(EXPRESSION_RULE_14)
+
+    EXPRESSION_RULE_15 =
+        new InputRule(230, null, makeExprFromIndexAccess, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromParserRef(LIST_LITERAL_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_15)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_15)
+
+    EXPRESSION_RULE_16 =
+        new InputRule(230, null, makeExprFromMethodCall, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOT))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromParserRef(EXPRESSION_TUPLE_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_16)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_16)
+
+    EXPRESSION_RULE_17 =
+        new InputRule(220, null, makeExprFromFieldAccess, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOT))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_17)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_17)
+
+    EXPRESSION_RULE_18 =
+        new InputRule(EXPRESSION_OPERATION_1, makeExprFromPostfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_PLUS))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_18)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_18)
+
+    EXPRESSION_RULE_19 =
+        new InputRule(EXPRESSION_OPERATION_2, makeExprFromPostfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_MINUS))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_19)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_19)
+
+    EXPRESSION_RULE_20 =
+        new InputRule(200, null, makeExprFromTypeCast, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_AS))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_20)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_20)
+
+    EXPRESSION_RULE_21 =
+        new InputRule(EXPRESSION_OPERATION_7, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_STAR))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_21)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_21)
+
+    EXPRESSION_RULE_22 =
+        new InputRule(EXPRESSION_OPERATION_8, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.STAR))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_22)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_22)
+
+    EXPRESSION_RULE_23 =
+        new InputRule(EXPRESSION_OPERATION_9, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.SLASH))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_23)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_23)
+
+    EXPRESSION_RULE_24 =
+        new InputRule(EXPRESSION_OPERATION_10, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.PERCENT))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_24)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_24)
+
+    EXPRESSION_RULE_25 =
+        new InputRule(EXPRESSION_OPERATION_11, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.PLUS))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_25)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_25)
+
+    EXPRESSION_RULE_26 =
+        new InputRule(EXPRESSION_OPERATION_12, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.MINUS))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_26)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_26)
+
+    EXPRESSION_RULE_27 =
+        new InputRule(EXPRESSION_OPERATION_13, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_SHL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_27)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_27)
+
+    EXPRESSION_RULE_28 =
+        new InputRule(EXPRESSION_OPERATION_14, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_SHR))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_28)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_28)
+
+    EXPRESSION_RULE_29 =
+        new InputRule(EXPRESSION_OPERATION_15, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_USHR))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_29)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_29)
+
+    EXPRESSION_RULE_30 =
+        new InputRule(EXPRESSION_OPERATION_16, makeExprFromCompare, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.GREATER))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_30)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_30)
+
+    EXPRESSION_RULE_31 =
+        new InputRule(EXPRESSION_OPERATION_17, makeExprFromCompare, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.LESS))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_31)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_31)
+
+    EXPRESSION_RULE_32 =
+        new InputRule(EXPRESSION_OPERATION_18, makeExprFromCompare, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.GREATER_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_32)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_32)
+
+    EXPRESSION_RULE_33 =
+        new InputRule(EXPRESSION_OPERATION_19, makeExprFromCompare, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.LESS_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_33)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_33)
+
+    EXPRESSION_RULE_34 =
+        new InputRule(EXPRESSION_OPERATION_20, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TRIPLE_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_34)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_34)
+
+    EXPRESSION_RULE_35 =
+        new InputRule(EXPRESSION_OPERATION_21, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_35)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_35)
+
+    EXPRESSION_RULE_36 =
+        new InputRule(EXPRESSION_OPERATION_20, makeExprFromNotRefEqual, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.BANG_DOUBLE_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_36)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_36)
+
+    EXPRESSION_RULE_37 =
+        new InputRule(EXPRESSION_OPERATION_21, makeExprFromNotEqual, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.NOT_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_37)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_37)
+
+    EXPRESSION_RULE_38 =
+        new InputRule(EXPRESSION_OPERATION_25, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_AND))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_38)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_38)
+
+    EXPRESSION_RULE_39 =
+        new InputRule(EXPRESSION_OPERATION_26, makeExprFromBitwiseNand, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_NAND))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_39)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_39)
+
+    EXPRESSION_RULE_40 =
+        new InputRule(EXPRESSION_OPERATION_27, makeExprFromBitwiseXor, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_XOR))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_40)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_40)
+
+    EXPRESSION_RULE_41 =
+        new InputRule(EXPRESSION_OPERATION_28, makeExprFromBitwiseXnor, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_XNOR))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_41)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_41)
+
+    EXPRESSION_RULE_42 =
+        new InputRule(EXPRESSION_OPERATION_29, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_OR))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_42)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_42)
+
+    EXPRESSION_RULE_43 =
+        new InputRule(EXPRESSION_OPERATION_30, makeExprFromBitwiseNor, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_NOR))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_43)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_43)
+
+    EXPRESSION_RULE_44 =
+        new InputRule(EXPRESSION_OPERATION_31, makeExprFromImplies, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IMPLIES))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_44)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_44)
+
+    EXPRESSION_RULE_45 =
+        new InputRule(EXPRESSION_OPERATION_32, makeExprFromNimplies, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_NIMPLIES))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_45)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_45)
+
+    EXPRESSION_RULE_46 =
+        new InputRule(EXPRESSION_OPERATION_33, makeExprFromIff, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IFF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_46)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_46)
+
+    EXPRESSION_RULE_47 =
+        new InputRule(EXPRESSION_OPERATION_34, makeExprFromNiff, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_NIFF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_47)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_47)
+
+    EXPRESSION_RULE_48 =
+        new InputRule(EXPRESSION_OPERATION_36, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_AMPERSAND))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_48)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_48)
+
+    EXPRESSION_RULE_49 =
+        new InputRule(EXPRESSION_OPERATION_37, makeExprFromLogicalNand, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.BANG_DOUBLE_AMPERSAND))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_49)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_49)
+
+    EXPRESSION_RULE_50 =
+        new InputRule(EXPRESSION_OPERATION_38, makeExprFromLogicalXor, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.CARET))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_50)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_50)
+
+    EXPRESSION_RULE_51 =
+        new InputRule(EXPRESSION_OPERATION_39, makeExprFromLogicalXnor, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.BANG_CARET))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_51)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_51)
+
+    EXPRESSION_RULE_52 =
+        new InputRule(EXPRESSION_OPERATION_40, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_PIPE))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_52)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_52)
+
+    EXPRESSION_RULE_53 =
+        new InputRule(EXPRESSION_OPERATION_41, makeExprFromLogicalNor, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.BANG_DOUBLE_PIPE))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_53)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_53)
+
+    EXPRESSION_RULE_54 =
+        new InputRule(EXPRESSION_OPERATION_42, makeExprFromLogicalImplies, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.ARROW))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_54)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_54)
+
+    EXPRESSION_RULE_55 =
+        new InputRule(EXPRESSION_OPERATION_43, makeExprFromLogicalNimplies, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.NOT_ARROW))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_55)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_55)
+
+    EXPRESSION_RULE_56 =
+        new InputRule(EXPRESSION_OPERATION_44, makeExprFromLogicalIff, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_ARROW))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_56)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_56)
+
+    EXPRESSION_RULE_57 =
+        new InputRule(EXPRESSION_OPERATION_45, makeExprFromLogicalNiff, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.BANG_DOUBLE_ARROW))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_57)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_57)
+
+    EXPRESSION_RULE_58 =
+        new InputRule(EXPRESSION_OPERATION_46, makeExprFromAssign, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_58)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_58)
+
+    EXPRESSION_RULE_59 =
+        new InputRule(EXPRESSION_OPERATION_47, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_STAR_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_59)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_59)
+
+    EXPRESSION_RULE_60 =
+        new InputRule(EXPRESSION_OPERATION_48, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.STAR_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_60)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_60)
+
+    EXPRESSION_RULE_61 =
+        new InputRule(EXPRESSION_OPERATION_49, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.SLASH_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_61)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_61)
+
+    EXPRESSION_RULE_62 =
+        new InputRule(EXPRESSION_OPERATION_50, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.PERCENT_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_62)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_62)
+
+    EXPRESSION_RULE_63 =
+        new InputRule(EXPRESSION_OPERATION_51, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.PLUS_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_63)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_63)
+
+    EXPRESSION_RULE_64 =
+        new InputRule(EXPRESSION_OPERATION_52, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.MINUS_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_64)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_64)
+
+    EXPRESSION_RULE_65 =
+        new InputRule(EXPRESSION_OPERATION_53, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_LESS_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_65)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_65)
+
+    EXPRESSION_RULE_66 =
+        new InputRule(EXPRESSION_OPERATION_54, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOUBLE_GREATER_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_66)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_66)
+
+    EXPRESSION_RULE_67 =
+        new InputRule(EXPRESSION_OPERATION_55, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TRIPLE_LESS_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_67)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_67)
+
+    EXPRESSION_RULE_68 =
+        new InputRule(EXPRESSION_OPERATION_56, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TRIPLE_GREATER_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_68)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_68)
+
+    EXPRESSION_RULE_69 =
+        new InputRule(EXPRESSION_OPERATION_57, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.AMPERSAND_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_69)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_69)
+
+    EXPRESSION_RULE_70 =
+        new InputRule(EXPRESSION_OPERATION_58, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.BANG_AMPERSAND_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_70)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_70)
+
+    EXPRESSION_RULE_71 =
+        new InputRule(EXPRESSION_OPERATION_59, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.PIPE_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_71)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_71)
+
+    EXPRESSION_RULE_72 =
+        new InputRule(EXPRESSION_OPERATION_60, makeExprFromInfix, parserRuleIdentity)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.BANG_PIPE_EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    EXPRESSION_RULE.push(EXPRESSION_RULE_72)
+    EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_72)
+
+    ATOM_RULE_0 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_NULL))
+    ATOM_RULE.push(ATOM_RULE_0)
+
+    ATOM_RULE_1 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_TRUE))
+    ATOM_RULE.push(ATOM_RULE_1)
+
+    ATOM_RULE_2 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FALSE))
+    ATOM_RULE.push(ATOM_RULE_2)
+
+    ATOM_RULE_3 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_CHAR))
+    ATOM_RULE.push(ATOM_RULE_3)
+
+    ATOM_RULE_4 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_STRING))
+    ATOM_RULE.push(ATOM_RULE_4)
+
+    ATOM_RULE_5 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_INTEGER))
+    ATOM_RULE.push(ATOM_RULE_5)
+
+    ATOM_RULE_6 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LONG))
+    ATOM_RULE.push(ATOM_RULE_6)
+
+    ATOM_RULE_7 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_FLOAT))
+    ATOM_RULE.push(ATOM_RULE_7)
+
+    ATOM_RULE_8 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_DOUBLE))
+    ATOM_RULE.push(ATOM_RULE_8)
+
+    ATOM_RULE_9 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LONG_DOUBLE))
+    ATOM_RULE.push(ATOM_RULE_9)
+
+    ATOM_RULE_10 =
+        new InputRule(makeAtom)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+    ATOM_RULE.push(ATOM_RULE_10)
+
+    SIZE_OF_RULE_0 =
+        new InputRule(makeSizeOf)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_SIZEOF))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    SIZE_OF_RULE.push(SIZE_OF_RULE_0)
+
+    EXPRESSION_TUPLE_RULE_0 =
+        new InputRule(makeExpressionTuple)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.createLoop(EXPRESSION_PARSER, Parser.createProcedural(EXPRESSION_TUPLE_RULE_0_SPLIT_1_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    EXPRESSION_TUPLE_RULE.push(EXPRESSION_TUPLE_RULE_0)
+
+    LIST_LITERAL_RULE_0 =
+        new InputRule(makeListLiteral)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACKET))
+            .push(RuleAtom.createLoop(EXPRESSION_PARSER, Parser.createProcedural(LIST_LITERAL_RULE_0_SPLIT_1_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACKET))
+    LIST_LITERAL_RULE.push(LIST_LITERAL_RULE_0)
+
+    STATEMENT_RULE_0 =
+        new InputRule(makeStmtFrom_VariableDefines)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
+            .push(RuleAtom.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(STATEMENT_RULE_0_SPLIT_1_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STATEMENT_RULE.push(STATEMENT_RULE_0)
+
+    STATEMENT_RULE_1 =
+        new InputRule(makeStmtFrom_VariableDefines)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAL))
+            .push(RuleAtom.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(STATEMENT_RULE_1_SPLIT_1_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STATEMENT_RULE.push(STATEMENT_RULE_1)
+
+    STATEMENT_RULE_2 =
+        new InputRule(makeStmtFrom_WhileStmt)
+            .push(RuleAtom.fromParserRef(WHILE_STATEMENT_PARSER))
+    STATEMENT_RULE.push(STATEMENT_RULE_2)
+
+    STATEMENT_RULE_3 =
+        new InputRule(makeStmtFrom_ForStmt)
+            .push(RuleAtom.fromParserRef(FOR_STATEMENT_PARSER))
+    STATEMENT_RULE.push(STATEMENT_RULE_3)
+
+    STATEMENT_RULE_4 =
+        new InputRule(makeStmtFrom_ReturnStmt)
+            .push(RuleAtom.fromParserRef(RETURN_STATEMENT_PARSER))
+    STATEMENT_RULE.push(STATEMENT_RULE_4)
+
+    STATEMENT_RULE_5 =
+        new InputRule(makeStmtFrom_BreakStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_BREAK))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STATEMENT_RULE.push(STATEMENT_RULE_5)
+
+    STATEMENT_RULE_6 =
+        new InputRule(makeStmtFrom_ContinueStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_CONTINUE))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STATEMENT_RULE.push(STATEMENT_RULE_6)
+
+    STATEMENT_RULE_7 =
+        new InputRule(makeStmtFrom_PassStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_PASS))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STATEMENT_RULE.push(STATEMENT_RULE_7)
+
+    STATEMENT_RULE_8 =
+        new InputRule(makeStmtFrom_ExprStatement)
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STATEMENT_RULE.push(STATEMENT_RULE_8)
+
+    STATEMENT_RULE_9 =
+        new InputRule(makeStmtFrom_ExprListStatement)
+            .push(RuleAtom.createLoop(EXPRESSION_PARSER, Parser.createProcedural(STATEMENT_RULE_9_SPLIT_0_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STATEMENT_RULE.push(STATEMENT_RULE_9)
+
+    ELSE_STATEMENT_RULE_0 =
+        new InputRule(makeElseStmtFromBlock)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELSE))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    ELSE_STATEMENT_RULE.push(ELSE_STATEMENT_RULE_0)
+
+    ELSE_STATEMENT_RULE_1 =
+        new InputRule(makeElseStmtFromStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELSE))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+    ELSE_STATEMENT_RULE.push(ELSE_STATEMENT_RULE_1)
+
+    ELSE_STATEMENT_RULE_2 =
+        new InputRule(makeElseStmtFromExpr)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELSE))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    ELSE_STATEMENT_RULE.push(ELSE_STATEMENT_RULE_2)
+
+    WHILE_STATEMENT_RULE_0 =
+        new InputRule(makeLoopStmtFromBlockElse)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_LOOP))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+            .push(RuleAtom.fromParserRef(ELSE_STATEMENT_PARSER))
+    WHILE_STATEMENT_RULE.push(WHILE_STATEMENT_RULE_0)
+
+    WHILE_STATEMENT_RULE_1 =
+        new InputRule(makeLoopStmtFromStmtElse)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_LOOP))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+            .push(RuleAtom.fromParserRef(ELSE_STATEMENT_PARSER))
+    WHILE_STATEMENT_RULE.push(WHILE_STATEMENT_RULE_1)
+
+    WHILE_STATEMENT_RULE_2 =
+        new InputRule(makeLoopStmtFromBlock)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_LOOP))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    WHILE_STATEMENT_RULE.push(WHILE_STATEMENT_RULE_2)
+
+    WHILE_STATEMENT_RULE_3 =
+        new InputRule(makeLoopStmtFromStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_LOOP))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+    WHILE_STATEMENT_RULE.push(WHILE_STATEMENT_RULE_3)
+
+    WHILE_STATEMENT_RULE_4 =
+        new InputRule(makeWhileStmtFromBlockElse)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_WHILE))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+            .push(RuleAtom.fromParserRef(ELSE_STATEMENT_PARSER))
+    WHILE_STATEMENT_RULE.push(WHILE_STATEMENT_RULE_4)
+
+    WHILE_STATEMENT_RULE_5 =
+        new InputRule(makeWhileStmtFromStmtElse)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_WHILE))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+            .push(RuleAtom.fromParserRef(ELSE_STATEMENT_PARSER))
+    WHILE_STATEMENT_RULE.push(WHILE_STATEMENT_RULE_5)
+
+    WHILE_STATEMENT_RULE_6 =
+        new InputRule(makeWhileStmtFromBlock)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_WHILE))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    WHILE_STATEMENT_RULE.push(WHILE_STATEMENT_RULE_6)
+
+    WHILE_STATEMENT_RULE_7 =
+        new InputRule(makeWhileStmtFromStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_WHILE))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+    WHILE_STATEMENT_RULE.push(WHILE_STATEMENT_RULE_7)
+
+    FOR_HEADER_RULE_0 =
+        new InputRule(makeEmptyForHeader)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    FOR_HEADER_RULE.push(FOR_HEADER_RULE_0)
+
+    FOR_HEADER_RULE_1 =
+        new InputRule(makeForHeaderS)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_1_SPLIT_3_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    FOR_HEADER_RULE.push(FOR_HEADER_RULE_1)
+
+    FOR_HEADER_RULE_2 =
+        new InputRule(makeForHeaderC)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    FOR_HEADER_RULE.push(FOR_HEADER_RULE_2)
+
+    FOR_HEADER_RULE_3 =
+        new InputRule(makeForHeaderCS)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_3_SPLIT_4_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    FOR_HEADER_RULE.push(FOR_HEADER_RULE_3)
+
+    FOR_HEADER_RULE_4 =
+        new InputRule(makeForHeaderI)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
+            .push(RuleAtom.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_4_SPLIT_2_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    FOR_HEADER_RULE.push(FOR_HEADER_RULE_4)
+
+    FOR_HEADER_RULE_5 =
+        new InputRule(makeForHeaderIS)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
+            .push(RuleAtom.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_5_SPLIT_2_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_5_SPLIT_5_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    FOR_HEADER_RULE.push(FOR_HEADER_RULE_5)
+
+    FOR_HEADER_RULE_6 =
+        new InputRule(makeForHeaderIC)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
+            .push(RuleAtom.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_6_SPLIT_2_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    FOR_HEADER_RULE.push(FOR_HEADER_RULE_6)
+
+    FOR_HEADER_RULE_7 =
+        new InputRule(makeForHeaderICS)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
+            .push(RuleAtom.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_7_SPLIT_2_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.SEMICOLON))
+            .push(RuleAtom.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_7_SPLIT_6_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    FOR_HEADER_RULE.push(FOR_HEADER_RULE_7)
+
+    FOR_STATEMENT_RULE_0 =
+        new InputRule(makeForStmtFromBlockElse)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FOR))
+            .push(RuleAtom.fromParserRef(FOR_HEADER_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+            .push(RuleAtom.fromParserRef(ELSE_STATEMENT_PARSER))
+    FOR_STATEMENT_RULE.push(FOR_STATEMENT_RULE_0)
+
+    FOR_STATEMENT_RULE_1 =
+        new InputRule(makeForStmtFromStmtElse)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FOR))
+            .push(RuleAtom.fromParserRef(FOR_HEADER_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+            .push(RuleAtom.fromParserRef(ELSE_STATEMENT_PARSER))
+    FOR_STATEMENT_RULE.push(FOR_STATEMENT_RULE_1)
+
+    FOR_STATEMENT_RULE_2 =
+        new InputRule(makeForStmtFromBlock)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FOR))
+            .push(RuleAtom.fromParserRef(FOR_HEADER_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FOR_STATEMENT_RULE.push(FOR_STATEMENT_RULE_2)
+
+    FOR_STATEMENT_RULE_3 =
+        new InputRule(makeForStmtFromStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FOR))
+            .push(RuleAtom.fromParserRef(FOR_HEADER_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+    FOR_STATEMENT_RULE.push(FOR_STATEMENT_RULE_3)
+
+    FOR_STATEMENT_RULE_4 =
+        new InputRule(makeForStmtFromEmpty)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FOR))
+            .push(RuleAtom.fromParserRef(FOR_HEADER_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FOR_STATEMENT_RULE.push(FOR_STATEMENT_RULE_4)
+
+    VARIABLE_DEFINE_RULE_0 =
+        new InputRule(makeVariableDefine)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    VARIABLE_DEFINE_RULE.push(VARIABLE_DEFINE_RULE_0)
+
+    VARIABLE_DEFINE_RULE_1 =
+        new InputRule(makeVariableDefineWithType)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    VARIABLE_DEFINE_RULE.push(VARIABLE_DEFINE_RULE_1)
+
+    VARIABLE_DEFINE_RULE_2 =
+        new InputRule(makeVarDefWithTypeWithoutInitValue)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+    VARIABLE_DEFINE_RULE.push(VARIABLE_DEFINE_RULE_2)
+
+    VARIABLE_DEFINE_RULE_3 =
+        new InputRule(makeVarDefWithoutInitValue)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+    VARIABLE_DEFINE_RULE.push(VARIABLE_DEFINE_RULE_3)
+
+    RETURN_STATEMENT_RULE_0 =
+        new InputRule(makeReturnStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_RETURN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    RETURN_STATEMENT_RULE.push(RETURN_STATEMENT_RULE_0)
+
+    RETURN_STATEMENT_RULE_1 =
+        new InputRule(makeReturnStmt)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_RETURN))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    RETURN_STATEMENT_RULE.push(RETURN_STATEMENT_RULE_1)
+
+    BLOCK_RULE_0 =
+        new InputRule(makeEmptyBlockExpr)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACE))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACE))
+    BLOCK_RULE.push(BLOCK_RULE_0)
+
+    BLOCK_RULE_1 =
+        new InputRule(makeBlockExpr)
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACE))
+            .push(RuleAtom.createLoop(STATEMENT_PARSER, false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACE))
+    BLOCK_RULE.push(BLOCK_RULE_1)
+
+    IF_EXPRESSION_RULE_0 =
+        new InputRule(makeIfExprFromStmts)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+    IF_EXPRESSION_RULE.push(IF_EXPRESSION_RULE_0)
+
+    IF_EXPRESSION_RULE_1 =
+        new InputRule(10, null, makeIfExprFromStmt, prependLineTerminator)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+    IF_EXPRESSION_RULE.push(IF_EXPRESSION_RULE_1)
+
+    IF_ELSE_EXPRESSION_RULE_0 =
+        new InputRule(makeIfElseExprFinalB)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+            .push(RuleAtom.fromParserRef(IF_ELSE_EXPRESSION_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_0)
+
+    IF_ELSE_EXPRESSION_RULE_1 =
+        new InputRule(makeIfElseExprFinalS)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+            .push(RuleAtom.fromParserRef(IF_ELSE_EXPRESSION_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_1)
+
+    IF_ELSE_EXPRESSION_RULE_2 =
+        new InputRule(makeIfElseExprFinalE)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromParserRef(IF_ELSE_EXPRESSION_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_2)
+
+    IF_ELSE_EXPRESSION_RULE_3 =
+        new InputRule(makeIfElseExprItB)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELIF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+            .push(RuleAtom.fromParserRef(IF_ELSE_EXPRESSION_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_3)
+
+    IF_ELSE_EXPRESSION_RULE_4 =
+        new InputRule(makeIfElseExprItS)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELIF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+            .push(RuleAtom.fromParserRef(IF_ELSE_EXPRESSION_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_4)
+
+    IF_ELSE_EXPRESSION_RULE_5 =
+        new InputRule(makeIfElseExprItE)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELIF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromParserRef(IF_ELSE_EXPRESSION_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_5)
+
+    IF_ELSE_EXPRESSION_RULE_6 =
+        new InputRule(makeIfElseExprFromElseB)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELSE))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_6)
+
+    IF_ELSE_EXPRESSION_RULE_7 =
+        new InputRule(10, null, makeIfElseExprFromElseS, prependLineTerminator)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELSE))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_7)
+
+    IF_ELSE_EXPRESSION_RULE_8 =
+        new InputRule(makeElseStmtFromExpr)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELSE))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_8)
+
+    IF_ELSE_EXPRESSION_RULE_9 =
+        new InputRule(makeIfElseExprFromElifB)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELIF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_9)
+
+    IF_ELSE_EXPRESSION_RULE_10 =
+        new InputRule(10, null, makeIfElseExprFromElifS, prependLineTerminator)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELIF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(STATEMENT_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_10)
+
+    IF_ELSE_EXPRESSION_RULE_11 =
+        new InputRule(makeIfElseExprFromElifE)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_ELIF))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+    IF_ELSE_EXPRESSION_RULE.push(IF_ELSE_EXPRESSION_RULE_11)
+
+    MODIFIER_RULE_0 =
+        new InputRule(makeModifier)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_PRIVATE))
+    MODIFIER_RULE.push(MODIFIER_RULE_0)
+
+    MODIFIER_RULE_1 =
+        new InputRule(makeModifier)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_PROTECTED))
+    MODIFIER_RULE.push(MODIFIER_RULE_1)
+
+    MODIFIER_RULE_2 =
+        new InputRule(makeModifier)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_PUBLIC))
+    MODIFIER_RULE.push(MODIFIER_RULE_2)
+
+    MODIFIER_RULE_3 =
+        new InputRule(makeModifier)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_STATIC))
+    MODIFIER_RULE.push(MODIFIER_RULE_3)
+
+    MODIFIER_RULE_4 =
+        new InputRule(makeModifier)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FINAL))
+    MODIFIER_RULE.push(MODIFIER_RULE_4)
+
+    MODIFIER_RULE_5 =
+        new InputRule(makeModifier)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_INLINE))
+    MODIFIER_RULE.push(MODIFIER_RULE_5)
+
+    MODIFIER_RULE_6 =
+        new InputRule(makeModifier)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_NATIVE))
+    MODIFIER_RULE.push(MODIFIER_RULE_6)
+
+    MODIFIER_RULE_7 =
+        new InputRule(makeModifier)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_INTRINSIC))
+    MODIFIER_RULE.push(MODIFIER_RULE_7)
+
+    MODIFIER_LIST_MAYBE_RULE_0 =
+        new InputRule(makeModifierListMaybe)
+            .push(RuleAtom.createLoop(MODIFIER_PARSER, false))
+    MODIFIER_LIST_MAYBE_RULE.push(MODIFIER_LIST_MAYBE_RULE_0)
+
+    MODIFIER_LIST_MAYBE_RULE_1 =
+        new InputRule(makeEmptyModifierListMaybe)
+    MODIFIER_LIST_MAYBE_RULE.push(MODIFIER_LIST_MAYBE_RULE_1)
+
+    PREPROCESS_SETTING_RULE_0 =
+        new InputRule(makePreprocessSetting)
+            .push(RuleAtom.fromRegex(Tokenizer.HASH))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.createLoop(ATOM_PARSER, Parser.createProcedural(PREPROCESS_SETTING_RULE_0_SPLIT_3_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    PREPROCESS_SETTING_RULE.push(PREPROCESS_SETTING_RULE_0)
+
+    ANNOTATION_RULE_0 =
+        new InputRule(makeAnnotationWithValues)
+            .push(RuleAtom.fromRegex(Tokenizer.AT))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.createLoop(ATOM_PARSER, Parser.createProcedural(ANNOTATION_RULE_0_SPLIT_3_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+    ANNOTATION_RULE.push(ANNOTATION_RULE_0)
+
+    ANNOTATION_RULE_1 =
+        new InputRule(makeAnnotation)
+            .push(RuleAtom.fromRegex(Tokenizer.AT))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+    ANNOTATION_RULE.push(ANNOTATION_RULE_1)
+
+    ANNOTATIONS_MAYBE_RULE_0 =
+        new InputRule(makeAnnotationsMaybe)
+            .push(RuleAtom.createLoop(ANNOTATION_PARSER, false))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    ANNOTATIONS_MAYBE_RULE.push(ANNOTATIONS_MAYBE_RULE_0)
+
+    ANNOTATIONS_MAYBE_RULE_1 =
+        new InputRule(makeEmptyAnnotationsMaybe)
+    ANNOTATIONS_MAYBE_RULE.push(ANNOTATIONS_MAYBE_RULE_1)
+
+    QUALIFIED_NAME_RULE_0 =
+        new InputRule(makeQualifiedNameIt)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOT))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+    QUALIFIED_NAME_RULE.push(QUALIFIED_NAME_RULE_0)
+
+    QUALIFIED_NAME_RULE_1 =
+        new InputRule(makeQualifiedName)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+    QUALIFIED_NAME_RULE.push(QUALIFIED_NAME_RULE_1)
+
+    PACKAGE_DECLARATION_MAYBE_RULE_0 =
+        new InputRule(makePackageDeclarationMaybe)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_PACKAGE))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    PACKAGE_DECLARATION_MAYBE_RULE.push(PACKAGE_DECLARATION_MAYBE_RULE_0)
+
+    PACKAGE_DECLARATION_MAYBE_RULE_1 =
+        new InputRule(makeEmptyPackageDeclarationMaybe)
+    PACKAGE_DECLARATION_MAYBE_RULE.push(PACKAGE_DECLARATION_MAYBE_RULE_1)
+
+    NAMESPACE_IMPORT_RULE_0 =
+        new InputRule(makeAllNamespaceImport)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IMPORT))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.DOT))
+            .push(RuleAtom.fromRegex(Tokenizer.STAR))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    NAMESPACE_IMPORT_RULE.push(NAMESPACE_IMPORT_RULE_0)
+
+    NAMESPACE_IMPORT_RULE_1 =
+        new InputRule(makeNamespaceImport)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IMPORT))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    NAMESPACE_IMPORT_RULE.push(NAMESPACE_IMPORT_RULE_1)
+
+    IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_0 =
+        new InputRule(makeImportedFunctionAliasMaybe)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_AS))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+    IMPORTED_SYMBOL_ALIAS_MAYBE_RULE.push(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_0)
+
+    IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_1 =
+        new InputRule(makeEmptyImportedFunctionAliasMaybe)
+    IMPORTED_SYMBOL_ALIAS_MAYBE_RULE.push(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_1)
+
+    IMPORTED_SYMBOL_RULE_0 =
+        new InputRule(makeImportedFunction)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.createLoop(TYPE_PARSER, Parser.createProcedural(IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromParserRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER))
+    IMPORTED_SYMBOL_RULE.push(IMPORTED_SYMBOL_RULE_0)
+
+    IMPORTED_SYMBOL_RULE_1 =
+        new InputRule(makeImportedVariable)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromParserRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER))
+    IMPORTED_SYMBOL_RULE.push(IMPORTED_SYMBOL_RULE_1)
+
+    SELECTIVE_IMPORTS_RULE_0 =
+        new InputRule(makeAllSelectiveImport)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FROM))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IMPORT))
+            .push(RuleAtom.fromRegex(Tokenizer.STAR))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    SELECTIVE_IMPORTS_RULE.push(SELECTIVE_IMPORTS_RULE_0)
+
+    SELECTIVE_IMPORTS_RULE_1 =
+        new InputRule(makeSelectiveImports)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FROM))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IMPORT))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACE))
+            .push(RuleAtom.createLoop(IMPORTED_SYMBOL_PARSER, Parser.createProcedural(SELECTIVE_IMPORTS_RULE_1_SPLIT_4_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACE))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    SELECTIVE_IMPORTS_RULE.push(SELECTIVE_IMPORTS_RULE_1)
+
+    SELECTIVE_IMPORTS_RULE_2 =
+        new InputRule(makeSelectiveImports)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FROM))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IMPORT))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACE))
+            .push(RuleAtom.createLoop(IMPORTED_SYMBOL_PARSER, Parser.createProcedural(SELECTIVE_IMPORTS_RULE_2_SPLIT_4_PARSER_RULE), false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACE))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    SELECTIVE_IMPORTS_RULE.push(SELECTIVE_IMPORTS_RULE_2)
+
+    SELECTIVE_IMPORTS_RULE_3 =
+        new InputRule(makeSelectiveImport)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FROM))
+            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_IMPORT))
+            .push(RuleAtom.fromParserRef(IMPORTED_SYMBOL_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    SELECTIVE_IMPORTS_RULE.push(SELECTIVE_IMPORTS_RULE_3)
+
+    IMPORT_DECLARATION_RULE_0 =
+        new InputRule(makeImportFromNamespace)
+            .push(RuleAtom.fromParserRef(NAMESPACE_IMPORT_PARSER))
+    IMPORT_DECLARATION_RULE.push(IMPORT_DECLARATION_RULE_0)
+
+    IMPORT_DECLARATION_RULE_1 =
+        new InputRule(makeImportFromSelective)
+            .push(RuleAtom.fromParserRef(SELECTIVE_IMPORTS_PARSER))
+    IMPORT_DECLARATION_RULE.push(IMPORT_DECLARATION_RULE_1)
+
+    IMPORT_DECLARATIONS_MAYBE_RULE_0 =
+        new InputRule(makeImportDeclarationsMaybe)
+            .push(RuleAtom.createLoop(IMPORT_DECLARATION_PARSER, false))
+    IMPORT_DECLARATIONS_MAYBE_RULE.push(IMPORT_DECLARATIONS_MAYBE_RULE_0)
+
+    IMPORT_DECLARATIONS_MAYBE_RULE_1 =
+        new InputRule(makeEmptyImportDeclarationsMaybe)
+    IMPORT_DECLARATIONS_MAYBE_RULE.push(IMPORT_DECLARATIONS_MAYBE_RULE_1)
+
+    FUNCTION_PARAM_RULE_0 =
+        new InputRule(makeFunctionParam)
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+    FUNCTION_PARAM_RULE.push(FUNCTION_PARAM_RULE_0)
+
+    FUNCTION_PARAM_RULE_1 =
+        new InputRule(makeMutFunctionParam)
+            .push(RuleAtom.fromRegex(Tokenizer.KW_MUT))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+    FUNCTION_PARAM_RULE.push(FUNCTION_PARAM_RULE_1)
+
+    FUNCTION_PARAMS_MAYBE_RULE_0 =
+        new InputRule(makeFunctionParamsMaybe)
+            .push(RuleAtom.createLoop(FUNCTION_PARAM_PARSER, Parser.createProcedural(FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE), false))
+    FUNCTION_PARAMS_MAYBE_RULE.push(FUNCTION_PARAMS_MAYBE_RULE_0)
+
+    FUNCTION_PARAMS_MAYBE_RULE_1 =
+        new InputRule(makeEmptyFunctionParamsMaybe)
+    FUNCTION_PARAMS_MAYBE_RULE.push(FUNCTION_PARAMS_MAYBE_RULE_1)
+
+    FIELD_RULE_0 =
+        new InputRule(makeFieldWithInitialValue)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FIELD_RULE.push(FIELD_RULE_0)
+
+    FIELD_RULE_1 =
+        new InputRule(makeFieldWithInitialValue)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAL))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FIELD_RULE.push(FIELD_RULE_1)
+
+    FIELD_RULE_2 =
+        new InputRule(makeField)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FIELD_RULE.push(FIELD_RULE_2)
+
+    FIELD_RULE_3 =
+        new InputRule(makeField)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_VAL))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FIELD_RULE.push(FIELD_RULE_3)
+
+    FUNCTION_RULE_0 =
+        new InputRule(makeFunction)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.ARROW))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.EQUAL))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FUNCTION_RULE.push(FUNCTION_RULE_0)
+
+    FUNCTION_RULE_1 =
+        new InputRule(makeFunction)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.ARROW))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FUNCTION_RULE.push(FUNCTION_RULE_1)
+
+    FUNCTION_RULE_2 =
+        new InputRule(makeFunctionFromBlock)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.ARROW))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FUNCTION_RULE.push(FUNCTION_RULE_2)
+
+    FUNCTION_RULE_3 =
+        new InputRule(makeFunctionFromEmptyBlock)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.ARROW))
+            .push(RuleAtom.fromParserRef(TYPE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FUNCTION_RULE.push(FUNCTION_RULE_3)
+
+    FUNCTION_RULE_4 =
+        new InputRule(makeVoidFunction)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FUNCTION_RULE.push(FUNCTION_RULE_4)
+
+    FUNCTION_RULE_5 =
+        new InputRule(makeVoidFunctionFromBlock)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FUNCTION_RULE.push(FUNCTION_RULE_5)
+
+    FUNCTION_RULE_6 =
+        new InputRule(makeVoidFunctionFromEmptyBlock)
+            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    FUNCTION_RULE.push(FUNCTION_RULE_6)
+
+    STRUCT_CONSTRUCTOR_RULE_0 =
+        new InputRule(makeStructConstructor)
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_CONSTRUCTOR))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromRegex(Tokenizer.COLON))
+            .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STRUCT_CONSTRUCTOR_RULE.push(STRUCT_CONSTRUCTOR_RULE_0)
+
+    STRUCT_CONSTRUCTOR_RULE_1 =
+        new InputRule(makeStructConstructorFromBlock)
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_CONSTRUCTOR))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
+            .push(RuleAtom.fromParserRef(BLOCK_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STRUCT_CONSTRUCTOR_RULE.push(STRUCT_CONSTRUCTOR_RULE_1)
+
+    MEMBER_RULE_0 =
+        new InputRule(makeMemberFromField)
+            .push(RuleAtom.fromParserRef(FIELD_PARSER))
+    MEMBER_RULE.push(MEMBER_RULE_0)
+
+    MEMBER_RULE_1 =
+        new InputRule(makeMemberFromFunction)
+            .push(RuleAtom.fromParserRef(FUNCTION_PARSER))
+    MEMBER_RULE.push(MEMBER_RULE_1)
+
+    MEMBER_RULE_2 =
+        new InputRule(makeMemberFromStructConstructor)
+            .push(RuleAtom.fromParserRef(STRUCT_CONSTRUCTOR_PARSER))
+    MEMBER_RULE.push(MEMBER_RULE_2)
+
+    MEMBER_RULE_3 =
+        new InputRule(makeMemberFromStruct)
+            .push(RuleAtom.fromParserRef(STRUCT_PARSER))
+    MEMBER_RULE.push(MEMBER_RULE_3)
+
+    STRUCT_RULE_0 =
+        new InputRule(makeStruct)
+            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromRegex(Tokenizer.KW_STRUCT))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
+            .push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACE))
+            .push(RuleAtom.createLoop(MEMBER_PARSER, false))
+            .push(RuleAtom.fromRegex(Tokenizer.RIGHT_BRACE))
+            .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
+    STRUCT_RULE.push(STRUCT_RULE_0)
+
+    PROGRAM_RULE_0 =
+        new InputRule(makeProgram)
+            .push(RuleAtom.createLoop(PREPROCESS_SETTING_PARSER, false))
+            .push(RuleAtom.fromParserRef(PACKAGE_DECLARATION_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(IMPORT_DECLARATIONS_MAYBE_PARSER))
+            .push(RuleAtom.createLoop(MEMBER_PARSER, false))
+    PROGRAM_RULE.push(PROGRAM_RULE_0)
+
+    TYPE_TEMP_CRULE_0 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_POINTER, 0)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LESS, 0)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.STAR, 0)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 0)))))
+
+    TYPE_TEMP_CRULE_1 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_POINTER, 1)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LESS, 1)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 1)))))
+
+    TYPE_TEMP_CRULE_2 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_BOOL, 2)))))
+
+    TYPE_TEMP_CRULE_3 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_BYTE, 3)))))
+
+    TYPE_TEMP_CRULE_4 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_CHAR, 4)))))
+
+    TYPE_TEMP_CRULE_5 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_DOUBLE, 5)))))
+
+    TYPE_TEMP_CRULE_6 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_FLOAT, 6)))))
+
+    TYPE_TEMP_CRULE_7 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_INT, 7)))))
+
+    TYPE_TEMP_CRULE_8 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_LONG, 8)))))
+
+    TYPE_TEMP_CRULE_9 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_SHORT, 9)))))
+
+    TYPE_TEMP_CRULE_10 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_VOID, 10)))))
+
+    TYPE_TEMP_CRULE_11 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 11)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createLoop(TYPE_PARSER, Parser.createProcedural(TYPE_TEMP_RULE_11_SPLIT_1_PARSER_RULE), false)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 11)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.ARROW, 11)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+
+    TYPE_TEMP_CRULE_12 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_BLOB, 12)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACKET, 12)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACKET, 12)))))
+
+    TYPE_TEMP_CRULE_13 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LESS, 13)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createLoop(TYPE_PARSER, Parser.createProcedural(TYPE_TEMP_RULE_13_SPLIT_2_PARSER_RULE), false)))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 13)))))
+
+    TYPE_TEMP_CRULE_14 =
+        new ParserRule(
+            TYPE_TEMP_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))))
+
+    TYPE_TEMP_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(TYPE_TEMP_CRULE_0)
+                .push(TYPE_TEMP_CRULE_1)
+                .push(TYPE_TEMP_CRULE_2)
+                .push(TYPE_TEMP_CRULE_3)
+                .push(TYPE_TEMP_CRULE_4)
+                .push(TYPE_TEMP_CRULE_5)
+                .push(TYPE_TEMP_CRULE_6)
+                .push(TYPE_TEMP_CRULE_7)
+                .push(TYPE_TEMP_CRULE_8)
+                .push(TYPE_TEMP_CRULE_9)
+                .push(TYPE_TEMP_CRULE_10)
+                .push(TYPE_TEMP_CRULE_11)
+                .push(TYPE_TEMP_CRULE_12)
+                .push(TYPE_TEMP_CRULE_13)
+                .push(TYPE_TEMP_CRULE_14))
+    TYPE_TEMP_PARSER_RULE.setExpression(TYPE_TEMP_CRULE)
+
+    TYPE_CRULE_0 =
+        new ParserRule(
+            TYPE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_RULE, RuleExpression.createRef(TYPE_TEMP_PARSER)))))
+
+    TYPE_CRULE_1 =
+        new ParserRule(
+            TYPE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(TYPE_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 1)))
+                    .push(new ParserRule(TYPE_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(TYPE_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))))
+
+    TYPE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(TYPE_CRULE_0)
+                .push(TYPE_CRULE_1))
+    TYPE_PARSER_RULE.setExpression(TYPE_CRULE)
+
+    EXPRESSION_CRULE_0 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NEW, 0)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER)))))
+
+    EXPRESSION_CRULE_1 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NEW, 1)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))))
+
+    EXPRESSION_CRULE_2 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(SIZE_OF_PARSER)))))
+
+    EXPRESSION_CRULE_3 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER)))))
+
+    EXPRESSION_CRULE_4 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_5 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(IF_EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_6 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))))
+
+    EXPRESSION_CRULE_7 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(ATOM_PARSER)))))
+
+    EXPRESSION_CRULE_8 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 8)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 8)))))
+
+    EXPRESSION_CRULE_9 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PLUS, 9)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_10 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.MINUS, 10)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_11 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_PLUS, 11)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_12 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_MINUS, 12)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_13 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_INV, 13)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_14 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG, 14)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_15 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(LIST_LITERAL_PARSER)))))
+
+    EXPRESSION_CRULE_16 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOT, 16)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 16)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER)))))
+
+    EXPRESSION_CRULE_17 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOT, 17)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 17)))))
+
+    EXPRESSION_CRULE_18 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_PLUS, 18)))))
+
+    EXPRESSION_CRULE_19 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_MINUS, 19)))))
+
+    EXPRESSION_CRULE_20 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_AS, 20)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+
+    EXPRESSION_CRULE_21 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_STAR, 21)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_22 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.STAR, 22)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_23 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.SLASH, 23)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_24 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PERCENT, 24)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_25 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PLUS, 25)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_26 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.MINUS, 26)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_27 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_SHL, 27)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_28 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_SHR, 28)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_29 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_USHR, 29)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_30 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.GREATER, 30)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_31 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.LESS, 31)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_32 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.GREATER_EQUAL, 32)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_33 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.LESS_EQUAL, 33)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_34 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TRIPLE_EQUAL, 34)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_35 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_EQUAL, 35)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_36 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_DOUBLE_EQUAL, 36)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_37 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.NOT_EQUAL, 37)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_38 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_AND, 38)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_39 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NAND, 39)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_40 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_XOR, 40)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_41 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_XNOR, 41)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_42 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_OR, 42)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_43 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NOR, 43)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_44 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IMPLIES, 44)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_45 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NIMPLIES, 45)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_46 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IFF, 46)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_47 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NIFF, 47)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_48 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_AMPERSAND, 48)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_49 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_DOUBLE_AMPERSAND, 49)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_50 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.CARET, 50)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_51 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_CARET, 51)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_52 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_PIPE, 52)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_53 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_DOUBLE_PIPE, 53)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_54 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.ARROW, 54)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_55 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.NOT_ARROW, 55)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_56 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_ARROW, 56)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_57 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_DOUBLE_ARROW, 57)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_58 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.EQUAL, 58)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_59 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_STAR_EQUAL, 59)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_60 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.STAR_EQUAL, 60)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_61 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.SLASH_EQUAL, 61)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_62 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PERCENT_EQUAL, 62)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_63 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PLUS_EQUAL, 63)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_64 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.MINUS_EQUAL, 64)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_65 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_LESS_EQUAL, 65)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_66 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_GREATER_EQUAL, 66)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_67 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TRIPLE_LESS_EQUAL, 67)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_68 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TRIPLE_GREATER_EQUAL, 68)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_69 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.AMPERSAND_EQUAL, 69)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_70 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_AMPERSAND_EQUAL, 70)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_71 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PIPE_EQUAL, 71)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE_72 =
+        new ParserRule(
+            EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_PIPE_EQUAL, 72)))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    EXPRESSION_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(EXPRESSION_CRULE_0)
+                .push(EXPRESSION_CRULE_1)
+                .push(EXPRESSION_CRULE_2)
+                .push(EXPRESSION_CRULE_3)
+                .push(EXPRESSION_CRULE_4)
+                .push(EXPRESSION_CRULE_5)
+                .push(EXPRESSION_CRULE_6)
+                .push(EXPRESSION_CRULE_7)
+                .push(EXPRESSION_CRULE_8)
+                .push(EXPRESSION_CRULE_9)
+                .push(EXPRESSION_CRULE_10)
+                .push(EXPRESSION_CRULE_11)
+                .push(EXPRESSION_CRULE_12)
+                .push(EXPRESSION_CRULE_13)
+                .push(EXPRESSION_CRULE_14)
+                .push(EXPRESSION_CRULE_15)
+                .push(EXPRESSION_CRULE_16)
+                .push(EXPRESSION_CRULE_17)
+                .push(EXPRESSION_CRULE_18)
+                .push(EXPRESSION_CRULE_19)
+                .push(EXPRESSION_CRULE_20)
+                .push(EXPRESSION_CRULE_21)
+                .push(EXPRESSION_CRULE_22)
+                .push(EXPRESSION_CRULE_23)
+                .push(EXPRESSION_CRULE_24)
+                .push(EXPRESSION_CRULE_25)
+                .push(EXPRESSION_CRULE_26)
+                .push(EXPRESSION_CRULE_27)
+                .push(EXPRESSION_CRULE_28)
+                .push(EXPRESSION_CRULE_29)
+                .push(EXPRESSION_CRULE_30)
+                .push(EXPRESSION_CRULE_31)
+                .push(EXPRESSION_CRULE_32)
+                .push(EXPRESSION_CRULE_33)
+                .push(EXPRESSION_CRULE_34)
+                .push(EXPRESSION_CRULE_35)
+                .push(EXPRESSION_CRULE_36)
+                .push(EXPRESSION_CRULE_37)
+                .push(EXPRESSION_CRULE_38)
+                .push(EXPRESSION_CRULE_39)
+                .push(EXPRESSION_CRULE_40)
+                .push(EXPRESSION_CRULE_41)
+                .push(EXPRESSION_CRULE_42)
+                .push(EXPRESSION_CRULE_43)
+                .push(EXPRESSION_CRULE_44)
+                .push(EXPRESSION_CRULE_45)
+                .push(EXPRESSION_CRULE_46)
+                .push(EXPRESSION_CRULE_47)
+                .push(EXPRESSION_CRULE_48)
+                .push(EXPRESSION_CRULE_49)
+                .push(EXPRESSION_CRULE_50)
+                .push(EXPRESSION_CRULE_51)
+                .push(EXPRESSION_CRULE_52)
+                .push(EXPRESSION_CRULE_53)
+                .push(EXPRESSION_CRULE_54)
+                .push(EXPRESSION_CRULE_55)
+                .push(EXPRESSION_CRULE_56)
+                .push(EXPRESSION_CRULE_57)
+                .push(EXPRESSION_CRULE_58)
+                .push(EXPRESSION_CRULE_59)
+                .push(EXPRESSION_CRULE_60)
+                .push(EXPRESSION_CRULE_61)
+                .push(EXPRESSION_CRULE_62)
+                .push(EXPRESSION_CRULE_63)
+                .push(EXPRESSION_CRULE_64)
+                .push(EXPRESSION_CRULE_65)
+                .push(EXPRESSION_CRULE_66)
+                .push(EXPRESSION_CRULE_67)
+                .push(EXPRESSION_CRULE_68)
+                .push(EXPRESSION_CRULE_69)
+                .push(EXPRESSION_CRULE_70)
+                .push(EXPRESSION_CRULE_71)
+                .push(EXPRESSION_CRULE_72))
+    EXPRESSION_PARSER_RULE.setExpression(EXPRESSION_CRULE)
+
+    ATOM_CRULE_0 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_NULL, 0)))))
+
+    ATOM_CRULE_1 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_TRUE, 1)))))
+
+    ATOM_CRULE_2 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_FALSE, 2)))))
+
+    ATOM_CRULE_3 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_CHAR, 3)))))
+
+    ATOM_CRULE_4 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_STRING, 4)))))
+
+    ATOM_CRULE_5 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_INTEGER, 5)))))
+
+    ATOM_CRULE_6 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_LONG, 6)))))
+
+    ATOM_CRULE_7 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_FLOAT, 7)))))
+
+    ATOM_CRULE_8 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_DOUBLE, 8)))))
+
+    ATOM_CRULE_9 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_LONG_DOUBLE, 9)))))
+
+    ATOM_CRULE_10 =
+        new ParserRule(
+            ATOM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 10)))))
+
+    ATOM_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(ATOM_CRULE_0)
+                .push(ATOM_CRULE_1)
+                .push(ATOM_CRULE_2)
+                .push(ATOM_CRULE_3)
+                .push(ATOM_CRULE_4)
+                .push(ATOM_CRULE_5)
+                .push(ATOM_CRULE_6)
+                .push(ATOM_CRULE_7)
+                .push(ATOM_CRULE_8)
+                .push(ATOM_CRULE_9)
+                .push(ATOM_CRULE_10))
+    ATOM_PARSER_RULE.setExpression(ATOM_CRULE)
+
+    SIZE_OF_CRULE_0 =
+        new ParserRule(
+            SIZE_OF_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(SIZE_OF_RULE, createCombinatorRegex(Tokenizer.KW_SIZEOF, 0)))
+                    .push(new ParserRule(SIZE_OF_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
+                    .push(new ParserRule(SIZE_OF_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(SIZE_OF_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))))
+
+    SIZE_OF_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(SIZE_OF_CRULE_0))
+    SIZE_OF_PARSER_RULE.setExpression(SIZE_OF_CRULE)
+
+    EXPRESSION_TUPLE_CRULE_0 =
+        new ParserRule(
+            EXPRESSION_TUPLE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(EXPRESSION_TUPLE_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
+                    .push(new ParserRule(EXPRESSION_TUPLE_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(EXPRESSION_TUPLE_RULE_0_SPLIT_1_PARSER_RULE), false)))
+                    .push(new ParserRule(EXPRESSION_TUPLE_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))))
+
+    EXPRESSION_TUPLE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(EXPRESSION_TUPLE_CRULE_0))
+    EXPRESSION_TUPLE_PARSER_RULE.setExpression(EXPRESSION_TUPLE_CRULE)
+
+    LIST_LITERAL_CRULE_0 =
+        new ParserRule(
+            LIST_LITERAL_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(LIST_LITERAL_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACKET, 0)))
+                    .push(new ParserRule(LIST_LITERAL_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(LIST_LITERAL_RULE_0_SPLIT_1_PARSER_RULE), false)))
+                    .push(new ParserRule(LIST_LITERAL_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACKET, 0)))))
+
+    LIST_LITERAL_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(LIST_LITERAL_CRULE_0))
+    LIST_LITERAL_PARSER_RULE.setExpression(LIST_LITERAL_CRULE)
+
+    STATEMENT_CRULE_0 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 0)))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(STATEMENT_RULE_0_SPLIT_1_PARSER_RULE), false)))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    STATEMENT_CRULE_1 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_VAL, 1)))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(STATEMENT_RULE_1_SPLIT_1_PARSER_RULE), false)))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+
+    STATEMENT_CRULE_2 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(WHILE_STATEMENT_PARSER)))))
+
+    STATEMENT_CRULE_3 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(FOR_STATEMENT_PARSER)))))
+
+    STATEMENT_CRULE_4 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(RETURN_STATEMENT_PARSER)))))
+
+    STATEMENT_CRULE_5 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_BREAK, 5)))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 5)))))
+
+    STATEMENT_CRULE_6 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_CONTINUE, 6)))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6)))))
+
+    STATEMENT_CRULE_7 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_PASS, 7)))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 7)))))
+
+    STATEMENT_CRULE_8 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 8)))))
+
+    STATEMENT_CRULE_9 =
+        new ParserRule(
+            STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(STATEMENT_RULE_9_SPLIT_0_PARSER_RULE), false)))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 9)))))
+
+    STATEMENT_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(STATEMENT_CRULE_0)
+                .push(STATEMENT_CRULE_1)
+                .push(STATEMENT_CRULE_2)
+                .push(STATEMENT_CRULE_3)
+                .push(STATEMENT_CRULE_4)
+                .push(STATEMENT_CRULE_5)
+                .push(STATEMENT_CRULE_6)
+                .push(STATEMENT_CRULE_7)
+                .push(STATEMENT_CRULE_8)
+                .push(STATEMENT_CRULE_9))
+    STATEMENT_PARSER_RULE.setExpression(STATEMENT_CRULE)
+
+    ELSE_STATEMENT_CRULE_0 =
+        new ParserRule(
+            ELSE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 0)))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    ELSE_STATEMENT_CRULE_1 =
+        new ParserRule(
+            ELSE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 1)))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+
+    ELSE_STATEMENT_CRULE_2 =
+        new ParserRule(
+            ELSE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 2)))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    ELSE_STATEMENT_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(ELSE_STATEMENT_CRULE_0)
+                .push(ELSE_STATEMENT_CRULE_1)
+                .push(ELSE_STATEMENT_CRULE_2))
+    ELSE_STATEMENT_PARSER_RULE.setExpression(ELSE_STATEMENT_CRULE)
+
+    WHILE_STATEMENT_CRULE_0 =
+        new ParserRule(
+            WHILE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_LOOP, 0)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+
+    WHILE_STATEMENT_CRULE_1 =
+        new ParserRule(
+            WHILE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_LOOP, 1)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+
+    WHILE_STATEMENT_CRULE_2 =
+        new ParserRule(
+            WHILE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_LOOP, 2)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+
+    WHILE_STATEMENT_CRULE_3 =
+        new ParserRule(
+            WHILE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_LOOP, 3)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+
+    WHILE_STATEMENT_CRULE_4 =
+        new ParserRule(
+            WHILE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_WHILE, 4)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 4)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 4)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+
+    WHILE_STATEMENT_CRULE_5 =
+        new ParserRule(
+            WHILE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_WHILE, 5)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 5)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+
+    WHILE_STATEMENT_CRULE_6 =
+        new ParserRule(
+            WHILE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_WHILE, 6)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 6)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6)))))
+
+    WHILE_STATEMENT_CRULE_7 =
+        new ParserRule(
+            WHILE_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_WHILE, 7)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 7)))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+
+    WHILE_STATEMENT_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(WHILE_STATEMENT_CRULE_0)
+                .push(WHILE_STATEMENT_CRULE_1)
+                .push(WHILE_STATEMENT_CRULE_2)
+                .push(WHILE_STATEMENT_CRULE_3)
+                .push(WHILE_STATEMENT_CRULE_4)
+                .push(WHILE_STATEMENT_CRULE_5)
+                .push(WHILE_STATEMENT_CRULE_6)
+                .push(WHILE_STATEMENT_CRULE_7))
+    WHILE_STATEMENT_PARSER_RULE.setExpression(WHILE_STATEMENT_CRULE)
+
+    FOR_HEADER_CRULE_0 =
+        new ParserRule(
+            FOR_HEADER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 0)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 0)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))))
+
+    FOR_HEADER_CRULE_1 =
+        new ParserRule(
+            FOR_HEADER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 1)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 1)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 1)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_1_SPLIT_3_PARSER_RULE), false)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))))
+
+    FOR_HEADER_CRULE_2 =
+        new ParserRule(
+            FOR_HEADER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 2)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 2)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 2)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 2)))))
+
+    FOR_HEADER_CRULE_3 =
+        new ParserRule(
+            FOR_HEADER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 3)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 3)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 3)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_3_SPLIT_4_PARSER_RULE), false)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 3)))))
+
+    FOR_HEADER_CRULE_4 =
+        new ParserRule(
+            FOR_HEADER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 4)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 4)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_4_SPLIT_2_PARSER_RULE), false)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 4)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 4)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 4)))))
+
+    FOR_HEADER_CRULE_5 =
+        new ParserRule(
+            FOR_HEADER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 5)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 5)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_5_SPLIT_2_PARSER_RULE), false)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 5)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 5)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_5_SPLIT_5_PARSER_RULE), false)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 5)))))
+
+    FOR_HEADER_CRULE_6 =
+        new ParserRule(
+            FOR_HEADER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 6)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 6)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_6_SPLIT_2_PARSER_RULE), false)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 6)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 6)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 6)))))
+
+    FOR_HEADER_CRULE_7 =
+        new ParserRule(
+            FOR_HEADER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 7)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 7)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_7_SPLIT_2_PARSER_RULE), false)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 7)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 7)))
+                    .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_7_SPLIT_6_PARSER_RULE), false)))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 7)))))
+
+    FOR_HEADER_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(FOR_HEADER_CRULE_0)
+                .push(FOR_HEADER_CRULE_1)
+                .push(FOR_HEADER_CRULE_2)
+                .push(FOR_HEADER_CRULE_3)
+                .push(FOR_HEADER_CRULE_4)
+                .push(FOR_HEADER_CRULE_5)
+                .push(FOR_HEADER_CRULE_6)
+                .push(FOR_HEADER_CRULE_7))
+    FOR_HEADER_PARSER_RULE.setExpression(FOR_HEADER_CRULE)
+
+    FOR_STATEMENT_CRULE_0 =
+        new ParserRule(
+            FOR_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_FOR, 0)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+
+    FOR_STATEMENT_CRULE_1 =
+        new ParserRule(
+            FOR_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_FOR, 1)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+
+    FOR_STATEMENT_CRULE_2 =
+        new ParserRule(
+            FOR_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_FOR, 2)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+
+    FOR_STATEMENT_CRULE_3 =
+        new ParserRule(
+            FOR_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_FOR, 3)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+
+    FOR_STATEMENT_CRULE_4 =
+        new ParserRule(
+            FOR_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_FOR, 4)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 4)))))
+
+    FOR_STATEMENT_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(FOR_STATEMENT_CRULE_0)
+                .push(FOR_STATEMENT_CRULE_1)
+                .push(FOR_STATEMENT_CRULE_2)
+                .push(FOR_STATEMENT_CRULE_3)
+                .push(FOR_STATEMENT_CRULE_4))
+    FOR_STATEMENT_PARSER_RULE.setExpression(FOR_STATEMENT_CRULE)
+
+    VARIABLE_DEFINE_CRULE_0 =
+        new ParserRule(
+            VARIABLE_DEFINE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.EQUAL, 0)))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    VARIABLE_DEFINE_CRULE_1 =
+        new ParserRule(
+            VARIABLE_DEFINE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.EQUAL, 1)))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    VARIABLE_DEFINE_CRULE_2 =
+        new ParserRule(
+            VARIABLE_DEFINE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 2)))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+
+    VARIABLE_DEFINE_CRULE_3 =
+        new ParserRule(
+            VARIABLE_DEFINE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))))
+
+    VARIABLE_DEFINE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(VARIABLE_DEFINE_CRULE_0)
+                .push(VARIABLE_DEFINE_CRULE_1)
+                .push(VARIABLE_DEFINE_CRULE_2)
+                .push(VARIABLE_DEFINE_CRULE_3))
+    VARIABLE_DEFINE_PARSER_RULE.setExpression(VARIABLE_DEFINE_CRULE)
+
+    RETURN_STATEMENT_CRULE_0 =
+        new ParserRule(
+            RETURN_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_RETURN, 0)))
+                    .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    RETURN_STATEMENT_CRULE_1 =
+        new ParserRule(
+            RETURN_STATEMENT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_RETURN, 1)))
+                    .push(new ParserRule(RETURN_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+
+    RETURN_STATEMENT_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(RETURN_STATEMENT_CRULE_0)
+                .push(RETURN_STATEMENT_CRULE_1))
+    RETURN_STATEMENT_PARSER_RULE.setExpression(RETURN_STATEMENT_CRULE)
+
+    BLOCK_CRULE_0 =
+        new ParserRule(
+            BLOCK_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 0)))
+                    .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 0)))))
+
+    BLOCK_CRULE_1 =
+        new ParserRule(
+            BLOCK_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 1)))
+                    .push(new ParserRule(BLOCK_RULE, RuleExpression.createLoop(STATEMENT_PARSER, false)))
+                    .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 1)))))
+
+    BLOCK_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(BLOCK_CRULE_0)
+                .push(BLOCK_CRULE_1))
+    BLOCK_PARSER_RULE.setExpression(BLOCK_CRULE)
+
+    IF_EXPRESSION_CRULE_0 =
+        new ParserRule(
+            IF_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IF, 0)))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))))
+
+    IF_EXPRESSION_CRULE_1 =
+        new ParserRule(
+            IF_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IF, 1)))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+
+    IF_EXPRESSION_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(IF_EXPRESSION_CRULE_0)
+                .push(IF_EXPRESSION_CRULE_1))
+    IF_EXPRESSION_PARSER_RULE.setExpression(IF_EXPRESSION_CRULE)
+
+    IF_ELSE_EXPRESSION_CRULE_0 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IF, 0)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_1 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IF, 1)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_2 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IF, 2)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_3 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 3)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_4 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 4)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 4)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_5 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 5)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 5)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_6 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 6)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 6)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_7 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 7)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 7)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_8 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 8)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 8)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_9 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 9)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 9)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_10 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 10)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 10)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE_11 =
+        new ParserRule(
+            IF_ELSE_EXPRESSION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 11)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 11)))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+
+    IF_ELSE_EXPRESSION_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(IF_ELSE_EXPRESSION_CRULE_0)
+                .push(IF_ELSE_EXPRESSION_CRULE_1)
+                .push(IF_ELSE_EXPRESSION_CRULE_2)
+                .push(IF_ELSE_EXPRESSION_CRULE_3)
+                .push(IF_ELSE_EXPRESSION_CRULE_4)
+                .push(IF_ELSE_EXPRESSION_CRULE_5)
+                .push(IF_ELSE_EXPRESSION_CRULE_6)
+                .push(IF_ELSE_EXPRESSION_CRULE_7)
+                .push(IF_ELSE_EXPRESSION_CRULE_8)
+                .push(IF_ELSE_EXPRESSION_CRULE_9)
+                .push(IF_ELSE_EXPRESSION_CRULE_10)
+                .push(IF_ELSE_EXPRESSION_CRULE_11))
+    IF_ELSE_EXPRESSION_PARSER_RULE.setExpression(IF_ELSE_EXPRESSION_CRULE)
+
+    MODIFIER_CRULE_0 =
+        new ParserRule(
+            MODIFIER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PRIVATE, 0)))))
+
+    MODIFIER_CRULE_1 =
+        new ParserRule(
+            MODIFIER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PROTECTED, 1)))))
+
+    MODIFIER_CRULE_2 =
+        new ParserRule(
+            MODIFIER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PUBLIC, 2)))))
+
+    MODIFIER_CRULE_3 =
+        new ParserRule(
+            MODIFIER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_STATIC, 3)))))
+
+    MODIFIER_CRULE_4 =
+        new ParserRule(
+            MODIFIER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_FINAL, 4)))))
+
+    MODIFIER_CRULE_5 =
+        new ParserRule(
+            MODIFIER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_INLINE, 5)))))
+
+    MODIFIER_CRULE_6 =
+        new ParserRule(
+            MODIFIER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_NATIVE, 6)))))
+
+    MODIFIER_CRULE_7 =
+        new ParserRule(
+            MODIFIER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_INTRINSIC, 7)))))
+
+    MODIFIER_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(MODIFIER_CRULE_0)
+                .push(MODIFIER_CRULE_1)
+                .push(MODIFIER_CRULE_2)
+                .push(MODIFIER_CRULE_3)
+                .push(MODIFIER_CRULE_4)
+                .push(MODIFIER_CRULE_5)
+                .push(MODIFIER_CRULE_6)
+                .push(MODIFIER_CRULE_7))
+    MODIFIER_PARSER_RULE.setExpression(MODIFIER_CRULE)
+
+    MODIFIER_LIST_MAYBE_CRULE_0 =
+        new ParserRule(
+            MODIFIER_LIST_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MODIFIER_LIST_MAYBE_RULE, RuleExpression.createLoop(MODIFIER_PARSER, false)))))
+
+    MODIFIER_LIST_MAYBE_CRULE_1 =
+        new ParserRule(
+            MODIFIER_LIST_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))))
+
+    MODIFIER_LIST_MAYBE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(MODIFIER_LIST_MAYBE_CRULE_0)
+                .push(MODIFIER_LIST_MAYBE_CRULE_1))
+    MODIFIER_LIST_MAYBE_PARSER_RULE.setExpression(MODIFIER_LIST_MAYBE_CRULE)
+
+    PREPROCESS_SETTING_CRULE_0 =
+        new ParserRule(
+            PREPROCESS_SETTING_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.HASH, 0)))
+                    .push(new ParserRule(PREPROCESS_SETTING_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
+                    .push(new ParserRule(PREPROCESS_SETTING_RULE, RuleExpression.createLoop(ATOM_PARSER, Parser.createProcedural(PREPROCESS_SETTING_RULE_0_SPLIT_3_PARSER_RULE), false)))
+                    .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
+                    .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    PREPROCESS_SETTING_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(PREPROCESS_SETTING_CRULE_0))
+    PREPROCESS_SETTING_PARSER_RULE.setExpression(PREPROCESS_SETTING_CRULE)
+
+    ANNOTATION_CRULE_0 =
+        new ParserRule(
+            ANNOTATION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.AT, 0)))
+                    .push(new ParserRule(ANNOTATION_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
+                    .push(new ParserRule(ANNOTATION_RULE, RuleExpression.createLoop(ATOM_PARSER, Parser.createProcedural(ANNOTATION_RULE_0_SPLIT_3_PARSER_RULE), false)))
+                    .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))))
+
+    ANNOTATION_CRULE_1 =
+        new ParserRule(
+            ANNOTATION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.AT, 1)))
+                    .push(new ParserRule(ANNOTATION_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))))
+
+    ANNOTATION_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(ANNOTATION_CRULE_0)
+                .push(ANNOTATION_CRULE_1))
+    ANNOTATION_PARSER_RULE.setExpression(ANNOTATION_CRULE)
+
+    ANNOTATIONS_MAYBE_CRULE_0 =
+        new ParserRule(
+            ANNOTATIONS_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(ANNOTATIONS_MAYBE_RULE, RuleExpression.createLoop(ANNOTATION_PARSER, false)))
+                    .push(new ParserRule(ANNOTATIONS_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    ANNOTATIONS_MAYBE_CRULE_1 =
+        new ParserRule(
+            ANNOTATIONS_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))))
+
+    ANNOTATIONS_MAYBE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(ANNOTATIONS_MAYBE_CRULE_0)
+                .push(ANNOTATIONS_MAYBE_CRULE_1))
+    ANNOTATIONS_MAYBE_PARSER_RULE.setExpression(ANNOTATIONS_MAYBE_CRULE)
+
+    QUALIFIED_NAME_CRULE_0 =
+        new ParserRule(
+            QUALIFIED_NAME_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.DOT, 0)))
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))))
+
+    QUALIFIED_NAME_CRULE_1 =
+        new ParserRule(
+            QUALIFIED_NAME_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))))
+
+    QUALIFIED_NAME_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(QUALIFIED_NAME_CRULE_0)
+                .push(QUALIFIED_NAME_CRULE_1))
+    QUALIFIED_NAME_PARSER_RULE.setExpression(QUALIFIED_NAME_CRULE)
+
+    PACKAGE_DECLARATION_MAYBE_CRULE_0 =
+        new ParserRule(
+            PACKAGE_DECLARATION_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, createCombinatorRegex(Tokenizer.KW_PACKAGE, 0)))
+                    .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    PACKAGE_DECLARATION_MAYBE_CRULE_1 =
+        new ParserRule(
+            PACKAGE_DECLARATION_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))))
+
+    PACKAGE_DECLARATION_MAYBE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(PACKAGE_DECLARATION_MAYBE_CRULE_0)
+                .push(PACKAGE_DECLARATION_MAYBE_CRULE_1))
+    PACKAGE_DECLARATION_MAYBE_PARSER_RULE.setExpression(PACKAGE_DECLARATION_MAYBE_CRULE)
+
+    NAMESPACE_IMPORT_CRULE_0 =
+        new ParserRule(
+            NAMESPACE_IMPORT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 0)))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.DOT, 0)))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.STAR, 0)))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    NAMESPACE_IMPORT_CRULE_1 =
+        new ParserRule(
+            NAMESPACE_IMPORT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 1)))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+
+    NAMESPACE_IMPORT_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(NAMESPACE_IMPORT_CRULE_0)
+                .push(NAMESPACE_IMPORT_CRULE_1))
+    NAMESPACE_IMPORT_PARSER_RULE.setExpression(NAMESPACE_IMPORT_CRULE)
+
+    IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_0 =
+        new ParserRule(
+            IMPORTED_SYMBOL_ALIAS_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE, createCombinatorRegex(Tokenizer.KW_AS, 0)))
+                    .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))))
+
+    IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_1 =
+        new ParserRule(
+            IMPORTED_SYMBOL_ALIAS_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))))
+
+    IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_0)
+                .push(IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_1))
+    IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE.setExpression(IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE)
+
+    IMPORTED_SYMBOL_CRULE_0 =
+        new ParserRule(
+            IMPORTED_SYMBOL_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createLoop(TYPE_PARSER, Parser.createProcedural(IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE), false)))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER)))))
+
+    IMPORTED_SYMBOL_CRULE_1 =
+        new ParserRule(
+            IMPORTED_SYMBOL_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER)))))
+
+    IMPORTED_SYMBOL_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(IMPORTED_SYMBOL_CRULE_0)
+                .push(IMPORTED_SYMBOL_CRULE_1))
+    IMPORTED_SYMBOL_PARSER_RULE.setExpression(IMPORTED_SYMBOL_CRULE)
+
+    SELECTIVE_IMPORTS_CRULE_0 =
+        new ParserRule(
+            SELECTIVE_IMPORTS_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_FROM, 0)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 0)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.STAR, 0)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    SELECTIVE_IMPORTS_CRULE_1 =
+        new ParserRule(
+            SELECTIVE_IMPORTS_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_FROM, 1)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 1)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 1)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createLoop(IMPORTED_SYMBOL_PARSER, Parser.createProcedural(SELECTIVE_IMPORTS_RULE_1_SPLIT_4_PARSER_RULE), false)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 1)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+
+    SELECTIVE_IMPORTS_CRULE_2 =
+        new ParserRule(
+            SELECTIVE_IMPORTS_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_FROM, 2)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 2)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 2)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createLoop(IMPORTED_SYMBOL_PARSER, Parser.createProcedural(SELECTIVE_IMPORTS_RULE_2_SPLIT_4_PARSER_RULE), false)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 2)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+
+    SELECTIVE_IMPORTS_CRULE_3 =
+        new ParserRule(
+            SELECTIVE_IMPORTS_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_FROM, 3)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 3)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_PARSER)))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3)))))
+
+    SELECTIVE_IMPORTS_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(SELECTIVE_IMPORTS_CRULE_0)
+                .push(SELECTIVE_IMPORTS_CRULE_1)
+                .push(SELECTIVE_IMPORTS_CRULE_2)
+                .push(SELECTIVE_IMPORTS_CRULE_3))
+    SELECTIVE_IMPORTS_PARSER_RULE.setExpression(SELECTIVE_IMPORTS_CRULE)
+
+    IMPORT_DECLARATION_CRULE_0 =
+        new ParserRule(
+            IMPORT_DECLARATION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORT_DECLARATION_RULE, RuleExpression.createRef(NAMESPACE_IMPORT_PARSER)))))
+
+    IMPORT_DECLARATION_CRULE_1 =
+        new ParserRule(
+            IMPORT_DECLARATION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORT_DECLARATION_RULE, RuleExpression.createRef(SELECTIVE_IMPORTS_PARSER)))))
+
+    IMPORT_DECLARATION_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(IMPORT_DECLARATION_CRULE_0)
+                .push(IMPORT_DECLARATION_CRULE_1))
+    IMPORT_DECLARATION_PARSER_RULE.setExpression(IMPORT_DECLARATION_CRULE)
+
+    IMPORT_DECLARATIONS_MAYBE_CRULE_0 =
+        new ParserRule(
+            IMPORT_DECLARATIONS_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORT_DECLARATIONS_MAYBE_RULE, RuleExpression.createLoop(IMPORT_DECLARATION_PARSER, false)))))
+
+    IMPORT_DECLARATIONS_MAYBE_CRULE_1 =
+        new ParserRule(
+            IMPORT_DECLARATIONS_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))))
+
+    IMPORT_DECLARATIONS_MAYBE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(IMPORT_DECLARATIONS_MAYBE_CRULE_0)
+                .push(IMPORT_DECLARATIONS_MAYBE_CRULE_1))
+    IMPORT_DECLARATIONS_MAYBE_PARSER_RULE.setExpression(IMPORT_DECLARATIONS_MAYBE_CRULE)
+
+    FUNCTION_PARAM_CRULE_0 =
+        new ParserRule(
+            FUNCTION_PARAM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+
+    FUNCTION_PARAM_CRULE_1 =
+        new ParserRule(
+            FUNCTION_PARAM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.KW_MUT, 1)))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+
+    FUNCTION_PARAM_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(FUNCTION_PARAM_CRULE_0)
+                .push(FUNCTION_PARAM_CRULE_1))
+    FUNCTION_PARAM_PARSER_RULE.setExpression(FUNCTION_PARAM_CRULE)
+
+    FUNCTION_PARAMS_MAYBE_CRULE_0 =
+        new ParserRule(
+            FUNCTION_PARAMS_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_PARAMS_MAYBE_RULE, RuleExpression.createLoop(FUNCTION_PARAM_PARSER, Parser.createProcedural(FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE), false)))))
+
+    FUNCTION_PARAMS_MAYBE_CRULE_1 =
+        new ParserRule(
+            FUNCTION_PARAMS_MAYBE_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))))
+
+    FUNCTION_PARAMS_MAYBE_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(FUNCTION_PARAMS_MAYBE_CRULE_0)
+                .push(FUNCTION_PARAMS_MAYBE_CRULE_1))
+    FUNCTION_PARAMS_MAYBE_PARSER_RULE.setExpression(FUNCTION_PARAMS_MAYBE_CRULE)
+
+    FIELD_CRULE_0 =
+        new ParserRule(
+            FIELD_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 0)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.EQUAL, 0)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    FIELD_CRULE_1 =
+        new ParserRule(
+            FIELD_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.KW_VAL, 1)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.EQUAL, 1)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+
+    FIELD_CRULE_2 =
+        new ParserRule(
+            FIELD_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 2)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 2)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+
+    FIELD_CRULE_3 =
+        new ParserRule(
+            FIELD_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.KW_VAL, 3)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3)))))
+
+    FIELD_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(FIELD_CRULE_0)
+                .push(FIELD_CRULE_1)
+                .push(FIELD_CRULE_2)
+                .push(FIELD_CRULE_3))
+    FIELD_PARSER_RULE.setExpression(FIELD_CRULE)
+
+    FUNCTION_CRULE_0 =
+        new ParserRule(
+            FUNCTION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 0)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 0)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.EQUAL, 0)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    FUNCTION_CRULE_1 =
+        new ParserRule(
+            FUNCTION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 1)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 1)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 1)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+
+    FUNCTION_CRULE_2 =
+        new ParserRule(
+            FUNCTION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 2)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 2)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 2)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 2)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 2)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+
+    FUNCTION_CRULE_3 =
+        new ParserRule(
+            FUNCTION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 3)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 3)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 3)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 3)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3)))))
+
+    FUNCTION_CRULE_4 =
+        new ParserRule(
+            FUNCTION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 4)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 4)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 4)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 4)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.COLON, 4)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 4)))))
+
+    FUNCTION_CRULE_5 =
+        new ParserRule(
+            FUNCTION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 5)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 5)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 5)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 5)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 5)))))
+
+    FUNCTION_CRULE_6 =
+        new ParserRule(
+            FUNCTION_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 6)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 6)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 6)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 6)))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6)))))
+
+    FUNCTION_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(FUNCTION_CRULE_0)
+                .push(FUNCTION_CRULE_1)
+                .push(FUNCTION_CRULE_2)
+                .push(FUNCTION_CRULE_3)
+                .push(FUNCTION_CRULE_4)
+                .push(FUNCTION_CRULE_5)
+                .push(FUNCTION_CRULE_6))
+    FUNCTION_PARSER_RULE.setExpression(FUNCTION_CRULE)
+
+    STRUCT_CONSTRUCTOR_CRULE_0 =
+        new ParserRule(
+            STRUCT_CONSTRUCTOR_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.KW_CONSTRUCTOR, 0)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    STRUCT_CONSTRUCTOR_CRULE_1 =
+        new ParserRule(
+            STRUCT_CONSTRUCTOR_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.KW_CONSTRUCTOR, 1)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 1)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(BLOCK_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+
+    STRUCT_CONSTRUCTOR_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(STRUCT_CONSTRUCTOR_CRULE_0)
+                .push(STRUCT_CONSTRUCTOR_CRULE_1))
+    STRUCT_CONSTRUCTOR_PARSER_RULE.setExpression(STRUCT_CONSTRUCTOR_CRULE)
+
+    MEMBER_CRULE_0 =
+        new ParserRule(
+            MEMBER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(FIELD_PARSER)))))
+
+    MEMBER_CRULE_1 =
+        new ParserRule(
+            MEMBER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(FUNCTION_PARSER)))))
+
+    MEMBER_CRULE_2 =
+        new ParserRule(
+            MEMBER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(STRUCT_CONSTRUCTOR_PARSER)))))
+
+    MEMBER_CRULE_3 =
+        new ParserRule(
+            MEMBER_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(STRUCT_PARSER)))))
+
+    MEMBER_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(MEMBER_CRULE_0)
+                .push(MEMBER_CRULE_1)
+                .push(MEMBER_CRULE_2)
+                .push(MEMBER_CRULE_3))
+    MEMBER_PARSER_RULE.setExpression(MEMBER_CRULE)
+
+    STRUCT_CRULE_0 =
+        new ParserRule(
+            STRUCT_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STRUCT_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.KW_STRUCT, 0)))
+                    .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
+                    .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 0)))
+                    .push(new ParserRule(STRUCT_RULE, RuleExpression.createLoop(MEMBER_PARSER, false)))
+                    .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 0)))
+                    .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+
+    STRUCT_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(STRUCT_CRULE_0))
+    STRUCT_PARSER_RULE.setExpression(STRUCT_CRULE)
+
+    PROGRAM_CRULE_0 =
+        new ParserRule(
+            PROGRAM_RULE,
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createLoop(PREPROCESS_SETTING_PARSER, false)))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createRef(PACKAGE_DECLARATION_MAYBE_PARSER)))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createRef(IMPORT_DECLARATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createLoop(MEMBER_PARSER, false)))))
+
+    PROGRAM_CRULE =
+        RuleExpression.createSelect(
+            new ArrayList(sizeof(ParserRule))
+                .push(PROGRAM_CRULE_0))
+    PROGRAM_PARSER_RULE.setExpression(PROGRAM_CRULE)
+
+    TYPE_TEMP_PARSER.setProceduralHost(new ProceduralParser(TYPE_TEMP_PARSER_RULE))
+
+    TYPE_PARSER.setProceduralHost(new ProceduralParser(TYPE_PARSER_RULE))
+
+    EXPRESSION_STARTER_PARSER_RULE = new ParserRule(
+        EXPRESSION_STARTER_RULE,
+        EXPRESSION_CRULE)
+    EXPRESSION_CONTINUATION_PARSER_RULE = new ParserRule(
+        EXPRESSION_CONTINUATION_RULE,
+        EXPRESSION_CRULE)
+    EXPRESSION_PARSER.setPrattHost(new PrattParser(
+        102,
+        EXPRESSION_STARTER_PARSER_RULE,
+        EXPRESSION_CONTINUATION_PARSER_RULE))
+
+    ATOM_PARSER.setProceduralHost(new ProceduralParser(ATOM_PARSER_RULE))
+
+    SIZE_OF_PARSER.setProceduralHost(new ProceduralParser(SIZE_OF_PARSER_RULE))
+
+    EXPRESSION_TUPLE_PARSER.setProceduralHost(new ProceduralParser(EXPRESSION_TUPLE_PARSER_RULE))
+
+    LIST_LITERAL_PARSER.setProceduralHost(new ProceduralParser(LIST_LITERAL_PARSER_RULE))
+
+    STATEMENT_PARSER.setProceduralHost(new ProceduralParser(STATEMENT_PARSER_RULE))
+
+    ELSE_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(ELSE_STATEMENT_PARSER_RULE))
+
+    WHILE_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(WHILE_STATEMENT_PARSER_RULE))
+
+    FOR_HEADER_PARSER.setProceduralHost(new ProceduralParser(FOR_HEADER_PARSER_RULE))
+
+    FOR_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(FOR_STATEMENT_PARSER_RULE))
+
+    VARIABLE_DEFINE_PARSER.setProceduralHost(new ProceduralParser(VARIABLE_DEFINE_PARSER_RULE))
+
+    RETURN_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(RETURN_STATEMENT_PARSER_RULE))
+
+    BLOCK_PARSER.setProceduralHost(new ProceduralParser(BLOCK_PARSER_RULE))
+
+    IF_EXPRESSION_PARSER.setProceduralHost(new ProceduralParser(IF_EXPRESSION_PARSER_RULE))
+
+    IF_ELSE_EXPRESSION_PARSER.setProceduralHost(new ProceduralParser(IF_ELSE_EXPRESSION_PARSER_RULE))
+
+    MODIFIER_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_PARSER_RULE))
+
+    MODIFIER_LIST_MAYBE_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_LIST_MAYBE_PARSER_RULE))
+
+    PREPROCESS_SETTING_PARSER.setProceduralHost(new ProceduralParser(PREPROCESS_SETTING_PARSER_RULE))
+
+    ANNOTATION_PARSER.setProceduralHost(new ProceduralParser(ANNOTATION_PARSER_RULE))
+
+    ANNOTATIONS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(ANNOTATIONS_MAYBE_PARSER_RULE))
+
+    QUALIFIED_NAME_PARSER.setProceduralHost(new ProceduralParser(QUALIFIED_NAME_PARSER_RULE))
+
+    PACKAGE_DECLARATION_MAYBE_PARSER.setProceduralHost(new ProceduralParser(PACKAGE_DECLARATION_MAYBE_PARSER_RULE))
+
+    NAMESPACE_IMPORT_PARSER.setProceduralHost(new ProceduralParser(NAMESPACE_IMPORT_PARSER_RULE))
+
+    IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE))
+
+    IMPORTED_SYMBOL_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_PARSER_RULE))
+
+    SELECTIVE_IMPORTS_PARSER.setProceduralHost(new ProceduralParser(SELECTIVE_IMPORTS_PARSER_RULE))
+
+    IMPORT_DECLARATION_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATION_PARSER_RULE))
+
+    IMPORT_DECLARATIONS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATIONS_MAYBE_PARSER_RULE))
+
+    FUNCTION_PARAM_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAM_PARSER_RULE))
+
+    FUNCTION_PARAMS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAMS_MAYBE_PARSER_RULE))
+
+    FIELD_PARSER.setProceduralHost(new ProceduralParser(FIELD_PARSER_RULE))
+
+    FUNCTION_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARSER_RULE))
+
+    STRUCT_CONSTRUCTOR_PARSER.setProceduralHost(new ProceduralParser(STRUCT_CONSTRUCTOR_PARSER_RULE))
+
+    MEMBER_PARSER.setProceduralHost(new ProceduralParser(MEMBER_PARSER_RULE))
+
+    STRUCT_PARSER.setProceduralHost(new ProceduralParser(STRUCT_PARSER_RULE))
+
+    PROGRAM_PARSER.setProceduralHost(new ProceduralParser(PROGRAM_PARSER_RULE))
+
+    return true
 }
 
-fun parseAtom(input: pointer<TokenList>) -> pointer<Atom>
-{
-    if input == null:
-        return null
-
-    if ATOM_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = ATOM_PARSER.getResult()
-
-    if result == null || result.isKind(ATOM_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Atom>
-}
-
-fun parseSizeOf(input: pointer<TokenList>) -> pointer<SizeOf>
-{
-    if input == null:
-        return null
-
-    if SIZE_OF_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = SIZE_OF_PARSER.getResult()
-
-    if result == null || result.isKind(SIZE_OF_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<SizeOf>
-}
-
-fun parseExpressionTuple(input: pointer<TokenList>) -> pointer<ExpressionTuple>
-{
-    if input == null:
-        return null
-
-    if EXPRESSION_TUPLE_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = EXPRESSION_TUPLE_PARSER.getResult()
-
-    if result == null || result.isKind(EXPRESSION_TUPLE_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ExpressionTuple>
-}
-
-fun parseListLiteral(input: pointer<TokenList>) -> pointer<ListLiteral>
-{
-    if input == null:
-        return null
-
-    if LIST_LITERAL_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = LIST_LITERAL_PARSER.getResult()
-
-    if result == null || result.isKind(LIST_LITERAL_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ListLiteral>
-}
-
-fun parseStatement(input: pointer<TokenList>) -> pointer<Statement>
-{
-    if input == null:
-        return null
-
-    if STATEMENT_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = STATEMENT_PARSER.getResult()
-
-    if result == null || result.isKind(STATEMENT_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Statement>
-}
-
-fun parseElseStatement(input: pointer<TokenList>) -> pointer<ElseStatement>
-{
-    if input == null:
-        return null
-
-    if ELSE_STATEMENT_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = ELSE_STATEMENT_PARSER.getResult()
-
-    if result == null || result.isKind(ELSE_STATEMENT_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ElseStatement>
-}
-
-fun parseWhileStatement(input: pointer<TokenList>) -> pointer<WhileStatement>
-{
-    if input == null:
-        return null
-
-    if WHILE_STATEMENT_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = WHILE_STATEMENT_PARSER.getResult()
-
-    if result == null || result.isKind(WHILE_STATEMENT_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<WhileStatement>
-}
-
-fun parseForHeader(input: pointer<TokenList>) -> pointer<ForHeader>
-{
-    if input == null:
-        return null
-
-    if FOR_HEADER_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = FOR_HEADER_PARSER.getResult()
-
-    if result == null || result.isKind(FOR_HEADER_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ForHeader>
-}
-
-fun parseForStatement(input: pointer<TokenList>) -> pointer<ForStatement>
-{
-    if input == null:
-        return null
-
-    if FOR_STATEMENT_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = FOR_STATEMENT_PARSER.getResult()
-
-    if result == null || result.isKind(FOR_STATEMENT_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ForStatement>
-}
-
-fun parseVariableDefine(input: pointer<TokenList>) -> pointer<VariableDefine>
-{
-    if input == null:
-        return null
-
-    if VARIABLE_DEFINE_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = VARIABLE_DEFINE_PARSER.getResult()
-
-    if result == null || result.isKind(VARIABLE_DEFINE_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<VariableDefine>
-}
-
-fun parseReturnStatement(input: pointer<TokenList>) -> pointer<ReturnStatement>
-{
-    if input == null:
-        return null
-
-    if RETURN_STATEMENT_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = RETURN_STATEMENT_PARSER.getResult()
-
-    if result == null || result.isKind(RETURN_STATEMENT_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ReturnStatement>
-}
-
-fun parseBlock(input: pointer<TokenList>) -> pointer<Block>
-{
-    if input == null:
-        return null
-
-    if BLOCK_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = BLOCK_PARSER.getResult()
-
-    if result == null || result.isKind(BLOCK_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Block>
-}
-
-fun parseIfExpression(input: pointer<TokenList>) -> pointer<IfExpression>
-{
-    if input == null:
-        return null
-
-    if IF_EXPRESSION_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = IF_EXPRESSION_PARSER.getResult()
-
-    if result == null || result.isKind(IF_EXPRESSION_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<IfExpression>
-}
-
-fun parseIfElseExpression(input: pointer<TokenList>) -> pointer<IfElseExpression>
-{
-    if input == null:
-        return null
-
-    if IF_ELSE_EXPRESSION_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = IF_ELSE_EXPRESSION_PARSER.getResult()
-
-    if result == null || result.isKind(IF_ELSE_EXPRESSION_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<IfElseExpression>
-}
-
-fun parseModifier(input: pointer<TokenList>) -> pointer<Modifier>
-{
-    if input == null:
-        return null
-
-    if MODIFIER_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = MODIFIER_PARSER.getResult()
-
-    if result == null || result.isKind(MODIFIER_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Modifier>
-}
-
-fun parseModifierListMaybe(input: pointer<TokenList>) -> pointer<ModifierListMaybe>
-{
-    if input == null:
-        return null
-
-    if MODIFIER_LIST_MAYBE_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = MODIFIER_LIST_MAYBE_PARSER.getResult()
-
-    if result == null || result.isKind(MODIFIER_LIST_MAYBE_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ModifierListMaybe>
-}
-
-fun parsePreprocessSetting(input: pointer<TokenList>) -> pointer<PreprocessSetting>
-{
-    if input == null:
-        return null
-
-    if PREPROCESS_SETTING_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = PREPROCESS_SETTING_PARSER.getResult()
-
-    if result == null || result.isKind(PREPROCESS_SETTING_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<PreprocessSetting>
-}
-
-fun parseAnnotation(input: pointer<TokenList>) -> pointer<Annotation>
-{
-    if input == null:
-        return null
-
-    if ANNOTATION_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = ANNOTATION_PARSER.getResult()
-
-    if result == null || result.isKind(ANNOTATION_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Annotation>
-}
-
-fun parseAnnotationsMaybe(input: pointer<TokenList>) -> pointer<AnnotationsMaybe>
-{
-    if input == null:
-        return null
-
-    if ANNOTATIONS_MAYBE_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = ANNOTATIONS_MAYBE_PARSER.getResult()
-
-    if result == null || result.isKind(ANNOTATIONS_MAYBE_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<AnnotationsMaybe>
-}
-
-fun parseQualifiedName(input: pointer<TokenList>) -> pointer<QualifiedName>
-{
-    if input == null:
-        return null
-
-    if QUALIFIED_NAME_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = QUALIFIED_NAME_PARSER.getResult()
-
-    if result == null || result.isKind(QUALIFIED_NAME_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<QualifiedName>
-}
-
-fun parsePackageDeclarationMaybe(input: pointer<TokenList>) -> pointer<PackageDeclarationMaybe>
-{
-    if input == null:
-        return null
-
-    if PACKAGE_DECLARATION_MAYBE_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = PACKAGE_DECLARATION_MAYBE_PARSER.getResult()
-
-    if result == null || result.isKind(PACKAGE_DECLARATION_MAYBE_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<PackageDeclarationMaybe>
-}
-
-fun parseNamespaceImport(input: pointer<TokenList>) -> pointer<NamespaceImport>
-{
-    if input == null:
-        return null
-
-    if NAMESPACE_IMPORT_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = NAMESPACE_IMPORT_PARSER.getResult()
-
-    if result == null || result.isKind(NAMESPACE_IMPORT_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<NamespaceImport>
-}
-
-fun parseImportedSymbolAliasMaybe(input: pointer<TokenList>) -> pointer<ImportedSymbolAliasMaybe>
-{
-    if input == null:
-        return null
-
-    if IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.getResult()
-
-    if result == null || result.isKind(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ImportedSymbolAliasMaybe>
-}
-
-fun parseImportedSymbol(input: pointer<TokenList>) -> pointer<ImportedSymbol>
-{
-    if input == null:
-        return null
-
-    if IMPORTED_SYMBOL_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = IMPORTED_SYMBOL_PARSER.getResult()
-
-    if result == null || result.isKind(IMPORTED_SYMBOL_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ImportedSymbol>
-}
-
-fun parseSelectiveImports(input: pointer<TokenList>) -> pointer<SelectiveImports>
-{
-    if input == null:
-        return null
-
-    if SELECTIVE_IMPORTS_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = SELECTIVE_IMPORTS_PARSER.getResult()
-
-    if result == null || result.isKind(SELECTIVE_IMPORTS_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<SelectiveImports>
-}
-
-fun parseImportDeclaration(input: pointer<TokenList>) -> pointer<ImportDeclaration>
-{
-    if input == null:
-        return null
-
-    if IMPORT_DECLARATION_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = IMPORT_DECLARATION_PARSER.getResult()
-
-    if result == null || result.isKind(IMPORT_DECLARATION_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ImportDeclaration>
-}
-
-fun parseImportDeclarationsMaybe(input: pointer<TokenList>) -> pointer<ImportDeclarationsMaybe>
-{
-    if input == null:
-        return null
-
-    if IMPORT_DECLARATIONS_MAYBE_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = IMPORT_DECLARATIONS_MAYBE_PARSER.getResult()
-
-    if result == null || result.isKind(IMPORT_DECLARATIONS_MAYBE_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<ImportDeclarationsMaybe>
-}
-
-fun parseFunctionParam(input: pointer<TokenList>) -> pointer<FunctionParam>
-{
-    if input == null:
-        return null
-
-    if FUNCTION_PARAM_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = FUNCTION_PARAM_PARSER.getResult()
-
-    if result == null || result.isKind(FUNCTION_PARAM_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<FunctionParam>
-}
-
-fun parseFunctionParamsMaybe(input: pointer<TokenList>) -> pointer<FunctionParamsMaybe>
-{
-    if input == null:
-        return null
-
-    if FUNCTION_PARAMS_MAYBE_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = FUNCTION_PARAMS_MAYBE_PARSER.getResult()
-
-    if result == null || result.isKind(FUNCTION_PARAMS_MAYBE_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<FunctionParamsMaybe>
-}
-
-fun parseField(input: pointer<TokenList>) -> pointer<Field>
-{
-    if input == null:
-        return null
-
-    if FIELD_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = FIELD_PARSER.getResult()
-
-    if result == null || result.isKind(FIELD_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Field>
-}
-
-fun parseFunction(input: pointer<TokenList>) -> pointer<Function>
-{
-    if input == null:
-        return null
-
-    if FUNCTION_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = FUNCTION_PARSER.getResult()
-
-    if result == null || result.isKind(FUNCTION_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Function>
-}
-
-fun parseStructConstructor(input: pointer<TokenList>) -> pointer<StructConstructor>
-{
-    if input == null:
-        return null
-
-    if STRUCT_CONSTRUCTOR_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = STRUCT_CONSTRUCTOR_PARSER.getResult()
-
-    if result == null || result.isKind(STRUCT_CONSTRUCTOR_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<StructConstructor>
-}
-
-fun parseMember(input: pointer<TokenList>) -> pointer<Member>
-{
-    if input == null:
-        return null
-
-    if MEMBER_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = MEMBER_PARSER.getResult()
-
-    if result == null || result.isKind(MEMBER_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Member>
-}
-
-fun parseStruct(input: pointer<TokenList>) -> pointer<Struct>
-{
-    if input == null:
-        return null
-
-    if STRUCT_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = STRUCT_PARSER.getResult()
-
-    if result == null || result.isKind(STRUCT_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Struct>
-}
-
-fun parseProgram(input: pointer<TokenList>) -> pointer<Program>
-{
-    if input == null:
-        return null
-
-    if PROGRAM_PARSER.doParse(input) < 0:
-        return null
-
-    val result: pointer<ParserResult> = PROGRAM_PARSER.getResult()
-
-    if result == null || result.isKind(PROGRAM_PARSER_ID) == false:
-        return null
-
-    return result.getValue() as pointer<Program>
-}
-
-
+private val PARSER_GRAPH_INITIALIZED: bool = initializeParserGraph()

@@ -26,7 +26,6 @@
 package xlang.lexer
 
 import xlang.System
-import xlang.parser.util.PatternList
 import xlang.util.ArrayList
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
@@ -476,31 +475,6 @@ struct TokenList
      * @warning                 An out-of-range index may cause undefined behavior.
      */
     fun get(index: int) -> pointer<Token> = this.tokens.get(index) as pointer<Token>
-
-
-    /**
-     * Tests whether a complete PatternList matches at an index.
-     *
-     * @param index             the zero-based token index at which matching begins
-     * @param patternList       the pattern sequence to match
-     *
-     * @return                  true if every pattern atom matched; otherwise false
-     */
-    fun canMatch(index: int, patternList: pointer<PatternList>) -> bool =
-        patternList.regMatch(this, index)
-
-
-    /**
-     * Tests whether a complete PatternList matches at the beginning.
-     *
-     * This overload uses index zero.
-     *
-     * @param patternList       the pattern sequence to match
-     *
-     * @return                  true if every pattern atom matched; otherwise false
-     */
-    fun canMatch(patternList: pointer<PatternList>) -> bool =
-        this.canMatch(0, patternList)
 
 
     /**

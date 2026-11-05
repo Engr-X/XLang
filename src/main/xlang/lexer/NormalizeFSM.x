@@ -24,7 +24,8 @@
 package xlang.lexer
 
 import xlang.System
-import xlang.parser.util.PatternList
+import xlang.parser.combinator.RegexAtomRule
+import xlang.parser.combinator.RuleAtom
 import xlang.util.ArrayList
 
 
@@ -248,7 +249,7 @@ struct NormalizeReceiver
 /**
  * Defines a token sequence and action used by the normalization FSM.
  *
- * A rule consists of an ordered PatternList, one selected
+ * A rule consists of an ordered RegexAtomRule sequence, one selected
  * pivot pattern, a required FSM state and an action function.
  *
  * During matching, currentIndex identifies the token corresponding to the
@@ -257,9 +258,9 @@ struct NormalizeReceiver
  *
  * A rule cannot match until a valid pivot has been selected with setPivot.
  *
- * Pattern strings are owned by the internal PatternList. Action functions
- * are referenced directly, so the caller must keep them valid while the
- * rule is used.
+ * Token patterns are stored directly in the internal ArrayList. Action
+ * functions are referenced directly, so the caller must keep them valid
+ * while the rule is used.
  */
 struct NormalizeRule
 {
@@ -293,7 +294,7 @@ struct NormalizeRule
     /**
      * Stores the ordered token pattern sequence used by this rule.
      */
-    private var patterns: pointer<PatternList>
+    private var patterns: pointer<ArrayList>
 
 
     /**
@@ -311,7 +312,7 @@ struct NormalizeRule
         this.state = state
         this.action = noopNormalizeAction
         this.pivotIndex = -1
-        this.patterns = new PatternList()
+        this.patterns = new ArrayList(sizeof(RegexAtomRule))
     }
 
 
@@ -337,7 +338,47 @@ struct NormalizeRule
         this.state = state
         this.action = action
         this.pivotIndex = -1
-        this.patterns = new PatternList()
+        this.patterns = new ArrayList(sizeof(RegexAtomRule))
+    }
+
+
+    /**
+     * Initializes a normalization rule with a generated token-pattern list.
+     *
+     * @param id                the application-defined rule identifier
+     * @param state             the FSM state in which the rule may match
+     * @param patterns          the ordered token atoms matched by this rule
+     */
+    constructor(id: int, state: int, patterns: pointer<ArrayList>)
+    {
+        this.id = id
+        this.state = state
+        this.action = noopNormalizeAction
+        this.pivotIndex = -1
+        this.patterns = patterns
+    }
+
+
+    /**
+     * Initializes a normalization rule with a custom action and generated
+     * token-pattern list.
+     *
+     * @param id                the application-defined rule identifier
+     * @param state             the FSM state in which the rule may match
+     * @param action            the function executed after a successful match
+     * @param patterns          the ordered token atoms matched by this rule
+     */
+    constructor(
+        id: int,
+        state: int,
+        action: (pointer<NormalizeFSM>, pointer<ArrayList>) -> bool,
+        patterns: pointer<ArrayList>)
+    {
+        this.id = id
+        this.state = state
+        this.action = action
+        this.pivotIndex = -1
+        this.patterns = patterns
     }
 
 
@@ -358,11 +399,10 @@ struct NormalizeRule
     /**
      * Appends a token pattern to the rule.
      *
-     * The pattern is added to the end of the matching sequence. PatternList
-     * owns the concrete pattern storage.
+     * The pattern is added to the end of the matching sequence. The internal
+     * ArrayList stores the RegexAtomRule directly.
      *
-     * PatternList creates the concrete pattern atom and owns any copied
-     * regex string used for matching.
+     * RuleAtom creates the concrete RegexAtomRule used for matching.
      *
      * @param kind              the required token kind or Token.ANY_KIND
      * @param regex             the optional regular expression
@@ -373,7 +413,7 @@ struct NormalizeRule
      */
     fun addPattern(kind: int, regex: pointer<char>) -> pointer<NormalizeRule>
     {
-        this.patterns.pushRegex(kind, regex)
+        this.patterns.push(RuleAtom.createRegex(kind, regex).getTokenRule())
         return this
     }
 
@@ -395,7 +435,7 @@ struct NormalizeRule
      */
     fun setPivot(pivot: int) -> pointer<NormalizeRule>
     {
-        if pivot < 0 || pivot >= this.patterns.length():
+        if pivot < 0 || pivot >= this.patterns.length:
         {
             this.pivotIndex = -1
             return this
@@ -413,7 +453,7 @@ struct NormalizeRule
      * the start of the complete pattern sequence and verifies that the whole
      * sequence fits inside the token list.
      *
-     * The complete sequence is matched by TokenList.canMatch.
+     * Every RegexAtomRule must match the corresponding token.
      *
      * The rule's state is not checked by this function. NormalizeFSM performs
      * that check before calling match.
@@ -434,7 +474,19 @@ struct NormalizeRule
 
         val start: int = currentIndex - this.pivotIndex
 
-        return tokens.canMatch(start, this.patterns)
+        if start < 0 || start + this.patterns.length > tokens.length():
+            return false
+
+        for (var i: int = 0; i < this.patterns.length; i++):
+        {
+            val pattern: pointer<RegexAtomRule> =
+                this.patterns.get(i) as pointer<RegexAtomRule>
+
+            if pattern == null || !pattern.canMatchToken(tokens.get(start + i)):
+                return false
+        }
+
+        return true
     }
 
 
@@ -468,7 +520,7 @@ struct NormalizeRule
      *
      * @return                  the pattern sequence length
      */
-    fun getPatternLength() -> int = this.patterns.length()
+    fun getPatternLength() -> int = this.patterns.length
 }
 
 

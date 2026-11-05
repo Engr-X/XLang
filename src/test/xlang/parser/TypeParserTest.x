@@ -31,6 +31,7 @@ import xlang.compiler.type.Type
 import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.Token
 import xlang.lexer.TokenList
+import xlang.parser.Parser
 import xlang.util.ArrayList
 import xlang.util.string.String
 import xlang.test.TestCase
@@ -132,15 +133,16 @@ fun genTest() -> pointer<TestGroup>
 private fun parseTypeValue(input: pointer<char>, expectedConsumed: int) -> pointer<Type>
 {
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(input, new Diagnostics())
-    val parser: pointer<TypeParser> = new TypeParser(1)
-    val consumed: int = parser.parse(tokens, 0)
+    val parser: pointer<Parser> =
+        xlang.compiler.parser.Parser.TYPE_PARSER
+    val container: pointer<ParserResult> =
+        ParserAPI.parse(parser, tokens, 0)
 
-    if parser.hasError(consumed) || consumed != expectedConsumed:
+    if container == null || container.hasError() ||
+        container.getConsumed() != expectedConsumed:
         return null
 
-    val container: pointer<ParserResult> = parser.getResult()
-
-    if container == null || !container.isKind(1):
+    if container == null || !container.isKind(ParserAPI.getId(parser)):
         return null
 
     return container.getValue() as pointer<Type>
@@ -467,15 +469,16 @@ private fun tokenTextAt(tokens: pointer<ArrayList>, index: int, text: pointer<ch
 private fun parseTypeTokens(input: pointer<char>, expectedConsumed: int) -> pointer<ArrayList>
 {
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(input, new Diagnostics())
-    val parser: pointer<TypeParser> = new TypeParser(1)
-    val consumed: int = parser.parse(tokens, 0)
+    val parser: pointer<Parser> =
+        xlang.compiler.parser.Parser.TYPE_PARSER
+    val container: pointer<ParserResult> =
+        ParserAPI.parse(parser, tokens, 0)
 
-    if parser.hasError(consumed) || consumed != expectedConsumed:
+    if container == null || container.hasError() ||
+        container.getConsumed() != expectedConsumed:
         return null
 
-    val container: pointer<ParserResult> = parser.getResult()
-
-    if container == null || !container.isKind(1):
+    if container == null || !container.isKind(ParserAPI.getId(parser)):
         return null
 
     val parsedType: pointer<Type> = container.getValue() as pointer<Type>
@@ -490,18 +493,18 @@ private fun parseTypeTokens(input: pointer<char>, expectedConsumed: int) -> poin
 private fun pointerVoidTest() -> int
 {
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("pointer<*>", new Diagnostics())
-    val parser: pointer<TypeParser> = new TypeParser(1)
-    val consumed: int = parser.parse(tokens, 0)
+    val parser: pointer<Parser> =
+        xlang.compiler.parser.Parser.TYPE_PARSER
+    val container: pointer<ParserResult> =
+        ParserAPI.parse(parser, tokens, 0)
 
-    if parser.hasError(consumed):
+    if container == null || container.hasError():
         return 1
 
-    if consumed != 4:
+    if container.getConsumed() != 4:
         return 2
 
-    val container: pointer<ParserResult> = parser.getResult()
-
-    if container == null || !container.isKind(1):
+    if container == null || !container.isKind(ParserAPI.getId(parser)):
         return 3
 
     val parsedType: pointer<Type> = container.getValue() as pointer<Type>
@@ -517,7 +520,7 @@ private fun pointerVoidTest() -> int
     if !tokenTextAt(typeTokens, 0, "pointer") || !tokenTextAt(typeTokens, 1, "<"):
         return 6
 
-    if !tokenTextAt(typeTokens, 2, "*") || !tokenTextAt(typeTokens, 3, ">"):
+    if !tokenTextAt(typeTokens, 2, "void") || !tokenTextAt(typeTokens, 3, ">"):
         return 7
 
     return 0
@@ -579,22 +582,22 @@ private fun parenthesizedFunctionTest() -> int
 {
     val typeTokens: pointer<ArrayList> = parseTypeTokens("((int), double) -> (() -> void)", 14)
 
-    if typeTokens == null || typeTokens.length != 10:
+    if typeTokens == null || typeTokens.length != 9:
         return 1
 
     if !tokenTextAt(typeTokens, 0, "(") || !tokenTextAt(typeTokens, 1, "int"):
         return 2
 
-    if !tokenTextAt(typeTokens, 2, ",") || !tokenTextAt(typeTokens, 3, "double"):
+    if !tokenTextAt(typeTokens, 2, "double"):
         return 3
 
-    if !tokenTextAt(typeTokens, 4, ")") || !tokenTextAt(typeTokens, 5, "->"):
+    if !tokenTextAt(typeTokens, 3, ")") || !tokenTextAt(typeTokens, 4, "->"):
         return 4
 
-    if !tokenTextAt(typeTokens, 6, "(") || !tokenTextAt(typeTokens, 7, ")"):
+    if !tokenTextAt(typeTokens, 5, "(") || !tokenTextAt(typeTokens, 6, ")"):
         return 5
 
-    if !tokenTextAt(typeTokens, 8, "->") || !tokenTextAt(typeTokens, 9, "void"):
+    if !tokenTextAt(typeTokens, 7, "->") || !tokenTextAt(typeTokens, 8, "void"):
         return 6
 
     return 0
@@ -622,19 +625,19 @@ private fun functionParametersTest() -> int
 {
     val typeTokens: pointer<ArrayList> = parseTypeTokens("(int, bool) -> void", 7)
 
-    if typeTokens == null || typeTokens.length != 7:
+    if typeTokens == null || typeTokens.length != 6:
         return 1
 
     if !tokenTextAt(typeTokens, 0, "(") || !tokenTextAt(typeTokens, 1, "int"):
         return 2
 
-    if !tokenTextAt(typeTokens, 2, ",") || !tokenTextAt(typeTokens, 3, "bool"):
+    if !tokenTextAt(typeTokens, 2, "bool"):
         return 3
 
-    if !tokenTextAt(typeTokens, 4, ")") || !tokenTextAt(typeTokens, 5, "->"):
+    if !tokenTextAt(typeTokens, 3, ")") || !tokenTextAt(typeTokens, 4, "->"):
         return 4
 
-    if !tokenTextAt(typeTokens, 6, "void"):
+    if !tokenTextAt(typeTokens, 5, "void"):
         return 5
 
     return 0
@@ -645,7 +648,7 @@ private fun nestedFunctionTest() -> int
 {
     val typeTokens: pointer<ArrayList> = parseTypeTokens("((int) -> bool, pointer<*>) -> () -> void", 17)
 
-    if typeTokens == null || typeTokens.length != 17:
+    if typeTokens == null || typeTokens.length != 16:
         return 1
 
     if !tokenTextAt(typeTokens, 0, "(") || !tokenTextAt(typeTokens, 1, "("):
@@ -657,22 +660,22 @@ private fun nestedFunctionTest() -> int
     if !tokenTextAt(typeTokens, 4, "->") || !tokenTextAt(typeTokens, 5, "bool"):
         return 4
 
-    if !tokenTextAt(typeTokens, 6, ",") || !tokenTextAt(typeTokens, 7, "pointer"):
+    if !tokenTextAt(typeTokens, 6, "pointer"):
         return 5
 
-    if !tokenTextAt(typeTokens, 8, "<") || !tokenTextAt(typeTokens, 9, "*"):
+    if !tokenTextAt(typeTokens, 7, "<") || !tokenTextAt(typeTokens, 8, "void"):
         return 6
 
-    if !tokenTextAt(typeTokens, 10, ">") || !tokenTextAt(typeTokens, 11, ")"):
+    if !tokenTextAt(typeTokens, 9, ">") || !tokenTextAt(typeTokens, 10, ")"):
         return 7
 
-    if !tokenTextAt(typeTokens, 12, "->") || !tokenTextAt(typeTokens, 13, "("):
+    if !tokenTextAt(typeTokens, 11, "->") || !tokenTextAt(typeTokens, 12, "("):
         return 8
 
-    if !tokenTextAt(typeTokens, 14, ")") || !tokenTextAt(typeTokens, 15, "->"):
+    if !tokenTextAt(typeTokens, 13, ")") || !tokenTextAt(typeTokens, 14, "->"):
         return 9
 
-    if !tokenTextAt(typeTokens, 16, "void"):
+    if !tokenTextAt(typeTokens, 15, "void"):
         return 10
 
     return 0
@@ -683,7 +686,7 @@ private fun mixedFunctionTest() -> int
 {
     val typeTokens: pointer<ArrayList> = parseTypeTokens("(blob[64], () -> pointer<*>) -> pointer<blob[8]>", 22)
 
-    if typeTokens == null || typeTokens.length != 22:
+    if typeTokens == null || typeTokens.length != 21:
         return 1
 
     if !tokenTextAt(typeTokens, 0, "(") || !tokenTextAt(typeTokens, 1, "blob"):
@@ -692,31 +695,31 @@ private fun mixedFunctionTest() -> int
     if !tokenTextAt(typeTokens, 2, "[") || !tokenTextAt(typeTokens, 3, "64"):
         return 3
 
-    if !tokenTextAt(typeTokens, 4, "]") || !tokenTextAt(typeTokens, 5, ","):
+    if !tokenTextAt(typeTokens, 4, "]"):
         return 4
 
-    if !tokenTextAt(typeTokens, 6, "(") || !tokenTextAt(typeTokens, 7, ")"):
+    if !tokenTextAt(typeTokens, 5, "(") || !tokenTextAt(typeTokens, 6, ")"):
         return 5
 
-    if !tokenTextAt(typeTokens, 8, "->") || !tokenTextAt(typeTokens, 9, "pointer"):
+    if !tokenTextAt(typeTokens, 7, "->") || !tokenTextAt(typeTokens, 8, "pointer"):
         return 6
 
-    if !tokenTextAt(typeTokens, 10, "<") || !tokenTextAt(typeTokens, 11, "*"):
+    if !tokenTextAt(typeTokens, 9, "<") || !tokenTextAt(typeTokens, 10, "void"):
         return 7
 
-    if !tokenTextAt(typeTokens, 12, ">") || !tokenTextAt(typeTokens, 13, ")"):
+    if !tokenTextAt(typeTokens, 11, ">") || !tokenTextAt(typeTokens, 12, ")"):
         return 8
 
-    if !tokenTextAt(typeTokens, 14, "->") || !tokenTextAt(typeTokens, 15, "pointer"):
+    if !tokenTextAt(typeTokens, 13, "->") || !tokenTextAt(typeTokens, 14, "pointer"):
         return 9
 
-    if !tokenTextAt(typeTokens, 16, "<") || !tokenTextAt(typeTokens, 17, "blob"):
+    if !tokenTextAt(typeTokens, 15, "<") || !tokenTextAt(typeTokens, 16, "blob"):
         return 10
 
-    if !tokenTextAt(typeTokens, 18, "[") || !tokenTextAt(typeTokens, 19, "8"):
+    if !tokenTextAt(typeTokens, 17, "[") || !tokenTextAt(typeTokens, 18, "8"):
         return 11
 
-    if !tokenTextAt(typeTokens, 20, "]") || !tokenTextAt(typeTokens, 21, ">"):
+    if !tokenTextAt(typeTokens, 19, "]") || !tokenTextAt(typeTokens, 20, ">"):
         return 12
 
     return 0
@@ -726,17 +729,16 @@ private fun mixedFunctionTest() -> int
 private fun topLevelStarTest() -> int
 {
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("*", new Diagnostics())
-    val parser: pointer<TypeParser> = new TypeParser(1)
-    val consumed: int = parser.parse(tokens, 0)
+    val parser: pointer<Parser> =
+        xlang.compiler.parser.Parser.TYPE_PARSER
+    val result: pointer<ParserResult> =
+        ParserAPI.parse(parser, tokens, 0)
 
-    if consumed >= 0:
+    if result == null:
         return 1
 
-    if parser.getError() == null:
+    if !result.hasError():
         return 2
-
-    if parser.getResult() != null:
-        return 3
 
     return 0
 }

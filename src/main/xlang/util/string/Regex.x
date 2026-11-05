@@ -50,6 +50,23 @@ native inline fun compileSize() -> int
 native inline fun compile(pattern: pointer<char>, dest: pointer<*>) -> void
 
 
-
+/**
+ * Matches the specified string against a compiled regular expression.
+ *
+ * The compiled regular expression is passed directly to the native
+ * regex_match_compiled function without being copied or modified.
+ *
+ * @param compiled          a pointer to the compiled regular expression.
+ * @param str               the null-terminated string to match.
+ *
+ * @return                  the match result returned by the native function.
+ *
+ * @note                    The interpretation of the return value depends on
+ *                          the native regex_match_compiled implementation.
+ *
+ * @warning                 The caller must ensure that the compiled regular
+ *                          expression and input string remain valid during
+ *                          the native function call.
+ */
 @Native("regex_match_compiled")
 native inline fun regexMatch(compiled: pointer<*>, str: pointer<char>) -> int

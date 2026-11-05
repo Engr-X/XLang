@@ -24,9 +24,6 @@
         "xlang.compiler.parser.stmtexpr.IfExpression",
         "xlang.compiler.parser.stmtexpr.IfElseExpression"
     ],
-    "constants": [
-        "val TYPE_PARSER: pointer<ParserRef> = ParserRef.fromType(1000)"
-    ],
     "patterns": [
         { "name": "Atoms", "patterns": [{ "kind": "[$Atom]", "split_by": { "kind": "Tokenizer.COMMA" }}]},
         { "name": "Expressions", "patterns": [{ "kind": "[$Expression]", "split_by": { "kind": "Tokenizer.COMMA" }}]}
@@ -283,6 +280,14 @@
 
         [   "private inline fun getContainerValue(results: pointer<ArrayList>, index: int) -> pointer<*> =",
             "    getContainerValue(results, index, true)" ],
+
+
+        [   "private inline fun getContainerTokens(results: pointer<ArrayList>, index: int) -> pointer<ArrayList>",
+            "{",
+            "    val container: pointer<ParserResult> =",
+            "        getContainerValue(results, index, false) as pointer<ParserResult>",
+            "    return container.getTokens()",
+            "}" ],
 
 
 
@@ -702,6 +707,7 @@
             "",
             "    return new ExpressionTuple(expressions)",
             "        .addExtraToken(leftParen)",
+            "        .addExtraTokens(getContainerTokens(results, 1))",
             "        .addExtraToken(rightParen)",
             "}" ],
 
@@ -714,6 +720,7 @@
             "",
             "    return new ListLiteral(expressions)",
             "        .addExtraToken(leftBracket)",
+            "        .addExtraTokens(getContainerTokens(results, 1))",
             "        .addExtraToken(rightBracket)",
             "}" ]
     ]

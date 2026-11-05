@@ -47,14 +47,18 @@ fun genTest() -> pointer<TestGroup>
     val strncpySafeTC: pointer<TestCase> = new TestCase("strncpy", strncpySafeTest)
     val strcatTC: pointer<TestCase> = new TestCase("strcat", strcatTest)
     val substringTC: pointer<TestCase> = new TestCase("substring", substringTest)
-    val strMatchTC: pointer<TestCase> = new TestCase("strMatch", strMatchTest)
+    val strRegMatchTC: pointer<TestCase> = new TestCase("strRegMatch", strMatchTest)
+    val strHashTC: pointer<TestCase> = new TestCase("strHash", strHashTest)
+    val stringListEqTC: pointer<TestCase> = new TestCase("stringListEq", stringListEqTest)
+    val stringListCmpTC: pointer<TestCase> = new TestCase("stringListCmp", stringListCmpTest)
+    val stringListHashTC: pointer<TestCase> = new TestCase("stringListHash", stringListHashTest)
     val splitTC: pointer<TestCase> = new TestCase("split", splitTest)
     val unescapeCharTC: pointer<TestCase> = new TestCase("unescapeChar", unescapeCharTest)
     val unescapeStringTC: pointer<TestCase> = new TestCase("unescapeString", unescapeStringTest)
 
     val testCaseSpace: blob[sizeof(pointer<TestCase>) * 100]
     val testCase: pointer<pointer<TestCase>> = testCaseSpace as pointer<pointer<TestCase>>
-    val testCaseLength: int = 12
+    val testCaseLength: int = 16
 
     testCase[0] = strlenTC
     testCase[1] = streqTC
@@ -64,10 +68,14 @@ fun genTest() -> pointer<TestGroup>
     testCase[5] = strncpySafeTC
     testCase[6] = strcatTC
     testCase[7] = substringTC
-    testCase[8] = strMatchTC
-    testCase[9] = splitTC
-    testCase[10] = unescapeCharTC
-    testCase[11] = unescapeStringTC
+    testCase[8] = strRegMatchTC
+    testCase[9] = strHashTC
+    testCase[10] = stringListEqTC
+    testCase[11] = stringListCmpTC
+    testCase[12] = stringListHashTC
+    testCase[13] = splitTC
+    testCase[14] = unescapeCharTC
+    testCase[15] = unescapeStringTC
 
     for (var i = 0; i < testCaseLength; i++):
     {
@@ -402,6 +410,183 @@ fun strMatchTest() -> int
 }
 
 
+fun strHashTest() -> int
+{
+    if String.strHash(null) != 0:
+        return 1
+
+    if String.strHash("") != 0:
+        return 2
+
+    if String.strHash("a") != 97:
+        return 3
+
+    if String.strHash("abc") != 96354:
+        return 4
+
+    val copy: pointer<char> = String.strdup("abc")
+
+    if copy == null || String.strHash(copy) != String.strHash("abc"):
+        return 5
+
+    if String.strHash("abd") == String.strHash("abc"):
+        return 6
+
+    return 0
+}
+
+
+fun stringListEqTest() -> int
+{
+    if !String.stringListEq(null, null):
+        return 1
+
+    val empty1: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val empty2: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+
+    if !String.stringListEq(empty1, empty1):
+        return 2
+
+    if !String.stringListEq(empty1, empty2):
+        return 3
+
+    if String.stringListEq(null, empty1) || String.stringListEq(empty1, null):
+        return 4
+
+    val list1: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val list2: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val first1: pointer<char> = "alpha"
+    val second1: pointer<char> = "beta"
+    val first2: pointer<char> = String.strdup("alpha")
+    val second2: pointer<char> = String.strdup("beta")
+
+    list1.push(first1.ref).push(second1.ref)
+    list2.push(first2.ref).push(second2.ref)
+
+    if !String.stringListEq(list1, list2):
+        return 5
+
+    val shorter: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    shorter.push(first1.ref)
+
+    if String.stringListEq(list1, shorter):
+        return 6
+
+    val different: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val other: pointer<char> = "gamma"
+    different.push(first1.ref).push(other.ref)
+
+    if String.stringListEq(list1, different):
+        return 7
+
+    var nullString1: pointer<char> = null
+    var nullString2: pointer<char> = null
+    val nullList1: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val nullList2: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    nullList1.push(nullString1.ref)
+    nullList2.push(nullString2.ref)
+
+    if !String.stringListEq(nullList1, nullList2):
+        return 8
+
+    return 0
+}
+
+
+fun stringListCmpTest() -> int
+{
+    if String.stringListCmp(null, null) != 0:
+        return 1
+
+    val empty1: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val empty2: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+
+    if String.stringListCmp(empty1, empty2) != 0:
+        return 2
+
+    if String.stringListCmp(null, empty1) >= 0 || String.stringListCmp(empty1, null) <= 0:
+        return 3
+
+    val alpha1: pointer<char> = "alpha"
+    val alpha2: pointer<char> = String.strdup("alpha")
+    val beta: pointer<char> = "beta"
+    val gamma: pointer<char> = "gamma"
+    val list1: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val list2: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    list1.push(alpha1.ref).push(beta.ref)
+    list2.push(alpha2.ref).push(beta.ref)
+
+    if String.stringListCmp(list1, list2) != 0:
+        return 4
+
+    val later: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    later.push(alpha1.ref).push(gamma.ref)
+
+    if String.stringListCmp(list1, later) >= 0 || String.stringListCmp(later, list1) <= 0:
+        return 5
+
+    val shorter: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    shorter.push(alpha1.ref)
+
+    if String.stringListCmp(shorter, list1) >= 0 || String.stringListCmp(list1, shorter) <= 0:
+        return 6
+
+    var nullString: pointer<char> = null
+    val nullEntry: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val textEntry: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    nullEntry.push(nullString.ref)
+    textEntry.push(alpha1.ref)
+
+    if String.stringListCmp(nullEntry, textEntry) >= 0 ||
+        String.stringListCmp(textEntry, nullEntry) <= 0:
+        return 7
+
+    return 0
+}
+
+
+fun stringListHashTest() -> int
+{
+    if String.stringListHash(null) != 0:
+        return 1
+
+    val empty: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+
+    if String.stringListHash(empty) != 1:
+        return 2
+
+    val alpha1: pointer<char> = "a"
+    val beta1: pointer<char> = "b"
+    val alpha2: pointer<char> = String.strdup("a")
+    val beta2: pointer<char> = String.strdup("b")
+    val list1: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    val list2: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    list1.push(alpha1.ref).push(beta1.ref)
+    list2.push(alpha2.ref).push(beta2.ref)
+
+    if String.stringListHash(list1) != 4066:
+        return 3
+
+    if String.stringListHash(list1) != String.stringListHash(list2):
+        return 4
+
+    var nullString: pointer<char> = null
+    val nullEntry: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    nullEntry.push(nullString.ref)
+
+    if String.stringListHash(nullEntry) != 31:
+        return 5
+
+    val reversed: pointer<ArrayList> = new ArrayList(sizeof(pointer<char>))
+    reversed.push(beta1.ref).push(alpha1.ref)
+
+    if String.stringListHash(reversed) == String.stringListHash(list1):
+        return 6
+
+    return 0
+}
+
+
 private fun splitPartEquals(parts: pointer<ArrayList>, index: int, expected: pointer<char>) -> bool
 {
     if parts == null || index < 0 || index >= parts.length:
@@ -478,94 +663,94 @@ fun splitTest() -> int
 
 fun unescapeCharTest() -> int
 {
-    var consume: int = 0
-    var value: char = String.unescapeChar("A", consume.ref)
+    var consumed: int = 0
+    var value: char = String.unescapeChar("A", consumed.ref)
 
-    if consume != 1 || value != 'A':
+    if consumed != 1 || value != 'A':
         return 1
 
-    consume = 0
-    value = String.unescapeChar("\\n", consume.ref)
+    consumed = 0
+    value = String.unescapeChar("\\n", consumed.ref)
 
-    if consume != 2 || value != '\n':
+    if consumed != 2 || value != '\n':
         return 2
 
-    consume = 0
-    value = String.unescapeChar("\\\\", consume.ref)
+    consumed = 0
+    value = String.unescapeChar("\\\\", consumed.ref)
 
-    if consume != 2 || value != '\\':
+    if consumed != 2 || value != '\\':
         return 3
 
-    consume = 0
-    value = String.unescapeChar("\\u328", consume.ref)
+    consumed = 0
+    value = String.unescapeChar("\\u328", consumed.ref)
 
-    if consume != 5 || value != (0x328 as char):
+    if consumed != 5 || value != (0x328 as char):
         return 4
 
-    consume = 0
-    value = String.unescapeChar("\\uAbCd", consume.ref)
+    consumed = 0
+    value = String.unescapeChar("\\uAbCd", consumed.ref)
 
-    if consume != 6 || value != (0xabcd as char):
+    if consumed != 6 || value != (0xabcd as char):
         return 5
 
-    consume = 0
-    value = String.unescapeChar("\\uFFFFFFFF", consume.ref)
+    consumed = 0
+    value = String.unescapeChar("\\uFFFFFFFF", consumed.ref)
 
-    if consume != 10 || value != ((-1) as char):
+    if consumed != 10 || value != ((-1) as char):
         return 6
 
-    consume = 0
-    value = String.unescapeChar("AB", consume.ref)
+    consumed = 0
+    value = String.unescapeChar("AB", consumed.ref)
 
-    if consume != 1 || value != 'A':
+    if consumed != 1 || value != 'A':
         return 7
 
-    consume = 0
-    value = String.unescapeChar("\\nX", consume.ref)
+    consumed = 0
+    value = String.unescapeChar("\\nX", consumed.ref)
 
-    if consume != 2 || value != '\n':
+    if consumed != 2 || value != '\n':
         return 8
 
-    consume = 0
-    value = String.unescapeChar("\\u12G", consume.ref)
+    consumed = 0
+    value = String.unescapeChar("\\u12G", consumed.ref)
 
-    if consume != 4 || value != (0x12 as char):
+    if consumed != 4 || value != (0x12 as char):
         return 9
 
-    consume = -1
-    value = String.unescapeChar("\\q", consume.ref)
+    consumed = -1
+    value = String.unescapeChar("\\q", consumed.ref)
 
-    if consume != 0:
+    if consumed != 0:
         return 10
 
-    consume = -1
-    value = String.unescapeChar("\\u", consume.ref)
+    consumed = -1
+    value = String.unescapeChar("\\u", consumed.ref)
 
-    if consume != 0:
+    if consumed != 0:
         return 11
 
-    consume = -1
-    value = String.unescapeChar("\\u123456789", consume.ref)
+    consumed = -1
+    value = String.unescapeChar("\\u123456789", consumed.ref)
 
-    if consume != 0:
+    if consumed != 0:
         return 12
 
-    consume = -1
-    value = String.unescapeChar("\\", consume.ref)
+    consumed = -1
+    value = String.unescapeChar("\\", consumed.ref)
 
-    if consume != 0:
+    if consumed != 0:
         return 13
 
-    consume = -1
-    value = String.unescapeChar("", consume.ref)
+    consumed = -1
+    value = String.unescapeChar("", consumed.ref)
 
-    if consume != 0:
+    if consumed != 0:
         return 14
 
-    consume = -1
-    value = String.unescapeChar(null, consume.ref)
+    consumed = -1
+    value = String.unescapeChar(null, consumed.ref)
 
-    if consume != 0:
+    if consumed != 0:
         return 15
 
     return 0
@@ -574,86 +759,86 @@ fun unescapeCharTest() -> int
 
 fun unescapeStringTest() -> int
 {
-    var consume: int = -1
-    var result: pointer<StringBuilder> = String.unescapeString("plain", consume.ref)
+    var consumed: int = -1
+    var result: pointer<StringBuilder> = String.unescapeString("plain", consumed.ref)
 
-    if result == null || consume != 5 || !result.equals("plain"):
+    if result == null || consumed != 5 || !result.equals("plain"):
         return 1
 
-    consume = -1
-    result = String.unescapeString("a\\nb\\t", consume.ref)
+    consumed = -1
+    result = String.unescapeString("a\\nb\\t", consumed.ref)
 
-    if result == null || consume != 6 || result.length != 4:
+    if result == null || consumed != 6 || result.length != 4:
         return 2
 
     if result.get(0) != 'a' || result.get(1) != '\n' ||
         result.get(2) != 'b' || result.get(3) != '\t':
         return 3
 
-    consume = -1
-    result = String.unescapeString("A\\u328Z", consume.ref)
+    consumed = -1
+    result = String.unescapeString("A\\u328Z", consumed.ref)
 
-    if result == null || consume != 7 || result.length != 3:
+    if result == null || consumed != 7 || result.length != 3:
         return 4
 
     if result.get(0) != 'A' || result.get(1) != (0x328 as char) || result.get(2) != 'Z':
         return 5
 
-    consume = -1
-    result = String.unescapeString("\\u12G", consume.ref)
+    consumed = -1
+    result = String.unescapeString("\\u12G", consumed.ref)
 
-    if result == null || consume != 5 || result.length != 2:
+    if result == null || consumed != 5 || result.length != 2:
         return 6
 
     if result.get(0) != (0x12 as char) || result.get(1) != 'G':
         return 7
 
-    consume = -1
-    result = String.unescapeString("A\\0B", consume.ref)
+    consumed = -1
+    result = String.unescapeString("A\\0B", consumed.ref)
 
-    if result == null || consume != 4 || result.length != 3:
+    if result == null || consumed != 4 || result.length != 3:
         return 8
 
     if result.get(0) != 'A' || result.get(1) != '\0' || result.get(2) != 'B':
         return 9
 
-    consume = -1
-    result = String.unescapeString("\\uFFFFFFFFX", consume.ref)
+    consumed = -1
+    result = String.unescapeString("\\uFFFFFFFFX", consumed.ref)
 
-    if result == null || consume != 11 || result.length != 2:
+    if result == null || consumed != 11 || result.length != 2:
         return 10
 
     if result.get(0) != ((-1) as char) || result.get(1) != 'X':
         return 11
 
-    consume = -1
-    result = String.unescapeString("", consume.ref)
+    consumed = -1
+    result = String.unescapeString("", consumed.ref)
 
-    if result == null || consume != 0 || result.length != 0:
+    if result == null || consumed != 0 || result.length != 0:
         return 12
 
-    consume = -1
-    result = String.unescapeString("ok\\q", consume.ref)
+    consumed = -1
+    result = String.unescapeString("ok\\q", consumed.ref)
 
-    if result != null || consume != 2:
+    if result != null || consumed != 2:
         return 13
 
-    consume = -1
-    result = String.unescapeString("A\\u", consume.ref)
+    consumed = -1
+    result = String.unescapeString("A\\u", consumed.ref)
 
-    if result != null || consume != 1:
+    if result != null || consumed != 1:
         return 14
 
-    consume = -1
-    result = String.unescapeString("\\u123456789", consume.ref)
+    consumed = -1
+    result = String.unescapeString("\\u123456789", consumed.ref)
 
-    if result != null || consume != 0:
+    if result != null || consumed != 0:
         return 15
 
-    consume = -1
-    result = String.unescapeString(null, consume.ref)
+    consumed = -1
+    result = String.unescapeString(null, consumed.ref)
 
-    if result != null || consume != 0:
+    if result != null || consumed != 0:
         return 16
 
     result = String.unescapeString("plain", null)

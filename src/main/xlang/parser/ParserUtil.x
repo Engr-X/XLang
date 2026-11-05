@@ -378,3 +378,129 @@ private fun defaultBracketPairs() -> pointer<ArrayList>
  */
 fun checkBrackets(tokens: pointer<TokenList>) -> pointer<Diagnostic> =
     checkBrackets(tokens, defaultBracketPairs())
+
+
+/**
+ * Creates the source position of one token split from a compound token.
+ *
+ * Every generated token occupies one character of the original token. A null
+ * source position is preserved for synthetic input.
+ *
+ * @param token             the compound source token.
+ * @param offset            the character offset inside the source token.
+ *
+ * @return                  the position of the generated one-character token.
+ */
+private fun splitTokenPosition(
+    token: pointer<Token>,
+    offset: int
+) -> pointer<TokenPosition>
+{
+    if token.pos == null:
+        return null
+
+    return new TokenPosition(
+        token.pos.offset + offset,
+        token.pos.line,
+        token.pos.column + offset,
+        1)
+}
+
+
+/**
+ * Splits a compound right-angle token into individual parser tokens.
+ *
+ * The supported token texts are {@code >>}, {@code >>=}, {@code >>>} and
+ * {@code >>>=}. Every greater-than character becomes a GREATER token, and a
+ * trailing equals character becomes an EQUAL token. The generated positions
+ * preserve the corresponding character ranges of the source token.
+ *
+ * This helper also accepts token kinds unknown to the current tokenizer and
+ * therefore determines the compound form from token text. This keeps it usable
+ * if the lexer later starts emitting {@code >>} or {@code >>>} as one token.
+ *
+ * @param token             the token to split.
+ *
+ * @return                  a new TokenList containing the split tokens, or null
+ *                          when token is not one of the supported forms.
+ */
+fun splitRightAngleToken(token: pointer<Token>) -> pointer<TokenList>
+{
+    if token == null || token.text == null:
+        return null
+
+    var greaterCount: int = 0
+
+    while greaterCount < 3 && token.text[greaterCount] == '>':
+        greaterCount++
+
+    if greaterCount < 2:
+        return null
+
+    var hasEqual: bool = false
+
+    if token.text[greaterCount] == '=':
+    {
+        hasEqual = true
+
+        if token.text[greaterCount + 1] != 0:
+            return null
+    }
+    elif token.text[greaterCount] != 0:
+        return null
+
+    val result: pointer<TokenList> = new TokenList()
+
+    for (var i: int = 0; i < greaterCount; i++):
+        result.push(new Token(
+            Tokenizer.GREATER,
+            splitTokenPosition(token, i),
+            Tokenizer.GREATER_PATTERN))
+
+    if hasEqual:
+        result.push(new Token(
+            Tokenizer.EQUAL,
+            splitTokenPosition(token, greaterCount),
+            Tokenizer.EQUAL_PATTERN))
+
+    return result
+}
+
+
+
+fun parseRegAtom(
+    rule: pointer<RegexAtomRule>,
+    tokens: pointer<TokenList>,
+    fromIndex: int
+) -> pointer<ParserResult>
+{
+    val token: pointer<Token> = tokens.get(fromIndex)
+
+    if rule.canMatchToken(token):
+        return ParserResult.fromToken(token)
+
+    val result: pointer<ParserResult> = ParserResult.fromEmpty()
+    val message: pointer<StringBuilder> = new StringBuilder(Diagnostic.UNEXPECTED_TOKEN_MSG)
+    message.append(token.text)
+    result.getDiagnostics().push(Diagnostic.makeError(
+        Diagnostic.UNEXPECTED_TOKEN,
+        new SourceLocation(
+            null,
+            token.pos.offset,
+            token.pos.line,
+            token.pos.column,
+            token.pos.length),
+        message.getText()))
+    return result
+}
+
+
+fun internalErrorParseResult() -> pointer<ParserResult>
+{
+    val result: pointer<ParserResult> = ParserResult.fromEmpty()
+    result.pushDiagnostic(Diagnostic.makeInternalError(
+        Diagnostic.CANNOT_PARSE,
+        new ArrayList(sizeof(SourceLocation)),
+        Diagnostic.CANNOT_PARSE_MSG))
+    return result
+}

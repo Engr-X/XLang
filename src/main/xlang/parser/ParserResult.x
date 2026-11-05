@@ -25,6 +25,8 @@ package xlang.parser
 
 import xlang.Diagnostic
 import xlang.Diagnostics
+import xlang.lexer.Token
+import xlang.util.ArrayList
 
 
 /**
@@ -86,8 +88,14 @@ struct ParserResult
      * @warning                 The token is not cloned. The caller must ensure
      *                          that it remains valid while the parser result uses it.
      */
-    static fun fromToken(token: pointer<Token>) -> pointer<ParserResult> =
-        new ParserResult(TOKEN_KIND, 1, token) 
+    static fun fromToken(token: pointer<Token>) -> pointer<ParserResult>
+    {
+        val stableToken: pointer<Token> = token.clone()
+        val result: pointer<ParserResult> =
+            new ParserResult(TOKEN_KIND, 1, stableToken)
+        result.pushToken(stableToken)
+        return result
+    }
 
 
     /**
@@ -99,7 +107,7 @@ struct ParserResult
      *
      * The array is referenced directly without being copied or cloned.
      *
-     * @param consume           the number of tokens consumed during parsing.
+     * @param consumed           the number of tokens consumed during parsing.
      * @param array             the array of parsed values to store.
      *
      * @return                  a newly allocated parser result containing the array.
@@ -110,8 +118,8 @@ struct ParserResult
      * @warning                 The array is not cloned. The caller must ensure
      *                          that it remains valid while the parser result uses it.
      */
-    static fun fromList(consume: int, array: pointer<ArrayList>) -> pointer<ParserResult> =
-        new ParserResult(ARRAY_LIST_KIND, consume, array)
+    static fun fromList(consumed: int, array: pointer<ArrayList>) -> pointer<ParserResult> =
+        new ParserResult(ARRAY_LIST_KIND, consumed, array)
 
 
     /**
@@ -120,7 +128,7 @@ struct ParserResult
      * A non-consuming result, including the result returned by fromEmpty,
      * stores zero.
      */
-    private var consume: int
+    private var consumed: int
 
     /**
      * The kind identifier describing the stored parse result.
@@ -134,6 +142,15 @@ struct ParserResult
      * {@code kind}.
      */
     private var value: pointer<*>
+
+    /**
+     * Tokens consumed while producing this result, in source order.
+     *
+     * This collection is independent of {@code value}. In particular, loop
+     * results can keep only their element values while still retaining tokens
+     * owned by separators and other structural parser atoms.
+     */
+    private var tokens: pointer<ArrayList>
 
 
     /**
@@ -149,14 +166,15 @@ struct ParserResult
      * <p>The supplied value is stored by reference and is not copied.
      *
      * @param kind              the kind identifier describing the stored value
-     * @param consume           the number of input tokens consumed to produce the result
+     * @param consumed           the number of input tokens consumed to produce the result
      * @param value             a pointer to the parse result value
      */
-    constructor(kind: int, consume: int, value: pointer<*>)
+    constructor(kind: int, consumed: int, value: pointer<*>)
     {
         this.kind = kind
-        this.consume = consume
+        this.consumed = consumed
         this.value = value
+        this.tokens = new ArrayList(sizeof(Token))
         this.diagnostics = new Diagnostics()
     }
 
@@ -206,7 +224,7 @@ struct ParserResult
      *
      * @return                  the consumed input token count
      */
-    fun getConsume() -> int = this.consume
+    fun getConsumed() -> int = this.consumed
 
 
     /**
@@ -227,6 +245,75 @@ struct ParserResult
      */
     fun getValue() -> pointer<*> = this.value
 
+
+    /**
+     * Retrieves the tokens consumed while producing this parser result.
+     *
+     * Returns a direct reference to the internal token collection
+     * without creating a copy.
+     *
+     * @return                  the ArrayList containing the consumed tokens.
+     *
+     * @note                    Changes made to the returned collection directly affect
+     *                          the tokens stored in this parser result.
+     *
+     * @warning                 The returned collection is not cloned. Callers must not
+     *                          release or invalidate it while this instance uses it.
+     */
+    fun getTokens() -> pointer<ArrayList> = this.tokens
+
+
+    /**
+     * Adds a consumed token to this parser result.
+     *
+     * The supplied token is appended to the internal token collection
+     * without being copied or cloned.
+     *
+     * Null tokens are ignored.
+     *
+     * @param token             the consumed token to add.
+     *
+     * @return                  this ParserResult instance for method chaining.
+     *
+     * @note                    The token is appended in the order it is provided.
+     *
+     * @warning                 The token is not cloned. The caller must ensure
+     *                          that it remains valid while the collection uses it.
+     */
+    fun pushToken(token: pointer<Token>) -> pointer<ParserResult>
+    {
+        if token != null:
+            this.tokens.push(token)
+
+        return this
+    }
+
+
+    /**
+     * Appends all consumed tokens from the specified collection.
+     *
+     * The supplied tokens are appended to the internal token collection
+     * in their original order.
+     *
+     * A null collection is ignored.
+     *
+     * @param tokens            the collection of consumed tokens to append.
+     * 
+     * @return                  this ParserResult instance for method chaining.
+     *
+     * @note                    The behavior when appending this instance's own token
+     *                          collection depends on the implementation of ArrayList.pushAll.
+     *
+     * @warning                 Whether token data is copied or referenced directly
+     *                          depends on the implementation of ArrayList.pushAll.
+     */
+    fun pushTokens(tokens: pointer<ArrayList>) -> pointer<ParserResult>
+    {
+        if tokens != null:
+            this.tokens.pushAll(tokens)
+
+        return this
+    }
 
     /**
      * Checks whether this parse result has the specified kind.

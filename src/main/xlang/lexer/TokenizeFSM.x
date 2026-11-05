@@ -115,7 +115,7 @@ struct TokenizeRule
  * pattern successfully matches at the cursor.
  *
  * Rule actions are responsible for advancing the cursor. The apply function
- * itself does not consume matched characters or change the source position.
+ * itself does not consumed matched characters or change the source position.
  *
  * The source-code pointer is stored directly and is not copied. The caller
  * must keep the source buffer valid for the lifetime of this FSM.
@@ -330,7 +330,7 @@ struct TokenizeFSM
      * the first matching rule intentionally skipped the input.
      *
      * This function does not advance the cursor. The matched rule action must
-     * consume input by updating the FSM cursor. A zero-length match is allowed
+     * consumed input by updating the FSM cursor. A zero-length match is allowed
      * by this implementation and may cause repeated matching at the same
      * position unless the action changes the cursor or state.
      *

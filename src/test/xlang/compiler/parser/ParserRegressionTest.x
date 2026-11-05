@@ -31,6 +31,7 @@ import xlang.compiler.parser.program.Function
 import xlang.compiler.parser.statement.Statement
 import xlang.lexer.Token
 import xlang.lexer.TokenList
+import xlang.parser.ParserResult
 import xlang.util.string.StringBuilder
 import xlang.test.TestCase
 import xlang.test.TestGroup
@@ -413,11 +414,40 @@ private fun arrayListSublistFunctionTest() -> int
 }
 
 
+private fun parseValue(
+    parser: pointer<*>,
+    tokens: pointer<TokenList>
+) -> pointer<*>
+{
+    val parseTokens: pointer<TokenList> =
+        tokens.subToken(0, tokens.length())
+
+    if parseTokens == null:
+        return null
+
+    val result: pointer<ParserResult> =
+        xlang.parser.ParserTestAdapter.parseForTest(parser, parseTokens, 0)
+
+    if result == null || result.hasError():
+        return null
+
+    val consumed: int = result.getConsumed()
+
+    if consumed < 0 || consumed > tokens.length():
+        return null
+
+    if consumed > 0:
+        tokens.remove(0, consumed)
+
+    return result.getValue()
+}
+
+
 private fun parseExpressionText(text: pointer<char>) -> pointer<Expression>
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(text, diagnostics)
-    return Parser.parseExpression(tokens)
+    return parseValue(Parser.EXPRESSION_PARSER, tokens) as pointer<Expression>
 }
 
 
@@ -425,7 +455,8 @@ private fun parseExpressionTupleText(text: pointer<char>) -> pointer<ExpressionT
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(text, diagnostics)
-    val tuple: pointer<ExpressionTuple> = Parser.parseExpressionTuple(tokens)
+    val tuple: pointer<ExpressionTuple> =
+        parseValue(Parser.EXPRESSION_TUPLE_PARSER, tokens) as pointer<ExpressionTuple>
 
     if tuple == null:
         return null
@@ -443,7 +474,7 @@ private fun parseStatementText(text: pointer<char>) -> pointer<Statement>
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    return Parser.parseStatement(tokens)
+    return parseValue(Parser.STATEMENT_PARSER, tokens) as pointer<Statement>
 }
 
 
@@ -451,7 +482,7 @@ private fun parseFunctionText(text: pointer<char>) -> pointer<Function>
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    return Parser.parseFunction(tokens)
+    return parseValue(Parser.FUNCTION_PARSER, tokens) as pointer<Function>
 }
 
 

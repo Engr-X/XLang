@@ -35,6 +35,7 @@ set(XLANG_LEXER_CODEGEN_UTILS
 set(XLANG_COMPILER_TOKENIZER_RULES "${CMAKE_CURRENT_SOURCE_DIR}/resources/syntax/compiler_tokenizer.json")
 set(XLANG_COMPILER_TOKEN_NORMALIZER_RULES "${CMAKE_CURRENT_SOURCE_DIR}/resources/syntax/compiler_token_normalizer.json")
 set(XLANG_COMPILER_PARSER_RULES
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/syntax/compiler_type_parser.json"
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/syntax/compiler_expression_parser.json"
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/syntax/compiler_statement_parser.json"
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/syntax/compiler_stmtexpr_parser.json"
@@ -127,6 +128,7 @@ add_custom_command(
 add_custom_target(xlang_compiler_parser_codegen
     DEPENDS "${XLANG_COMPILER_PARSER}"
 )
+
 ###############################################################
 
 # ===============================================================
@@ -315,16 +317,23 @@ list(REMOVE_DUPLICATES XLANG_OBJ_DIRS)
 set_property(GLOBAL PROPERTY GP_XLANG_COMPILER_OBJS "${XLANG_COMPILER_OBJS}")
 
 if (XLANG_SRCS)
+    set(XLANG_COMPILE_STAMP "${XLANG_OBJ_ROOT}/compile.stamp")
+
     add_custom_command(
-        OUTPUT ${XLANG_OBJS}
+        OUTPUT "${XLANG_COMPILE_STAMP}"
+
+        BYPRODUCTS ${XLANG_OBJS}
 
         COMMAND ${CMAKE_COMMAND} -E remove_directory "${XLANG_OBJ_ROOT}"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${XLANG_OBJ_ROOT}" ${XLANG_OBJ_DIRS}
+
         COMMAND ${XLANG}
             --target=x64
             --root=${XLANG_SOURCE_DIR}
             -c ${XLANG_SRCS}
             -d ${XLANG_OBJ_ROOT}
+
+        COMMAND ${CMAKE_COMMAND} -E touch "${XLANG_COMPILE_STAMP}"
 
         DEPENDS ${XLANG_SOURCES} ${XLANG}
 
@@ -336,8 +345,9 @@ if (XLANG_SRCS)
     )
 
     add_custom_target(xlang_objects ALL
-        DEPENDS ${XLANG_OBJS}
+        DEPENDS "${XLANG_COMPILE_STAMP}"
     )
+
     add_dependencies(xlang_objects
         xlang_compiler_tokenizer_codegen
         xlang_compiler_token_normalizer_codegen
@@ -348,7 +358,6 @@ else()
         COMMENT "No xlang source files found under ${XLANG_SOURCE_DIR}"
     )
 endif()
-
 
 ###############################################################
 

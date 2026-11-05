@@ -30,15 +30,22 @@ val TEST_GROUP: pointer<TestGroup> = genTest()
 fun genTest() -> pointer<TestGroup>
 {
     val result: pointer<TestGroup> = new TestGroup("xlang.util.HashMap")
-    val putGetTC: pointer<TestCase> = new TestCase("putGet", putGetTest)
+    val containsKeyTC: pointer<TestCase> =
+        new TestCase("containsKey", containsKeyFunctionTest)
+    val getTC: pointer<TestCase> = new TestCase("get", getFunctionTest)
+    val putTC: pointer<TestCase> = new TestCase("put", putFunctionTest)
     val putIfAbsentTC: pointer<TestCase> = new TestCase("putIfAbsent", putIfAbsentTest)
-    val removeClearTC: pointer<TestCase> = new TestCase("removeClear", removeClearTest)
+    val removeTC: pointer<TestCase> = new TestCase("remove", removeFunctionTest)
+    val clearTC: pointer<TestCase> = new TestCase("clear", clearFunctionTest)
     val getEntriesTC: pointer<TestCase> = new TestCase("getEntries", getEntriesTest)
     val toArrayTC: pointer<TestCase> = new TestCase("toArray", toArrayTest)
 
-    result.addTestUnion(new TestUnion(TestCase.TYPE, putGetTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, containsKeyTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, getTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, putTC, null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, putIfAbsentTC, null))
-    result.addTestUnion(new TestUnion(TestCase.TYPE, removeClearTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, removeTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, clearTC, null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, getEntriesTC, null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, toArrayTC, null))
 
@@ -56,6 +63,179 @@ private fun intEq(left: pointer<*>, right: pointer<*>) -> bool
 
 private fun intHash(value: pointer<*>) -> int =
     (value as pointer<int>).deref
+
+
+private fun containsKeyFunctionTest() -> int
+{
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
+    val keysSpace: blob[sizeof(int) * 3]
+    val valuesSpace: blob[sizeof(int) * 2]
+    val keys: pointer<int> = keysSpace as pointer<int>
+    val values: pointer<int> = valuesSpace as pointer<int>
+    keys[0] = 1
+    keys[1] = 2
+    keys[2] = 3
+    values[0] = 10
+    values[1] = 20
+
+    if map.containsKey(keys):
+        return 1
+
+    map.put(keys, values)
+    map.put(keys + 1, values + 1)
+
+    if !map.containsKey(keys) || !map.containsKey(keys + 1):
+        return 2
+
+    if map.containsKey(keys + 2):
+        return 3
+
+    map.remove(keys)
+
+    return if !map.containsKey(keys): 0 else: 4
+}
+
+
+private fun getFunctionTest() -> int
+{
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
+    val keysSpace: blob[sizeof(int) * 3]
+    val valuesSpace: blob[sizeof(int) * 3]
+    val keys: pointer<int> = keysSpace as pointer<int>
+    val values: pointer<int> = valuesSpace as pointer<int>
+    keys[0] = 1
+    keys[1] = 2
+    keys[2] = 3
+    values[0] = 10
+    values[1] = 20
+    values[2] = 30
+
+    if map.get(keys) != null:
+        return 1
+
+    map.put(keys, values)
+    map.put(keys + 1, values + 1)
+
+    if (map.get(keys) as pointer<int>).deref != 10:
+        return 2
+
+    if (map.get(keys + 1) as pointer<int>).deref != 20:
+        return 3
+
+    if map.get(keys + 2) != null:
+        return 4
+
+    map.remove(keys)
+
+    return if map.get(keys) == null: 0 else: 5
+}
+
+
+private fun putFunctionTest() -> int
+{
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
+    val keysSpace: blob[sizeof(int) * 2]
+    val valuesSpace: blob[sizeof(int) * 3]
+    val keys: pointer<int> = keysSpace as pointer<int>
+    val values: pointer<int> = valuesSpace as pointer<int>
+    keys[0] = 1
+    keys[1] = 2
+    values[0] = 10
+    values[1] = 20
+    values[2] = 30
+
+    if map.put(keys, values) != map:
+        return 1
+
+    if map.length != 1 || (map.get(keys) as pointer<int>).deref != 10:
+        return 2
+
+    map.put(keys + 1, values + 1)
+
+    if map.length != 2 || (map.get(keys + 1) as pointer<int>).deref != 20:
+        return 3
+
+    map.put(keys, values + 2)
+
+    if map.length != 2 || (map.get(keys) as pointer<int>).deref != 30:
+        return 4
+
+    return 0
+}
+
+
+private fun removeFunctionTest() -> int
+{
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
+    val keysSpace: blob[sizeof(int) * 4]
+    val valuesSpace: blob[sizeof(int) * 3]
+    val keys: pointer<int> = keysSpace as pointer<int>
+    val values: pointer<int> = valuesSpace as pointer<int>
+
+    for (var i: int = 0; i < 4; i++):
+        keys[i] = i + 1
+
+    for (var i: int = 0; i < 3; i++):
+    {
+        values[i] = (i + 1) * 10
+        map.put(keys + i, values + i)
+    }
+
+    if map.remove(keys + 3):
+        return 1
+
+    if !map.remove(keys + 1):
+        return 2
+
+    if map.length != 2 || map.containsKey(keys + 1):
+        return 3
+
+    if !map.remove(keys) || !map.remove(keys + 2):
+        return 4
+
+    if map.length != 0:
+        return 5
+
+    return if !map.remove(keys): 0 else: 6
+}
+
+
+private fun clearFunctionTest() -> int
+{
+    val map: pointer<HashMap> = new HashMap(intEq, intHash)
+    val keysSpace: blob[sizeof(int) * 2]
+    val valuesSpace: blob[sizeof(int) * 2]
+    val keys: pointer<int> = keysSpace as pointer<int>
+    val values: pointer<int> = valuesSpace as pointer<int>
+    keys[0] = 1
+    keys[1] = 2
+    values[0] = 10
+    values[1] = 20
+
+    map.clear()
+
+    if map.length != 0:
+        return 1
+
+    map.put(keys, values)
+    map.put(keys + 1, values + 1)
+    map.clear()
+
+    if map.length != 0 || map.containsKey(keys) || map.containsKey(keys + 1):
+        return 2
+
+    val entries: pointer<ArrayList> = map.getEntries()
+
+    if entries.length != 0:
+        return 3
+
+    map.put(keys, values)
+
+    if map.length != 1 || (map.get(keys) as pointer<int>).deref != 10:
+        return 4
+
+    return 0
+}
 
 
 private fun putGetTest() -> int

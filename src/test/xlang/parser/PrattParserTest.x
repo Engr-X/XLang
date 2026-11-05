@@ -24,12 +24,19 @@
 package xlang.parser
 
 import xlang.Diagnostics
+import xlang.Operation
 import xlang.compiler.lexer.Tokenizer
-import xlang.parser.util.ParserRef
 import xlang.lexer.Token
 import xlang.lexer.TokenList
-import xlang.parser.util.PatternList
-import xlang.parser.util.Rule
+import xlang.parser.Parser
+import xlang.parser.rule.InputRule
+import xlang.parser.rule.InputRules
+import xlang.parser.rule.ParserRule
+import xlang.parser.rule.RuleAtom
+import xlang.parser.rule.RuleExpression
+import xlang.parser.rule.RuleSelect
+import xlang.parser.rule.RuleSequence
+import xlang.parser.pratt.PrattParser
 import xlang.test.TestCase
 import xlang.test.TestGroup
 import xlang.test.TestUnion
@@ -58,16 +65,13 @@ private fun parseTest() -> int
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
-    val consumed: int = parser.parse(tokens, 0)
+    val result: pointer<ParserResult> = parser.parse(tokens, 0)
 
-    if consumed != 3:
+    if result == null || result.hasError() || result.getConsumed() != 3:
         return 1
 
     if tokens.length() != originalLength:
         return 2
-
-    if parser.getResult() == null:
-        return 3
 
     return 0
 }
@@ -75,19 +79,17 @@ private fun parseTest() -> int
 
 private fun doParseEntryTest() -> int
 {
-    val parser: pointer<PrattParser> = parserWithBinary()
+    val parser: pointer<Parser> =
+        xlang.parser.ParserAPI.fromPratt(parserWithBinary())
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
-    val consumed: int = parser.doParse(tokens)
+    val result: pointer<ParserResult> = ParserAPI.parse(parser, tokens, 0)
 
-    if consumed != 3:
+    if result == null || result.hasError() || result.getConsumed() != 3:
         return 1
 
-    if tokens.length() != originalLength - consumed:
+    if tokens.length() != originalLength:
         return 2
-
-    if parser.getResult() == null:
-        return 3
 
     return 0
 }
@@ -96,38 +98,88 @@ private fun makeExpr(results: pointer<ArrayList>) -> pointer<*> =
     results.clone() as pointer<*>
 
 
-private fun atomRule() -> pointer<Rule> =
-    new Rule(new PatternList().pushRegex(Tokenizer.TK_INTEGER), makeExpr, Rule.STARTER_ROLE, 0)
+private fun tokenIdentity(
+    tokens: pointer<TokenList>, index: int
+) -> pointer<TokenList> = tokens
 
 
-private fun atomParserRef() -> pointer<ParserRef> =
-    ParserRef.fromRecursiveDown(EXPR_ID).addRule(atomRule())
+private fun firstResult(results: pointer<ArrayList>) -> pointer<*>
+{
+    val slot: pointer<pointer<*>> =
+        results.get(0) as pointer<pointer<*>>
+    val result: pointer<ParserResult> =
+        slot.deref as pointer<ParserResult>
+    return result.getValue()
+}
 
 
-private fun plusRule(priority: int) -> pointer<Rule> =
-    new Rule(
-        new PatternList()
-            .pushRef(atomParserRef())
-            .pushRegex(Tokenizer.PLUS)
-            .pushRef(atomParserRef()),
-        makeExpr, Rule.CONTINUATION_ROLE, priority)
+private fun tokenRule(tokenKind: int) -> pointer<ParserRule>
+{
+    val input: pointer<InputRule> = new InputRule(firstResult)
+    val inputs: pointer<InputRules> =
+        new InputRules(EXPR_ID).push(input)
+    return new ParserRule(
+        inputs,
+        RuleExpression.fromRegexAtom(tokenKind))
+}
 
 
-private fun starRule(priority: int) -> pointer<Rule> =
-    new Rule(
-        new PatternList()
-            .pushRef(atomParserRef())
-            .pushRegex(Tokenizer.STAR)
-            .pushRef(atomParserRef()),
-        makeExpr, Rule.CONTINUATION_ROLE, priority)
+private fun atomRule() -> pointer<ParserRule>
+{
+    val input: pointer<InputRule> =
+        new InputRule(makeExpr).push(RuleAtom.fromRegex(Tokenizer.TK_INTEGER))
+    val inputs: pointer<InputRules> =
+        new InputRules(EXPR_ID).push(input)
+    return new ParserRule(
+        inputs,
+        RuleExpression.fromSequence(new RuleSequence()))
+}
 
 
-private fun parserWithAtom() -> pointer<PrattParser> =
-    new PrattParser().setId(EXPR_ID).addStarterRule(atomRule())
+private fun continuationRule(
+    root: pointer<Parser>,
+    tokenKind: int,
+    priority: int
+) -> pointer<InputRule>
+{
+    val input: pointer<InputRule> =
+        new InputRule(priority, null, makeExpr, tokenIdentity)
+    input.push(RuleAtom.fromParserRef(root))
+    input.push(RuleAtom.fromRegex(tokenKind))
+    input.push(RuleAtom.fromParserRef(root))
+    return input
+}
 
 
-private fun parserWithBinary() -> pointer<PrattParser> =
-    parserWithAtom().addContinuationRule(plusRule(10)).addContinuationRule(starRule(20))
+private fun parserWithAtom() -> pointer<PrattParser>
+{
+    val continuationInputs: pointer<InputRules> = new InputRules(EXPR_ID)
+    val continuation: pointer<ParserRule> = new ParserRule(
+        continuationInputs,
+        RuleExpression.fromSequence(new RuleSequence()))
+    return new PrattParser(EXPR_ID, atomRule(), continuation)
+}
+
+
+private fun parserWithBinary() -> pointer<PrattParser>
+{
+    val root: pointer<Parser> =
+        xlang.parser.ParserAPI.fromPratt(null)
+    val atom: pointer<ParserRule> = atomRule()
+    val plus: pointer<InputRule> =
+        continuationRule(root, Tokenizer.PLUS, 10)
+    val star: pointer<InputRule> =
+        continuationRule(root, Tokenizer.STAR, 20)
+    val continuationInputs: pointer<InputRules> =
+        new InputRules(EXPR_ID).push(plus).push(star)
+    val continuation: pointer<ParserRule> = new ParserRule(
+        continuationInputs,
+        RuleExpression.fromSequence(new RuleSequence()))
+    val parser: pointer<PrattParser> =
+        new PrattParser(EXPR_ID, atom, continuation)
+    ParserAPI.setPrattHost(root, parser)
+    return parser
+}
 
 
 private fun valueList(container: pointer<ParserResult>) -> pointer<ArrayList> =
@@ -180,10 +232,9 @@ private fun tryParseAtomTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithAtom()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1", new Diagnostics())
-    var length: int = 0
-    val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
+    val result: pointer<ParserResult> = parser.parse(tokens, 0)
 
-    if result == null || length != 1:
+    if result == null || result.hasError() || result.getConsumed() != 1:
         return 1
 
     if result.getKind() != EXPR_ID:
@@ -202,10 +253,9 @@ private fun tryParsePlusTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
-    var length: int = 0
-    val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
+    val result: pointer<ParserResult> = parser.parse(tokens, 0)
 
-    if result == null || length != 3:
+    if result == null || result.hasError() || result.getConsumed() != 3:
         return 1
 
     val resultList: pointer<ArrayList> = valueList(result)
@@ -232,10 +282,9 @@ private fun tryParsePriorityTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2 * 3", new Diagnostics())
-    var length: int = 0
-    val result: pointer<ParserResult> = parser.tryParse(tokens, 0, length.ref)
+    val result: pointer<ParserResult> = parser.parse(tokens, 0)
 
-    if result == null || length != 5:
+    if result == null || result.hasError() || result.getConsumed() != 5:
         return 1
 
     val plusToken: pointer<Token> = tokenAt(result, 1)
@@ -257,18 +306,17 @@ private fun tryParseMinPriorityTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
-    var length: int = 0
-    val result: pointer<ParserResult> = parser.tryParse(tokens, 0, 11, length.ref)
+    val result: pointer<ParserResult> = parser.parse(tokens, 0)
 
-    if result == null:
+    if result == null || result.hasError():
         return 1
 
-    if length != 1:
+    if result.getConsumed() != 3:
         return 2
 
     val resultList: pointer<ArrayList> = valueList(result)
 
-    if resultList.length != 1:
+    if resultList.length != 3:
         return 3
 
     return 0

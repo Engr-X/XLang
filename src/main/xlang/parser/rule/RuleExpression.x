@@ -21,9 +21,10 @@
  *
  */
 
-package xlang.parser.combinator
+package xlang.parser.rule
 
 import xlang.lexer.Token
+import xlang.parser.Parser
 import xlang.util.string.Regex
 import xlang.util.string.String
 import xlang.util.ArrayList
@@ -107,14 +108,14 @@ struct OptionalAtomRule
 
 struct LoopAtomRule
 {
-    private var loopRule: pointer<ParserRule>
+    private var loopRule: pointer<Parser>
 
-    private var splitBy: pointer<ParserRule>
+    private var splitBy: pointer<Parser>
 
     private var allowTrailing: bool
 
 
-    constructor(loopRule: pointer<ParserRule>, allowTrailing: bool)
+    constructor(loopRule: pointer<Parser>, allowTrailing: bool)
     {
         this.loopRule = loopRule
         this.splitBy = null
@@ -122,7 +123,7 @@ struct LoopAtomRule
     }
 
 
-    constructor(loopRule: pointer<ParserRule>, splitBy: pointer<ParserRule>, allowTrailing: bool)
+    constructor(loopRule: pointer<Parser>, splitBy: pointer<Parser>, allowTrailing: bool)
     {
         this.loopRule = loopRule
         this.splitBy = splitBy
@@ -130,10 +131,11 @@ struct LoopAtomRule
     }
 
 
-    fun getLoopRule() -> pointer<ParserRule> = this.loopRule
+    fun getLoopParser() -> pointer<Parser> = this.loopRule.reset()
 
 
-    fun getSplitBy() -> pointer<ParserRule> = this.splitBy
+    fun getSplitByParser() -> pointer<Parser> =
+        if this.splitBy == null: null else: this.splitBy.reset()
 
 
     fun getAllowTrailing() -> bool = this.allowTrailing
@@ -155,30 +157,30 @@ struct RuleAtom
         new RuleAtom(TOKEN_KIND, new RegexAtomRule(tokenKind, null, null))
 
     
-    static inline fun fromRegex(tokenKind: int, tokenRegex: pointer<char>) -> pointer<RuleAtom> =
+    static inline fun createRegex(tokenKind: int, tokenRegex: pointer<char>) -> pointer<RuleAtom> =
         new RuleAtom(TOKEN_KIND, new RegexAtomRule(tokenKind, tokenRegex, null))
 
 
-    static inline fun fromRegex(tokenKind: int, tokenCompiledRegex: pointer<*>) -> pointer<RuleAtom> =
+    static inline fun createRegex(tokenKind: int, tokenCompiledRegex: pointer<*>) -> pointer<RuleAtom> =
         new RuleAtom(TOKEN_KIND, new RegexAtomRule(tokenKind, null, tokenCompiledRegex))
 
 
-    static inline fun fromRuleRef(rule: pointer<ParserRule>) -> pointer<RuleAtom> =
-        new RuleAtom(REF_TYPE, rule)
+    static inline fun fromParserRef(parser: pointer<Parser>) -> pointer<RuleAtom> =
+        new RuleAtom(REF_TYPE, parser)
 
 
-    static inline fun fromOptional(rule: pointer<ParserRule>) -> pointer<RuleAtom> =
+    static inline fun createOptional(rule: pointer<ParserRule>) -> pointer<RuleAtom> =
         new RuleAtom(OPTIONAL_KIND, new OptionalAtomRule(rule))
 
 
-    static inline fun fromLoop(loopRule: pointer<ParserRule>, allowTrailing: bool) -> pointer<RuleAtom> =
-        new RuleAtom(LOOP_KIND, new LoopAtomRule(loopRule, allowTrailing))
+    static inline fun createLoop(loopParser: pointer<Parser>, allowTrailing: bool) -> pointer<RuleAtom> =
+        new RuleAtom(LOOP_KIND, new LoopAtomRule(loopParser, allowTrailing))
 
     
-    static inline fun fromLoop(
-        loopRule: pointer<ParserRule>, splitBy: pointer<ParserRule>, allowTrailing: bool
+    static inline fun createLoop(
+        loopParser: pointer<Parser>, splitByParser: pointer<Parser>, allowTrailing: bool
     ) -> pointer<RuleAtom> =
-        new RuleAtom(LOOP_KIND, new LoopAtomRule(loopRule, splitBy, allowTrailing))
+        new RuleAtom(LOOP_KIND, new LoopAtomRule(loopParser, splitByParser, allowTrailing))
 
 
     private var kind: int
@@ -209,8 +211,14 @@ struct RuleAtom
         if this.kind == TOKEN_KIND: this.host as pointer<RegexAtomRule> else: null
 
         
-    fun getRefRule() -> pointer<ParserRule> =
-        if this.kind == REF_TYPE: this.host as pointer<ParserRule> else: null
+    fun getRefParser() -> pointer<Parser>
+    {
+        if this.kind != REF_TYPE:
+            return null
+
+        val parser: pointer<Parser> = this.host as pointer<Parser>
+        return parser.reset()
+    }
 
 
     fun getOpticalRule() -> pointer<OptionalAtomRule> =
@@ -229,6 +237,10 @@ struct RuleSelect
 
     constructor():
         this.internelRules = new ArrayList(sizeof(ParserRule))
+
+
+    constructor(rule: pointer<ArrayList>):
+        this.internelRules = rule
 
 
     fun push(rule: pointer<ParserRule>) -> pointer<RuleSelect>
@@ -253,6 +265,10 @@ struct RuleSequence
 
     constructor():
         this.ruleSeq = new ArrayList(sizeof(ParserRule))
+
+    
+    constructor(rule: pointer<ArrayList>):
+        this.ruleSeq = rule
 
 
     fun push(rule: pointer<ParserRule>) -> pointer<RuleSequence>
@@ -283,38 +299,46 @@ struct RuleExpression
         new RuleExpression(ATOM_KIND, RuleAtom.fromRegex(tokenKind))
 
     
-    static fun fromRegexAtom(tokenKind: int, tokenRegex: pointer<char>) -> pointer<RuleExpression> =
-        new RuleExpression(ATOM_KIND, RuleAtom.fromRegex(tokenKind, tokenRegex))
+    static fun createRegex(tokenKind: int, tokenRegex: pointer<char>) -> pointer<RuleExpression> =
+        new RuleExpression(ATOM_KIND, RuleAtom.createRegex(tokenKind, tokenRegex))
 
 
-    static fun fromRegexAtom(tokenKind: int, tokenCompiledRegex: pointer<*>) -> pointer<RuleExpression> =
-        new RuleExpression(ATOM_KIND, RuleAtom.fromRegex(tokenKind, tokenCompiledRegex))
+    static fun createRegex(tokenKind: int, tokenCompiledRegex: pointer<*>) -> pointer<RuleExpression> =
+        new RuleExpression(ATOM_KIND, RuleAtom.createRegex(tokenKind, tokenCompiledRegex))
 
 
-    static fun fromRefAtom(rule: pointer<ParserRule>) -> pointer<RuleExpression> =
-        new RuleExpression(ATOM_KIND, RuleAtom.fromRuleRef(rule))
+    static fun createRef(parser: pointer<Parser>) -> pointer<RuleExpression> =
+        new RuleExpression(ATOM_KIND, RuleAtom.fromParserRef(parser))
 
 
-    static fun fromOptionalAtom(rule: pointer<ParserRule>) -> pointer<RuleExpression> =
-        new RuleExpression(ATOM_KIND, RuleAtom.fromOptional(rule))
+    static fun createOptional(rule: pointer<ParserRule>) -> pointer<RuleExpression> =
+        new RuleExpression(ATOM_KIND, RuleAtom.createOptional(rule))
 
 
-    static fun fromLoopAtom(loopRule: pointer<ParserRule>, allowTrailing: bool) -> pointer<RuleExpression> =
-        new RuleExpression(ATOM_KIND, RuleAtom.fromLoop(loopRule, allowTrailing))
+    static fun createLoop(loopParser: pointer<Parser>, allowTrailing: bool) -> pointer<RuleExpression> =
+        new RuleExpression(ATOM_KIND, RuleAtom.createLoop(loopParser, allowTrailing))
 
     
-    static fun fromLoopAtom(
-        loopRule: pointer<ParserRule>, splitBy: pointer<ParserRule>, allowTrailing: bool
+    static fun createLoop(
+        loopParser: pointer<Parser>, splitByParser: pointer<Parser>, allowTrailing: bool
     ) -> pointer<RuleExpression> =
-        new RuleExpression(ATOM_KIND, RuleAtom.fromLoop(loopRule, splitBy, allowTrailing))
+        new RuleExpression(ATOM_KIND, RuleAtom.createLoop(loopParser, splitByParser, allowTrailing))
 
 
     static fun fromSelect(selectRule: pointer<RuleSelect>) -> pointer<RuleExpression> =
         new RuleExpression(SELECT_KIND, selectRule)
 
 
+    static fun createSelect(selectRules: pointer<ArrayList>) -> pointer<RuleExpression> =
+        new RuleExpression(SELECT_KIND, new RuleSelect(selectRules))
+
+
     static fun fromSequence(seqRule: pointer<RuleSequence>) -> pointer<RuleExpression> =
         new RuleExpression(SEQUENCE_KIND, seqRule)
+
+
+    static fun createSequence(seqRules: pointer<ArrayList>) -> pointer<RuleExpression> =
+        new RuleExpression(SEQUENCE_KIND, new RuleSequence(seqRules))
 
 
 

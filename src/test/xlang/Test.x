@@ -46,6 +46,7 @@ import xlang.util.IO
 import xlang.util.ArrayListTest
 import xlang.util.HashMapTest
 import xlang.util.HashSetTest
+import xlang.util.LinkedListTest
 import xlang.util.IOTest
 import xlang.util.TypeConvertTest
 import xlang.util.string.StringBuilderTest
@@ -56,28 +57,29 @@ private fun getTestGroup() -> pointer<TestGroup>
 {
     val result: pointer<TestGroup> = new TestGroup("xlang")
     val testGroupSpace: blob[sizeof(pointer<TestGroup>) * 100]
-    val testGroupLength: int = 19
+    val testGroupLength: int = 20
     val testGroups: pointer<pointer<TestGroup>> = testGroupSpace as pointer<pointer<TestGroup>>
 
-    testGroups[0] = StringTest.TEST_GROUP
-    testGroups[1] = StringBuilderTest.TEST_GROUP
-    testGroups[2] = ArrayListTest.TEST_GROUP
-    testGroups[3] = HashSetTest.TEST_GROUP
-    testGroups[4] = HashMapTest.TEST_GROUP
-    testGroups[5] = TypeConvertTest.TEST_GROUP
-    testGroups[6] = TokenTest.TEST_GROUP
-    testGroups[7] = TokenizeFSMTest.TEST_GROUP
-    testGroups[8] = NormalizeFSMTest.TEST_GROUP
-    testGroups[9] = TokenizerTest.TEST_GROUP
-    testGroups[10] = TokenNormalizerTest.TEST_GROUP
-    testGroups[11] = ParserUtilTest.TEST_GROUP
-    testGroups[12] = ParserTest.TEST_GROUP
-    testGroups[13] = ParserRegressionTest.TEST_GROUP
-    testGroups[14] = RecursiveParserTest.TEST_GROUP
-    testGroups[15] = PrattParserTest.TEST_GROUP
-    testGroups[16] = TypeParserTest.TEST_GROUP
-    testGroups[17] = IOTest.TEST_GROUP
-    testGroups[18] = NormalTypeTest.TEST_GROUP
+    testGroups[0] = ParserUtilTest.TEST_GROUP
+    testGroups[1] = ParserTest.TEST_GROUP
+    testGroups[2] = ParserRegressionTest.TEST_GROUP
+    testGroups[3] = RecursiveParserTest.TEST_GROUP
+    testGroups[4] = PrattParserTest.TEST_GROUP
+    testGroups[5] = TypeParserTest.TEST_GROUP
+    testGroups[6] = StringTest.TEST_GROUP
+    testGroups[7] = StringBuilderTest.TEST_GROUP
+    testGroups[8] = ArrayListTest.TEST_GROUP
+    testGroups[9] = LinkedListTest.TEST_GROUP
+    testGroups[10] = HashSetTest.TEST_GROUP
+    testGroups[11] = HashMapTest.TEST_GROUP
+    testGroups[12] = TypeConvertTest.TEST_GROUP
+    testGroups[13] = TokenTest.TEST_GROUP
+    testGroups[14] = TokenizeFSMTest.TEST_GROUP
+    testGroups[15] = NormalizeFSMTest.TEST_GROUP
+    testGroups[16] = TokenizerTest.TEST_GROUP
+    testGroups[17] = TokenNormalizerTest.TEST_GROUP
+    testGroups[18] = IOTest.TEST_GROUP
+    testGroups[19] = NormalTypeTest.TEST_GROUP
 
     for (var i = 0; i < testGroupLength; i++):
     {

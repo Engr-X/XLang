@@ -21,7 +21,7 @@
  *
  */
 
-package xlang.parser.combinator
+package xlang.parser.rule
 
 import xlang.Diagnostic
 import xlang.Operation
@@ -36,6 +36,21 @@ struct InputRule
     private static fun ident(
         input: pointer<TokenList>, index: int
     ) -> pointer<TokenList> = input
+
+
+    static fun comparePriority(
+        left: pointer<*>,
+        right: pointer<*>
+    ) -> int
+    {
+        val leftRule: pointer<InputRule> = left as pointer<InputRule>
+        val rightRule: pointer<InputRule> = right as pointer<InputRule>
+
+        if leftRule.priority == rightRule.priority:
+            return 0
+
+        return if leftRule.priority > rightRule.priority: -1 else: 1
+    }
 
 
     private var priority: int
@@ -60,43 +75,6 @@ struct InputRule
 
 
     constructor(
-        priority: int,
-        resultConstructor: (pointer<ArrayList>) -> pointer<*>)
-    {
-        this.priority = priority
-        this.operation = null
-        this.atoms = new ArrayList(sizeof(RuleAtom))
-        this.resultConstructor = resultConstructor
-        this.afterFun = ident
-    }
-
-
-    constructor(
-        priority: int,
-        resultConstructor: (pointer<ArrayList>) -> pointer<*>,
-        afterFun: (pointer<TokenList>, int) -> pointer<TokenList>)
-    {
-        this.priority = priority
-        this.operation = null
-        this.atoms = new ArrayList(sizeof(RuleAtom))
-        this.resultConstructor = resultConstructor
-        this.afterFun = afterFun
-    }
-
-
-    constructor(
-        operation: pointer<Operation>,
-        resultConstructor: (pointer<ArrayList>) -> pointer<*>)
-    {
-        this.priority = operation.priority
-        this.operation = operation
-        this.atoms = new ArrayList(sizeof(RuleAtom))
-        this.resultConstructor = resultConstructor
-        this.afterFun = ident
-    }
-
-
-    constructor(
         operation: pointer<Operation>,
         resultConstructor: (pointer<ArrayList>) -> pointer<*>,
         afterFun: (pointer<TokenList>, int) -> pointer<TokenList>)
@@ -106,6 +84,51 @@ struct InputRule
         this.atoms = new ArrayList(sizeof(RuleAtom))
         this.resultConstructor = resultConstructor
         this.afterFun = afterFun
+    }
+
+
+    constructor(
+        priority: int,
+        operation: pointer<Operation>,
+        resultConstructor: (pointer<ArrayList>) -> pointer<*>,
+        afterFun: (pointer<TokenList>, int) -> pointer<TokenList>)
+    {
+        this.priority = priority
+        this.operation = operation
+        this.atoms = new ArrayList(sizeof(RuleAtom))
+        this.resultConstructor = resultConstructor
+        this.afterFun = afterFun
+    }
+
+
+    private constructor(
+        priority: int,
+        operation: pointer<Operation>,
+        atoms: pointer<ArrayList>,
+        resultConstructor: (pointer<ArrayList>) -> pointer<*>,
+        afterFun: (pointer<TokenList>, int) -> pointer<TokenList>)
+    {
+        this.priority = priority
+        this.operation = operation
+        this.atoms = atoms
+        this.resultConstructor = resultConstructor
+        this.afterFun = afterFun
+    }
+
+
+    fun extract(fromIndex: int, toIndex: int) -> pointer<InputRule>
+    {
+        val atoms: pointer<ArrayList> = this.atoms.extract(fromIndex, toIndex)
+
+        if atoms == null:
+            return null
+
+        return new InputRule(
+            this.priority,
+            this.operation,
+            atoms,
+            this.resultConstructor,
+            this.afterFun)
     }
 
 
@@ -129,8 +152,8 @@ struct InputRule
     fun getOperation() -> pointer<Operation> = this.operation
 
 
-    fun getResult(id: int, input: pointer<ArrayList>, consume: int) -> pointer<ParserResult> =
-        new ParserResult(id, consume, this.resultConstructor(input))
+    fun getResult(id: int, input: pointer<ArrayList>, consumed: int) -> pointer<ParserResult> =
+        new ParserResult(id, consumed, this.resultConstructor(input))
 
 
     fun after(token: pointer<TokenList>, index: int) -> pointer<TokenList> =
@@ -143,6 +166,14 @@ struct InputRules
     private static fun ident(
         input: pointer<TokenList>, index: int
     ) -> pointer<TokenList> = input
+
+
+    static fun sortByPriority(rules: pointer<ArrayList>) -> pointer<ArrayList>
+    {
+        rules.setComparator(InputRule.comparePriority)
+        rules.sort()
+        return rules
+    }
 
 
     var id: int
@@ -184,10 +215,14 @@ struct InputRules
     fun length() -> int = this.rules.length
 
 
+    fun sort():
+        sortByPriority(this.rules)
+
+
     fun getResult(
         index: int,
         input: pointer<ArrayList>,
-        consume: int
+        consumed: int
     ) -> pointer<ParserResult>
     {
         if index < 0 || index >= this.rules.length:
@@ -202,7 +237,7 @@ struct InputRules
 
         val rule: pointer<InputRule> =
             this.rules.get(index) as pointer<InputRule>
-        return rule.getResult(this.id, input, consume)
+        return rule.getResult(this.id, input, consumed)
     }
 
 

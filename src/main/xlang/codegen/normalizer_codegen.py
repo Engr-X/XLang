@@ -43,6 +43,8 @@ DEFAULT_IMPORTS: set[str] = {
     "xlang.lexer.NormalizeRule",
     "xlang.lexer.Token",
     "xlang.lexer.TokenList",
+    "xlang.parser.combinator.RegexAtomRule",
+    "xlang.parser.combinator.RuleAtom",
     "xlang.util.ArrayList",
 }
 
@@ -375,20 +377,32 @@ def genNormalizerInitFun(rules: list[JsonObject], tabs: int) -> str:
     for index, rule in enumerate(rules):
         state = rule["state"]
         action = rule["action"]
+        patterns_name = f"rule{index}Patterns"
 
-        if action is None:
-            rule_expr = f"new NormalizeRule({index}, {state})"
-        else:
-            rule_expr = f"new NormalizeRule({index}, {state}, {action})"
+        lines.append(
+            f"{body_indent}val {patterns_name}: pointer<ArrayList> = "
+            f"new ArrayList(sizeof(RegexAtomRule))"
+        )
 
         for pattern in rules[index]["patterns"]:
             kind = genKindExpr(pattern["kind"])
             regex = pattern["regex"]
 
             if regex is None:
-                rule_expr += f".addPattern({kind})"
+                atom_expr = f"RuleAtom.fromRegex({kind}).getTokenRule()"
             else:
-                rule_expr += f".addPattern({kind}, {json.dumps(regex)})"
+                atom_expr = (
+                    f"RuleAtom.fromRegex({kind}, {json.dumps(regex)}).getTokenRule()"
+                )
+
+            lines.append(f"{body_indent}{patterns_name}.push({atom_expr})")
+
+        if action is None:
+            rule_expr = f"new NormalizeRule({index}, {state}, {patterns_name})"
+        else:
+            rule_expr = (
+                f"new NormalizeRule({index}, {state}, {action}, {patterns_name})"
+            )
 
         rule_expr += f".setPivot({rules[index]['pivot_index']})"
         lines.append(f"{body_indent}rulePtr[{index}] = {rule_expr}")

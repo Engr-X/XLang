@@ -20,7 +20,7 @@
  *
  */
 
-package xlang.parser.combinator
+package xlang.parser.rule
 
 
 struct ParserRule
@@ -30,14 +30,6 @@ struct ParserRule
     private var inputRule: pointer<InputRules>
 
     private var expression: pointer<RuleExpression>
-
-
-    constructor(inputRule: pointer<InputRules>)
-    {
-        this.inputRule = inputRule
-        this.expression = null
-        this.id = inputRule.id
-    }
 
 
     constructor(inputRule: pointer<InputRules>, expression: pointer<RuleExpression>)

@@ -83,7 +83,7 @@ struct Diagnostics
         if diagnostic == null:
             return this
 
-        if diagnostic.isError():
+        if diagnostic.isError() || diagnostic.isInternalError():
             this.errors.push(diagnostic)
         elif diagnostic.isWarning():
             this.warnings.push(diagnostic)

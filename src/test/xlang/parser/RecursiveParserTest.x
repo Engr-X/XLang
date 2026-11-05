@@ -29,8 +29,13 @@ import xlang.Diagnostics
 import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.Token
 import xlang.lexer.TokenList
-import xlang.parser.util.PatternList
-import xlang.parser.util.Rule
+import xlang.parser.rule.InputRule
+import xlang.parser.rule.InputRules
+import xlang.parser.rule.ParserRule
+import xlang.parser.rule.RegexAtomRule
+import xlang.parser.rule.RuleAtom
+import xlang.parser.rule.RuleExpression
+import xlang.parser.recursive.RecursiveParser
 import xlang.test.TestCase
 import xlang.test.TestGroup
 import xlang.test.TestUnion
@@ -43,7 +48,7 @@ val TEST_GROUP: pointer<TestGroup> = genTest()
 
 fun genTest() -> pointer<TestGroup>
 {
-    val result: pointer<TestGroup> = new TestGroup("xlang.parser.ORecursiveParser")
+    val result: pointer<TestGroup> = new TestGroup("xlang.parser.RecursiveParser")
     val resultLifetimeTC: pointer<TestCase> = new TestCase("resultLifetime", resultLifetimeTest)
     val resultLifetimeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, resultLifetimeTC, null)
     val constructFailureTC: pointer<TestCase> = new TestCase("constructFailure", constructFailureTest)
@@ -68,17 +73,23 @@ private fun makeNullResult(results: pointer<ArrayList>) -> pointer<*> = null
 
 private fun resultLifetimeTest() -> int
 {
-    val pattern: pointer<PatternList> = new PatternList().pushRegex(Tokenizer.KW_TRUE)
-    val rule: pointer<Rule> = new Rule(pattern, makeTokenResult, Rule.STARTER_ROLE, 0)
-    val recursiveParser: pointer<ORecursiveParser> = new ORecursiveParser(1).addRule(rule)
+    val input: pointer<InputRule> = new InputRule(makeTokenResult)
+    val inputs: pointer<InputRules> = new InputRules(1).push(input)
+    val expression: pointer<RuleExpression> =
+        RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)
+    val atom: pointer<RuleAtom> = expression.getAtomRule()
+    val tokenRule: pointer<RegexAtomRule> = atom.getTokenRule()
+    tokenRule.addRuleId(0)
+    val rule: pointer<ParserRule> = new ParserRule(inputs, expression)
+    val recursiveParser: pointer<RecursiveParser> =
+        new RecursiveParser(rule)
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("true", new Diagnostics())
+    val result: pointer<ParserResult> = recursiveParser.parse(tokens, 0)
 
-    if recursiveParser.doParse(tokens) != 1:
+    if result == null || result.getConsumed() != 1:
         return 1
 
-    val result: pointer<ParserResult> = recursiveParser.getResult()
-
-    if result == null || !result.isKind(1):
+    if !result.isKind(1):
         return 2
 
     val token: pointer<Token> = result.getValue() as pointer<Token>
@@ -98,34 +109,31 @@ private fun resultLifetimeTest() -> int
 
 private fun constructFailureTest() -> int
 {
-    val pattern: pointer<PatternList> = new PatternList().pushRegex(Tokenizer.KW_TRUE)
-    val rule: pointer<Rule> = new Rule(pattern, makeNullResult, Rule.STARTER_ROLE, 0)
-    val recursiveParser: pointer<ORecursiveParser> = new ORecursiveParser(1).addRule(rule)
+    val input: pointer<InputRule> = new InputRule(makeNullResult)
+    val inputs: pointer<InputRules> = new InputRules(1).push(input)
+    val expression: pointer<RuleExpression> =
+        RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)
+    val atom: pointer<RuleAtom> = expression.getAtomRule()
+    val tokenRule: pointer<RegexAtomRule> = atom.getTokenRule()
+    tokenRule.addRuleId(0)
+    val rule: pointer<ParserRule> = new ParserRule(inputs, expression)
+    val recursiveParser: pointer<RecursiveParser> =
+        new RecursiveParser(rule)
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("true", new Diagnostics())
     val originalLength: int = tokens.length()
+    val result: pointer<ParserResult> = recursiveParser.parse(tokens, 0)
 
-    if recursiveParser.doParse(tokens) != -1:
+    if result == null || result.getConsumed() != 1:
         return 1
 
     if tokens.length() != originalLength:
         return 2
 
-    if recursiveParser.getError() == null:
+    if result.getValue() != null:
         return 3
 
-    if recursiveParser.getResult() != null:
+    if result.hasError():
         return 4
-
-    val error: pointer<Diagnostic> = recursiveParser.getError()
-
-    if error == null || !error.isInternalError():
-        return 5
-
-    if error.code != Diagnostic.CANNOT_CONSTRUCT_AST:
-        return 6
-
-    if !String.streq(error.message, Diagnostic.CANNOT_CONSTRUCT_AST_MSG):
-        return 7
 
     return 0
 }

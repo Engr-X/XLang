@@ -31,23 +31,22 @@ val TEST_GROUP: pointer<TestGroup> = genTest()
 fun genTest() -> pointer<TestGroup>
 {
     val result: pointer<TestGroup> = new TestGroup("xlang.util.HashSet")
-    val basicTC: pointer<TestCase> = new TestCase("basic", basicTest)
+    val containsTC: pointer<TestCase> = new TestCase("contains", containsFunctionTest)
+    val addIfAbsentTC: pointer<TestCase> =
+        new TestCase("addIfAbsent", addIfAbsentFunctionTest)
+    val addTC: pointer<TestCase> = new TestCase("add", chainAddTest)
     val removeTC: pointer<TestCase> = new TestCase("remove", removeTest)
-    val toArrayTC: pointer<TestCase> = new TestCase("toArray", toArrayTest)
-    val chainAddTC: pointer<TestCase> = new TestCase("chainAdd", chainAddTest)
     val intersectTC: pointer<TestCase> = new TestCase("intersect", intersectTest)
+    val getTC: pointer<TestCase> = new TestCase("get", getFunctionTest)
+    val toArrayTC: pointer<TestCase> = new TestCase("toArray", toArrayTest)
 
-    val basicUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, basicTC, null)
-    val removeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, removeTC, null)
-    val toArrayUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, toArrayTC, null)
-    val chainAddUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, chainAddTC, null)
-    val intersectUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, intersectTC, null)
-
-    result.addTestUnion(basicUnion)
-    result.addTestUnion(removeUnion)
-    result.addTestUnion(toArrayUnion)
-    result.addTestUnion(chainAddUnion)
-    result.addTestUnion(intersectUnion)
+    result.addTestUnion(new TestUnion(TestCase.TYPE, containsTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, addIfAbsentTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, addTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, removeTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, intersectTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, getTC, null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, toArrayTC, null))
 
     return result
 }
@@ -67,6 +66,100 @@ private fun intHash(value: pointer<*>) -> int
         return 0
 
     return (value as pointer<int>).deref
+}
+
+
+private fun containsFunctionTest() -> int
+{
+    val set: pointer<HashSet> = new HashSet(sizeof(int), intEq, intHash)
+    val valuesSpace: blob[sizeof(int) * 4]
+    val values: pointer<int> = valuesSpace as pointer<int>
+    values[0] = 1
+    values[1] = 2
+    values[2] = -1
+    values[3] = 99
+
+    if set.contains(null) || set.contains(values):
+        return 1
+
+    set.add(values)
+    set.add(values + 1)
+    set.add(values + 2)
+
+    if !set.contains(values) || !set.contains(values + 1) ||
+        !set.contains(values + 2):
+        return 2
+
+    if set.contains(values + 3):
+        return 3
+
+    return 0
+}
+
+
+private fun addIfAbsentFunctionTest() -> int
+{
+    val set: pointer<HashSet> =
+        new HashSet(sizeof(int), 2, 0.75, intEq, intHash)
+    val valuesSpace: blob[sizeof(int) * 5]
+    val values: pointer<int> = valuesSpace as pointer<int>
+
+    for (var i: int = 0; i < 5; i++):
+        values[i] = i - 2
+
+    if set.addIfAbsent(null):
+        return 1
+
+    for (var i: int = 0; i < 5; i++):
+    {
+        if !set.addIfAbsent(values + i):
+            return i + 2
+    }
+
+    if set.length != 5:
+        return 7
+
+    for (var i: int = 0; i < 5; i++):
+    {
+        if !set.contains(values + i):
+            return i + 8
+    }
+
+    if set.addIfAbsent(values + 2) || set.length != 5:
+        return 13
+
+    return 0
+}
+
+
+private fun getFunctionTest() -> int
+{
+    val set: pointer<HashSet> = new HashSet(sizeof(int), intEq, intHash)
+    val valuesSpace: blob[sizeof(int) * 4]
+    val values: pointer<int> = valuesSpace as pointer<int>
+    values[0] = 0
+    values[1] = 1
+    values[2] = 2
+    values[3] = 3
+
+    if set.get(-1) != null || set.get(0) != null:
+        return 1
+
+    for (var i: int = 0; i < 4; i++):
+        set.add(values + i)
+
+    for (var i: int = 0; i < 4; i++):
+    {
+        val value: pointer<int> = set.get(i) as pointer<int>
+
+        if value == null || value.deref != i:
+            return i + 2
+    }
+
+    if set.get(set.length) != null:
+        return 6
+
+    return 0
 }
 
 

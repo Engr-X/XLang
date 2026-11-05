@@ -48,6 +48,7 @@ set(XLANG_TEST_LIBS
 )
 
 collect_xlang_sources(XLANG_TEST_SOURCES "${XLANG_TEST_SOURCE_DIR}")
+
 get_property(XLANG_COMPILER_OBJS GLOBAL PROPERTY GP_XLANG_COMPILER_OBJS)
 get_property(XLANG_C_OBJS GLOBAL PROPERTY GP_XLANG_C_OBJS)
 
@@ -90,7 +91,13 @@ if (XLANG_TEST_SRCS)
             -lib ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS}
             -d ${XLANG_TEST_OBJ_ROOT}
 
-        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} cjson tiny-regex ${XLANG_TEST_SOURCES} ${XLANG}
+        DEPENDS
+            ${XLANG_COMPILER_OBJS}
+            ${XLANG_C_OBJS}
+            cjson
+            tiny-regex
+            ${XLANG_TEST_SOURCES}
+            ${XLANG}
 
         WORKING_DIRECTORY ${XLANG_TEST_SOURCE_DIR}
 

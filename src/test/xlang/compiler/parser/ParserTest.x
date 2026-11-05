@@ -62,6 +62,7 @@ import xlang.compiler.parser.statement.WhileStatement
 import xlang.compiler.parser.stmtexpr.Block
 import xlang.lexer.Token
 import xlang.lexer.TokenList
+import xlang.parser.ParserResult
 import xlang.util.ArrayList
 import xlang.util.HashSet
 import xlang.util.IO
@@ -78,6 +79,35 @@ private var sourceProgramIndex: int = 0
 val TEST_GROUP: pointer<TestGroup> = genTest()
 
 
+private fun parseValue(
+    parser: pointer<*>,
+    tokens: pointer<TokenList>
+) -> pointer<*>
+{
+    val parseTokens: pointer<TokenList> =
+        tokens.subToken(0, tokens.length())
+
+    if parseTokens == null:
+        return null
+
+    val result: pointer<ParserResult> =
+        xlang.parser.ParserTestAdapter.parseForTest(parser, parseTokens, 0)
+
+    if result == null || result.hasError():
+        return null
+
+    val consumed: int = result.getConsumed()
+
+    if consumed < 0 || consumed > tokens.length():
+        return null
+
+    if consumed > 0:
+        tokens.remove(0, consumed)
+
+    return result.getValue()
+}
+
+
 fun genTest() -> pointer<TestGroup>
 {
     val result: pointer<TestGroup> = new TestGroup("xlang.compiler.parser.Parser")
@@ -89,46 +119,8 @@ fun genTest() -> pointer<TestGroup>
         new TestCase("namespaceImports", namespaceImportsTest)
     val selectiveImportsTC: pointer<TestCase> =
         new TestCase("selectiveImports", selectiveImportsTest)
-    val focusedAllSourceProgramsTG: pointer<TestGroup> = genAllSourceProgramsTestGroup()
-    val focusedCompoundOperatorExpressionTC: pointer<TestCase> =
-        new TestCase("compoundOperatorExpression", compoundOperatorExpressionTest)
-    val annotationSeparatedValuesUnion: pointer<TestUnion> =
-        new TestUnion(TestCase.TYPE, annotationSeparatedValuesTC, null)
-    val preprocessSeparatedValuesUnion: pointer<TestUnion> =
-        new TestUnion(TestCase.TYPE, preprocessSeparatedValuesTC, null)
-    val namespaceImportsUnion: pointer<TestUnion> =
-        new TestUnion(TestCase.TYPE, namespaceImportsTC, null)
-    val selectiveImportsUnion: pointer<TestUnion> =
-        new TestUnion(TestCase.TYPE, selectiveImportsTC, null)
-    val focusedAllSourceProgramsUnion: pointer<TestUnion> =
-        new TestUnion(TestGroup.TYPE, null, focusedAllSourceProgramsTG)
-    val focusedCompoundOperatorExpressionUnion: pointer<TestUnion> =
-        new TestUnion(TestCase.TYPE, focusedCompoundOperatorExpressionTC, null)
-
-    result.addTestUnion(annotationSeparatedValuesUnion)
-    result.addTestUnion(preprocessSeparatedValuesUnion)
-    result.addTestUnion(namespaceImportsUnion)
-    result.addTestUnion(selectiveImportsUnion)
-    result.addTestUnion(focusedCompoundOperatorExpressionUnion)
-    result.addTestUnion(focusedAllSourceProgramsUnion)
-    return result
-
     val atomParserTC: pointer<TestCase> = new TestCase("atomParser", atomParserTest)
-    val functionCallExpressionTC: pointer<TestCase> = new TestCase("functionCallExpression", functionCallExpressionTest)
-    val newExpressionTC: pointer<TestCase> = new TestCase("newExpression", newExpressionTest)
-    val atomExpressionTC: pointer<TestCase> = new TestCase("atomExpression", atomExpressionTest)
-    val blockExpressionTC: pointer<TestCase> = new TestCase("blockExpression", blockExpressionTest)
-    val ifElseExpressionTC: pointer<TestCase> = new TestCase("ifElseExpression", ifElseExpressionTest)
-    val parenthesizedExpressionTC: pointer<TestCase> = new TestCase("parenthesizedExpression", parenthesizedExpressionTest)
-    val prefixExpressionTC: pointer<TestCase> = new TestCase("prefixExpression", prefixExpressionTest)
-    val indexAccessExpressionTC: pointer<TestCase> = new TestCase("indexAccessExpression", indexAccessExpressionTest)
-    val methodCallExpressionTC: pointer<TestCase> = new TestCase("methodCallExpression", methodCallExpressionTest)
-    val fieldAccessExpressionTC: pointer<TestCase> = new TestCase("fieldAccessExpression", fieldAccessExpressionTest)
-    val postfixExpressionTC: pointer<TestCase> = new TestCase("postfixExpression", postfixExpressionTest)
-    val typeCastExpressionTC: pointer<TestCase> = new TestCase("typeCastExpression", typeCastExpressionTest)
-    val infixExpressionTC: pointer<TestCase> = new TestCase("infixExpression", infixExpressionTest)
-    val compoundOperatorExpressionTC: pointer<TestCase> = new TestCase("compoundOperatorExpression", compoundOperatorExpressionTest)
-    val mixedExpressionTC: pointer<TestCase> = new TestCase("mixedExpression", mixedExpressionTest)
+    val parseExpressionTG: pointer<TestGroup> = genParseExpressionTestGroup()
     val functionArrowEqualExpressionTC: pointer<TestCase> = new TestCase("functionArrowEqualExpression", functionArrowEqualExpressionTest)
     val functionArrowColonExpressionTC: pointer<TestCase> = new TestCase("functionArrowColonExpression", functionArrowColonExpressionTest)
     val functionArrowBlockTC: pointer<TestCase> = new TestCase("functionArrowBlock", functionArrowBlockTest)
@@ -137,22 +129,17 @@ fun genTest() -> pointer<TestGroup>
     val structTC: pointer<TestCase> = new TestCase("struct", structTest)
     val allSourceProgramsTG: pointer<TestGroup> = genAllSourceProgramsTestGroup()
     val statementTC: pointer<TestCase> = new TestCase("statement", statementTest)
+    val annotationSeparatedValuesUnion: pointer<TestUnion> =
+        new TestUnion(TestCase.TYPE, annotationSeparatedValuesTC, null)
+    val preprocessSeparatedValuesUnion: pointer<TestUnion> =
+        new TestUnion(TestCase.TYPE, preprocessSeparatedValuesTC, null)
+    val namespaceImportsUnion: pointer<TestUnion> =
+        new TestUnion(TestCase.TYPE, namespaceImportsTC, null)
+    val selectiveImportsUnion: pointer<TestUnion> =
+        new TestUnion(TestCase.TYPE, selectiveImportsTC, null)
     val atomParserUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, atomParserTC, null)
-    val functionCallExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, functionCallExpressionTC, null)
-    val newExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, newExpressionTC, null)
-    val atomExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, atomExpressionTC, null)
-    val blockExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, blockExpressionTC, null)
-    val ifElseExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, ifElseExpressionTC, null)
-    val parenthesizedExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, parenthesizedExpressionTC, null)
-    val prefixExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, prefixExpressionTC, null)
-    val indexAccessExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, indexAccessExpressionTC, null)
-    val methodCallExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, methodCallExpressionTC, null)
-    val fieldAccessExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, fieldAccessExpressionTC, null)
-    val postfixExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, postfixExpressionTC, null)
-    val typeCastExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, typeCastExpressionTC, null)
-    val infixExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, infixExpressionTC, null)
-    val compoundOperatorExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, compoundOperatorExpressionTC, null)
-    val mixedExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, mixedExpressionTC, null)
+    val parseExpressionUnion: pointer<TestUnion> =
+        new TestUnion(TestGroup.TYPE, null, parseExpressionTG)
     val functionArrowEqualExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, functionArrowEqualExpressionTC, null)
     val functionArrowColonExpressionUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, functionArrowColonExpressionTC, null)
     val functionArrowBlockUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, functionArrowBlockTC, null)
@@ -162,30 +149,59 @@ fun genTest() -> pointer<TestGroup>
     val allSourceProgramsUnion: pointer<TestUnion> = new TestUnion(TestGroup.TYPE, null, allSourceProgramsTG)
     val statementUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, statementTC, null)
 
+    result.addTestUnion(annotationSeparatedValuesUnion)
+    result.addTestUnion(preprocessSeparatedValuesUnion)
+    result.addTestUnion(namespaceImportsUnion)
+    result.addTestUnion(selectiveImportsUnion)
     result.addTestUnion(atomParserUnion)
-    result.addTestUnion(functionCallExpressionUnion)
-    result.addTestUnion(newExpressionUnion)
-    result.addTestUnion(atomExpressionUnion)
-    result.addTestUnion(blockExpressionUnion)
-    result.addTestUnion(ifElseExpressionUnion)
-    result.addTestUnion(parenthesizedExpressionUnion)
-    result.addTestUnion(prefixExpressionUnion)
-    result.addTestUnion(indexAccessExpressionUnion)
-    result.addTestUnion(methodCallExpressionUnion)
-    result.addTestUnion(fieldAccessExpressionUnion)
-    result.addTestUnion(postfixExpressionUnion)
-    result.addTestUnion(typeCastExpressionUnion)
-    result.addTestUnion(infixExpressionUnion)
-    result.addTestUnion(compoundOperatorExpressionUnion)
-    result.addTestUnion(mixedExpressionUnion)
+    result.addTestUnion(parseExpressionUnion)
     result.addTestUnion(functionArrowEqualExpressionUnion)
     result.addTestUnion(functionArrowColonExpressionUnion)
     result.addTestUnion(functionArrowBlockUnion)
     result.addTestUnion(functionVoidExpressionUnion)
     result.addTestUnion(functionVoidBlockUnion)
     result.addTestUnion(structUnion)
-    result.addTestUnion(allSourceProgramsUnion)
     result.addTestUnion(statementUnion)
+    result.addTestUnion(allSourceProgramsUnion)
+
+    return result
+}
+
+
+private fun genParseExpressionTestGroup() -> pointer<TestGroup>
+{
+    val result: pointer<TestGroup> = new TestGroup("parseExpression")
+
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("functionCallExpression", functionCallExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("newExpression", newExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("atomExpression", atomExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("blockExpression", blockExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("ifElseExpression", ifElseExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("parenthesizedExpression", parenthesizedExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("prefixExpression", prefixExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("indexAccessExpression", indexAccessExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("methodCallExpression", methodCallExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("fieldAccessExpression", fieldAccessExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("postfixExpression", postfixExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("typeCastExpression", typeCastExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("infixExpression", infixExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("compoundOperatorExpression", compoundOperatorExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE,
+        new TestCase("mixedExpression", mixedExpressionTest), null))
 
     return result
 }
@@ -195,7 +211,8 @@ private fun annotationValueCount(text: pointer<char>) -> int
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(text, diagnostics)
-    val annotation: pointer<Annotation> = Parser.parseAnnotation(tokens)
+    val annotation: pointer<Annotation> =
+        parseValue(Parser.ANNOTATION_PARSER, tokens) as pointer<Annotation>
 
     if annotation == null:
         return -1
@@ -216,7 +233,7 @@ private fun annotationSeparatedValuesTest() -> int
     if annotationValueCount("@Sample(0, 1)") != 2:
         return 2
 
-    if annotationValueCount("@Sample(0, 1,)") != 2:
+    if annotationValueCount("@Sample(0, 1,)") != -1:
         return 3
 
     return 0
@@ -227,7 +244,8 @@ private fun preprocessValueCount(text: pointer<char>) -> int
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    val setting: pointer<PreprocessSetting> = Parser.parsePreprocessSetting(tokens)
+    val setting: pointer<PreprocessSetting> =
+        parseValue(Parser.PREPROCESS_SETTING_PARSER, tokens) as pointer<PreprocessSetting>
 
     if setting == null:
         return -1
@@ -248,7 +266,7 @@ private fun preprocessSeparatedValuesTest() -> int
     if preprocessValueCount("#sample(0, 1)\n") != 2:
         return 2
 
-    if preprocessValueCount("#sample(0, 1,)\n") != 2:
+    if preprocessValueCount("#sample(0, 1,)\n") != -1:
         return 3
 
     return 0
@@ -259,7 +277,8 @@ private fun parseSelectiveImportsText(text: pointer<char>) -> pointer<SelectiveI
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    val selectiveImports: pointer<SelectiveImports> = Parser.parseSelectiveImports(tokens)
+    val selectiveImports: pointer<SelectiveImports> =
+        parseValue(Parser.SELECTIVE_IMPORTS_PARSER, tokens) as pointer<SelectiveImports>
 
     if selectiveImports == null:
     {
@@ -281,7 +300,8 @@ private fun parseImportedSymbolText(text: pointer<char>) -> pointer<ImportedSymb
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(text, diagnostics)
-    val importedSymbol: pointer<ImportedSymbol> = Parser.parseImportedSymbol(tokens)
+    val importedSymbol: pointer<ImportedSymbol> =
+        parseValue(Parser.IMPORTED_SYMBOL_PARSER, tokens) as pointer<ImportedSymbol>
 
     if importedSymbol == null:
         return null
@@ -297,7 +317,8 @@ private fun parseNamespaceImportText(text: pointer<char>) -> pointer<NamespaceIm
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    val namespaceImport: pointer<NamespaceImport> = Parser.parseNamespaceImport(tokens)
+    val namespaceImport: pointer<NamespaceImport> =
+        parseValue(Parser.NAMESPACE_IMPORT_PARSER, tokens) as pointer<NamespaceImport>
 
     if namespaceImport == null:
     {
@@ -519,7 +540,7 @@ private fun parseExpressionText(text: pointer<char>) -> pointer<Expression>
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(text, diagnostics)
-    return Parser.parseExpression(tokens)
+    return parseValue(Parser.EXPRESSION_PARSER, tokens) as pointer<Expression>
 }
 
 
@@ -527,7 +548,7 @@ private fun parseFullExpressionText(text: pointer<char>) -> pointer<Expression>
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    return Parser.parseExpression(tokens)
+    return parseValue(Parser.EXPRESSION_PARSER, tokens) as pointer<Expression>
 }
 
 
@@ -535,7 +556,7 @@ private fun parseStatementText(text: pointer<char>) -> pointer<Statement>
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    return Parser.parseStatement(tokens)
+    return parseValue(Parser.STATEMENT_PARSER, tokens) as pointer<Statement>
 }
 
 
@@ -543,7 +564,7 @@ private fun parseFunctionText(text: pointer<char>) -> pointer<Function>
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    return Parser.parseFunction(tokens)
+    return parseValue(Parser.FUNCTION_PARSER, tokens) as pointer<Function>
 }
 
 
@@ -551,7 +572,7 @@ private fun parseStructText(text: pointer<char>) -> pointer<Struct>
 {
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.tokenize(text, diagnostics)
-    return Parser.parseStruct(tokens)
+    return parseValue(Parser.STRUCT_PARSER, tokens) as pointer<Struct>
 }
 
 
@@ -683,20 +704,32 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
         return false
     }
 
-    if cachedTokens == null:
+    val diagnostics: pointer<Diagnostics> = new Diagnostics()
+    val tokens: pointer<TokenList> = if cachedTokens == null:
+            Tokenizer.tokenize(source, diagnostics)
+        else:
+            cachedTokens
+
+    if tokens == null:
     {
         printProgramFailure(path, "tokenizer result is null", null)
         return false
     }
 
-    val tokens: pointer<TokenList> = cachedTokens
-    val program: pointer<Program> = Parser.parseProgram(tokens)
-    val diagnostics: pointer<Diagnostics> = new Diagnostics()
+    // Program parsing may run after-functions that insert tokens. Parse and
+    // consume the same list so the returned consumed count uses the same
+    // index space as the list checked by this test.
+    val result: pointer<ParserResult> =
+        xlang.parser.ParserTestAdapter.parseForTest(
+            Parser.PROGRAM_PARSER,
+            tokens,
+            0)
 
-    if program == null:
+    if result == null || result.hasError():
     {
-        val token: pointer<Token> = if tokens.length() > 0:
-                tokens.get(0)
+        val failedAt: int = if result == null: 0 else: result.getConsumed()
+        val token: pointer<Token> = if failedAt >= 0 && failedAt < tokens.length():
+                tokens.get(failedAt)
             else:
                 null
 
@@ -706,10 +739,47 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
         return false
     }
 
+    val consumed: int = result.getConsumed()
+
+    if consumed < 0 || consumed > tokens.length():
+    {
+        printProgramFailure(path, "parseProgram returned invalid consumed count", null)
+        return false
+    }
+
+    if consumed > 0:
+        tokens.remove(0, consumed)
+
+    val program: pointer<Program> = result.getValue() as pointer<Program>
+
+    if program == null:
+    {
+        printProgramFailure(path, "parseProgram returned null value", currentToken(tokens))
+        return false
+    }
+
     if tokens.length() > 0 && !tokens.get(0).isEOF():
     {
         val token: pointer<Token> = tokens.get(0)
         printProgramFailure(path, "parseProgram left token", token)
+
+        val functionTokens: pointer<TokenList> = tokens.subToken(0, tokens.length())
+        val functionResult: pointer<ParserResult> =
+            xlang.parser.ParserTestAdapter.parseForTest(
+                Parser.FUNCTION_PARSER,
+                functionTokens,
+                0)
+
+        if functionResult != null:
+        {
+            val failedAt: int = functionResult.getConsumed()
+            val failedToken: pointer<Token> = if failedAt >= 0 && failedAt < functionTokens.length():
+                    functionTokens.get(failedAt)
+                else:
+                    null
+            printProgramFailure(path, "function parser stopped near", failedToken)
+        }
+
         printTokenDump("raw tokens: ", Tokenizer.pureTokenize(source, diagnostics))
         printTokenDump("normalized tokens: ", tokens)
         return false
@@ -1149,7 +1219,8 @@ private fun atomParserTest() -> int
     val diagnostics: pointer<Diagnostics> = new Diagnostics()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("true", diagnostics)
     val originalLength: int = tokens.length()
-    val atom: pointer<Atom> = Parser.parseAtom(tokens)
+    val atom: pointer<Atom> =
+        parseValue(Parser.ATOM_PARSER, tokens) as pointer<Atom>
 
     if atom == null:
         return 1
@@ -1289,10 +1360,10 @@ private fun statementVarDefineRuleTest() -> int
 {
     val statement: pointer<Statement> = parseStatementText("var x = 1;")
 
-    if statement == null || statement.getKind() != Statement.VARIABLE_DEFINE_TYPE:
+    if statement == null || statement.getKind() != Statement.VARIABLE_DEFINES_TYPE:
         return 1
 
-    val root: pointer<VariableDefine> = statement.getRoot() as pointer<VariableDefine>
+    val root: pointer<VariableDefines> = statement.getRoot() as pointer<VariableDefines>
 
     if root == null || !root.canModified():
         return 2
@@ -1313,10 +1384,10 @@ private fun statementValDefineRuleTest() -> int
 {
     val statement: pointer<Statement> = parseStatementText("val y: int = 2;")
 
-    if statement == null || statement.getKind() != Statement.VARIABLE_DEFINE_TYPE:
+    if statement == null || statement.getKind() != Statement.VARIABLE_DEFINES_TYPE:
         return 1
 
-    val root: pointer<VariableDefine> = statement.getRoot() as pointer<VariableDefine>
+    val root: pointer<VariableDefines> = statement.getRoot() as pointer<VariableDefines>
 
     if root == null || root.canModified():
         return 2
@@ -1494,7 +1565,7 @@ private fun statementLoopRuleTest() -> int
 
 private fun statementForRuleTest() -> int
 {
-    val stmtBody: pointer<Statement> = parseStatementText("for (var i = 0; i < 10; i++;): a = i")
+    val stmtBody: pointer<Statement> = parseStatementText("for (var i = 0; i < 10; i++): a = i")
 
     if stmtBody == null || stmtBody.getKind() != Statement.FOR_TYPE:
         return 1
@@ -1517,7 +1588,7 @@ private fun statementForRuleTest() -> int
     if stmtBodyStatement == null || stmtBodyStatement.getKind() != Statement.EXPRESSION_TYPE:
         return 5
 
-    val blockElse: pointer<Statement> = parseStatementText("for (;;;): {a = 1} else: {a = 2}")
+    val blockElse: pointer<Statement> = parseStatementText("for (;;): {a = 1} else: {a = 2}")
 
     if blockElse == null || blockElse.getKind() != Statement.FOR_TYPE:
         return 6
@@ -1545,7 +1616,7 @@ private fun statementForRuleTest() -> int
 
 private fun statementForGetAllTokensTest() -> int
 {
-    val statement: pointer<Statement> = parseStatementText("for (var i = 0; cond; i++;): {a = i} else: {a = 0}")
+    val statement: pointer<Statement> = parseStatementText("for (var i = 0; cond; i++): {a = i} else: {a = 0}")
 
     if statement == null || statement.getKind() != Statement.FOR_TYPE:
         return 1
@@ -1555,7 +1626,7 @@ private fun statementForGetAllTokensTest() -> int
     if tokens == null:
         return 2
 
-    if tokens.length != 26:
+    if tokens.length != 25:
         return 2
 
     if !tokenTextAt(tokens, 0, "for") || !tokenTextAt(tokens, 1, "(") || !tokenTextAt(tokens, 2, "var") || !tokenTextAt(tokens, 3, "i"):
@@ -1567,16 +1638,16 @@ private fun statementForGetAllTokensTest() -> int
     if !tokenTextAt(tokens, 7, "cond") || !tokenTextAt(tokens, 8, ";"):
         return 5
 
-    if !tokenTextAt(tokens, 9, "i") || !tokenTextAt(tokens, 10, "++") || !tokenTextAt(tokens, 11, ";") || !tokenTextAt(tokens, 12, ")") || !tokenTextAt(tokens, 13, ":"):
+    if !tokenTextAt(tokens, 9, "i") || !tokenTextAt(tokens, 10, "++") || !tokenTextAt(tokens, 11, ")") || !tokenTextAt(tokens, 12, ":"):
         return 6
 
-    if !tokenTextAt(tokens, 14, "{") || !tokenTextAt(tokens, 15, "a") || !tokenTextAt(tokens, 16, "=") || !tokenTextAt(tokens, 17, "i") || !tokenTextAt(tokens, 18, "}"):
+    if !tokenTextAt(tokens, 13, "{") || !tokenTextAt(tokens, 14, "a") || !tokenTextAt(tokens, 15, "=") || !tokenTextAt(tokens, 16, "i") || !tokenTextAt(tokens, 17, "}"):
         return 7
 
-    if !tokenTextAt(tokens, 19, "else") || !tokenTextAt(tokens, 20, ":") || !tokenTextAt(tokens, 21, "{") || !tokenTextAt(tokens, 22, "a"):
+    if !tokenTextAt(tokens, 18, "else") || !tokenTextAt(tokens, 19, ":") || !tokenTextAt(tokens, 20, "{") || !tokenTextAt(tokens, 21, "a"):
         return 8
 
-    if !tokenTextAt(tokens, 23, "=") || !tokenTextAt(tokens, 24, "0") || !tokenTextAt(tokens, 25, "}"):
+    if !tokenTextAt(tokens, 22, "=") || !tokenTextAt(tokens, 23, "0") || !tokenTextAt(tokens, 24, "}"):
         return 9
 
     return 0
@@ -1842,7 +1913,7 @@ private fun blockExpressionTest() -> int
     val defineStatement: pointer<Statement> = statements.get(0) as pointer<Statement>
     val returnStatement: pointer<Statement> = statements.get(1) as pointer<Statement>
 
-    if defineStatement == null || defineStatement.getKind() != Statement.VARIABLE_DEFINE_TYPE:
+    if defineStatement == null || defineStatement.getKind() != Statement.VARIABLE_DEFINES_TYPE:
         return 4
 
     if returnStatement == null || returnStatement.getKind() != Statement.RETURN_TYPE:
@@ -1879,10 +1950,10 @@ private fun blockExpressionTest() -> int
 
     val statement: pointer<Statement> = parseStatementText("val a = {val b = 10; return b * 2}")
 
-    if statement == null || statement.getKind() != Statement.VARIABLE_DEFINE_TYPE:
+    if statement == null || statement.getKind() != Statement.VARIABLE_DEFINES_TYPE:
         return 12
 
-    val defines: pointer<VariableDefine> = statement.getRoot() as pointer<VariableDefine>
+    val defines: pointer<VariableDefines> = statement.getRoot() as pointer<VariableDefines>
 
     if defines == null || defines.canModified():
         return 13

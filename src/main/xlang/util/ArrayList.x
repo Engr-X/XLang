@@ -148,6 +148,25 @@ struct ArrayList
     private var eqFun: (pointer<*>, pointer<*>) -> bool
 
 
+    private constructor(
+        tsize: int,
+        data: pointer<byte>,
+        length: int,
+        capacity: int,
+        loadFactor: double,
+        cmpFun: (pointer<*>, pointer<*>) -> int,
+        eqFun: (pointer<*>, pointer<*>) -> bool)
+    {
+        this.length = length
+        this.tsize = tsize
+        this.data = data
+        this.loadFactor = loadFactor
+        this.capacity = capacity
+        this.cmpFun = cmpFun
+        this.eqFun = eqFun
+    }
+
+
     /**
      * Creates an empty list using the default capacity and load factor.
      *
@@ -386,6 +405,17 @@ struct ArrayList
             index < this.length
     }
 
+
+    /**
+     * Checks whether this collection is empty.
+     *
+     * A collection is considered empty when its length equals zero.
+     *
+     * @return                  true if the collection contains no elements;
+     *                          false otherwise.
+     */
+    inline fun isEmpty() -> bool = this.length == 0
+
     
     /**
      * Appends an element to this list by copying {@code tsize} bytes from the given source.
@@ -447,6 +477,31 @@ struct ArrayList
     fun pushAll(items: pointer<ArrayList>) -> pointer<ArrayList>
     {
         this.addAll(this.length, items)
+        return this
+    }
+
+
+    /**
+     * Inserts all elements from the specified collection at the beginning of this list.
+     *
+     * The elements are inserted in their original order, and existing elements
+     * are shifted to make room for the new elements.
+     *
+     * The insertion is delegated to the addAll method.
+     *
+     * @param items             the collection of elements to insert.
+     *
+     * @return                  this ArrayList instance for method chaining.
+     *
+     * @note                    The behavior for null or empty collections depends
+     *                          on the implementation of addAll.
+     *
+     * @warning                 The behavior when inserting this list into itself
+     *                          depends on the implementation of addAll.
+     */
+    fun pushAllFront(items: pointer<ArrayList>) -> pointer<ArrayList>
+    {
+        this.addAll(0, items)
         return this
     }
 
@@ -589,8 +644,6 @@ struct ArrayList
         System.memcopy(this.data + index * this.tsize, items, length * this.tsize)
         this.length += length
     }
-
-
 
 
     /**
@@ -899,6 +952,45 @@ struct ArrayList
         return this
     }
 
+    /**
+     * Extracts a specified range of elements into a new ArrayList.
+     *
+     * The range starts at fromIndex (inclusive) and ends at toIndex
+     * (exclusive). The resulting list contains toIndex - fromIndex elements.
+     *
+     * The new ArrayList preserves the element size, load factor,
+     * comparison function, and equality function of this collection.
+     *
+     * The source data pointer is offset to the beginning of the specified
+     * range and passed directly to the ArrayList constructor.
+     *
+     * @param fromIndex         the inclusive starting index of the range.
+     * @param toIndex           the exclusive ending index of the range.
+     *
+     * @return                  a newly allocated ArrayList containing the specified
+     *                           range, or null if the indices are invalid.
+     *
+     * @note                    An empty range is permitted when fromIndex equals
+     *                          toIndex.
+     *
+     * @warning                 Whether the elements are copied or share the original
+     *                          storage depends on the ArrayList constructor.
+     */
+    fun extract(fromIndex: int, toIndex: int) -> pointer<ArrayList>
+    {
+        if fromIndex < 0 || toIndex < fromIndex || toIndex > this.length:
+            return null
+
+        return new ArrayList(
+            this.tsize,
+            this.data + fromIndex * this.tsize,
+            toIndex - fromIndex,
+            this.capacity - fromIndex,
+            this.loadFactor,
+            this.cmpFun,
+            this.eqFun)
+    }
+
 
     /**
      * Copies a half-open range into a new ArrayList.
@@ -941,6 +1033,39 @@ struct ArrayList
         }
 
         return sublist
+    }
+
+
+    /**
+     * Converts this collection into a new LinkedList.
+     *
+     * The returned LinkedList preserves the element size, comparison function,
+     * and equality function of this collection.
+     *
+     * All elements are inserted into the new list in their original order.
+     * Each element is passed to LinkedList.push for storage.
+     *
+     * @return                  a newly allocated LinkedList containing the elements
+     *                          of this collection.
+     *
+     * @note                    The returned list is independent of this collection,
+     *                          assuming LinkedList.push copies the element data.
+     *
+     * @warning                 The caller is responsible for managing the lifetime
+     *                          of the returned LinkedList.
+     */
+    fun toLinkedList() -> pointer<LinkedList>
+    {
+        val linkedList: pointer<LinkedList> = new LinkedList(this.cmpFun, this.eqFun)
+        linkedList.setEquality(this.eqFun)
+
+        for (var i = 0; i < this.length; i++):
+        {
+            val slot: pointer<byte> = this.data + i * this.tsize
+            linkedList.push(slot)
+        }
+
+        return linkedList
     }
 
 

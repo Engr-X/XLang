@@ -34,6 +34,59 @@ import xlang.util.string.StringBuilder
 
 
 /**
+ * Represents a temporary type container used during parsing.
+ *
+ * This structure serves as an intermediate representation of a parsed
+ * type before it is incorporated into the final parse result or AST.
+ *
+ * The underlying Type object is referenced directly without being
+ * copied or cloned.
+ */
+struct TempType
+{
+    /**
+     * Stores the type represented by this temporary container.
+     *
+     * The Type object is referenced directly without being copied.
+     */
+    private var type: pointer<Type>
+
+
+    /**
+     * Creates a temporary type container with the specified type.
+     *
+     * The provided Type pointer is stored directly without being
+     * copied or cloned.
+     *
+     * @param type              the type to store in this container.
+     *
+     * @warning                 The Type object is not cloned. The caller must
+     *                          ensure that it remains valid while this
+     *                          container uses it.
+     */
+    constructor(type: pointer<Type>):
+        this.type = type
+
+
+    /**
+     * Retrieves the type stored in this temporary container.
+     *
+     * Returns a direct reference to the underlying Type object
+     * without creating a copy.
+     *
+     * @return                  the Type object represented by this container.
+     *
+     * @note                    Changes made to the returned Type object directly
+     *                          affect the type stored in this container.
+     *
+     * @warning                 The returned Type object is not cloned. Callers
+     *                          must not release or invalidate it while this
+     *                          container uses it.
+     */
+    fun toType() -> pointer<Type> = this.type
+}
+
+/**
  * Wraps one concrete type representation.
  *
  * Type is the public type node used by parser and semantic-facing structures.
