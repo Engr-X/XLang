@@ -62,6 +62,8 @@ fun main()
         return
     }
 
+    val rawTokenCount: int = rawTokens.length()
+
     // LinkedList-backed TokenList currently has O(n) indexed access. Keep the
     // expensive normalization pass to one repetition so this executable also
     // remains useful while that implementation is being developed.
@@ -114,7 +116,7 @@ fun main()
     val linkedScanElapsed: int = (nowMs() - linkedScanStart) as int
 
     IO.println("source: src/main/xlang/compiler/parser/Parser.x")
-    printNumber("raw token count: ", rawTokens.length())
+    printNumber("raw token count: ", rawTokenCount)
     printNumber("normalized token count: ", tokens.length())
     printNumber("pure tokenize 3 runs ms: ", pureTokenizeElapsed)
     printNumber(

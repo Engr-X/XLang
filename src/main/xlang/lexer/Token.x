@@ -431,6 +431,10 @@ struct TokenList
         this.tokens.add(index, token)
 
 
+    fun add(node: pointer<LinkedListNode>, token: pointer<Token>):
+        this.tokens.add(node, token)
+
+
     /**
      * Inserts all elements from the specified list at the given index.
      *
@@ -463,6 +467,21 @@ struct TokenList
      * @return                  the number of stored tokens
      */
     fun length() -> int = this.tokens.length
+
+
+    /**
+     * Retrieves the head node of the internal token list.
+     *
+     * Returns a direct reference to the first LinkedListNode
+     * without creating a copy.
+     *
+     * @return                  the head node of the token list,
+     *                          or null if the list is empty.
+     *
+     * @note                    The returned node belongs to the internal LinkedList.
+     *                          Structural modifications may invalidate the node.
+     */
+    fun getHead() -> pointer<LinkedListNode> = this.tokens.getHead()
 
 
     /**
@@ -573,6 +592,25 @@ struct TokenList
             current = next
         }
     }
+
+
+    /**
+     * Removes the specified node from the internal token list.
+     *
+     * The removal is delegated directly to LinkedList.remove.
+     * Other nodes retain their relative order.
+     *
+     * @param node              the linked list node to remove.
+     *
+     * @note                    The behavior for null or invalid nodes depends
+     *                          on the implementation of LinkedList.remove.
+     *
+     * @warning                 The removed node may become invalid after removal.
+     *                          Callers must not access it unless its lifetime
+     *                          is explicitly guaranteed by LinkedList.
+     */
+    fun remove(node: pointer<LinkedListNode>):
+        this.tokens.remove(node)
 
 
     /**
