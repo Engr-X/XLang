@@ -50,6 +50,13 @@ struct Parser
     static inline fun fromPratt(host: pointer<PrattParser>) -> pointer<Parser> =
         new Parser(PRATT_KIND, host)
 
+    
+    static inline fun createPratt(
+        id: int,
+        starterRules: pointer<ParserRule>,
+        continuationRules: pointer<ParserRule>) -> pointer<Parser> =
+        new Parser(PRATT_KIND, new PrattParser(id, starterRules, continuationRules))
+
 
     static val PROCEDURAL_KIND: int = 0
 

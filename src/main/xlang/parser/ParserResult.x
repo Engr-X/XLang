@@ -26,6 +26,7 @@ package xlang.parser
 import xlang.Diagnostic
 import xlang.Diagnostics
 import xlang.lexer.Token
+import xlang.util.LinkedListNode
 import xlang.util.ArrayList
 
 
@@ -152,11 +153,10 @@ struct ParserResult
      */
     private var tokens: pointer<ArrayList>
 
-
-    /**
-     * Diagnostics produced while parsing.
-     */
+    // Diagnostics produced while parsing.
     private var diagnostics: pointer<Diagnostics>
+
+    private var endToken: pointer<LinkedListNode>
 
 
     /**
@@ -169,10 +169,11 @@ struct ParserResult
      * @param consumed           the number of input tokens consumed to produce the result
      * @param value             a pointer to the parse result value
      */
-    constructor(kind: int, consumed: int, value: pointer<*>)
+    constructor(kind: int, consumed: int, /*endToken: pointer<LinkedListNode>,*/ value: pointer<*>)
     {
         this.kind = kind
         this.consumed = consumed
+        // this.endToken = endToken
         this.value = value
         this.tokens = new ArrayList(sizeof(Token))
         this.diagnostics = new Diagnostics()
