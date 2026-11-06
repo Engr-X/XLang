@@ -101,6 +101,8 @@ import qualified Util.FileHelper as FileHelper
     'nimplies'          { t@(Lex.Ident "nimplies" _) }
     '&&'                { t@(Lex.Symbol Lex.LogicalAnd _)}
     '!&&'                { t@(Lex.Symbol Lex.LogicalNand _)}
+    '^^'                { t@(Lex.Symbol Lex.LogicalXor _)}
+    '!^'                { t@(Lex.Symbol Lex.LogicalXnor _)}
     '||'                { t@(Lex.Symbol Lex.LogicalOr _)}
     '!||'                { t@(Lex.Symbol Lex.LogicalNor _)}
     '='                 { t@(Lex.Symbol Lex.Assign _) }
@@ -153,6 +155,9 @@ import qualified Util.FileHelper as FileHelper
 
 -- 16: logical-or
 %left '||' '!||'
+
+-- logical-xor
+%left '^^' '!^'
 
 -- 15: logical-and
 %left '&&' '!&&'

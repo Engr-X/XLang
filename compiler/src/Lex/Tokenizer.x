@@ -144,6 +144,8 @@ tokens :-
 <0> ">>"                { eatSymbol BitRShift }
 <0> "<<"                { eatSymbol BitLShift }
 <0> "||"                { eatSymbol LogicalOr }
+<0> "^^"                { eatSymbol LogicalXor }
+<0> "!^"                { eatSymbol LogicalXnor }
 <0> "&&"                { eatSymbol LogicalAnd }
 
 <0> "**"                { eatSymbol Power }

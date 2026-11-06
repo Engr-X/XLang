@@ -40,6 +40,9 @@ data Symbol
     | LogicalOr        -- "||"
     | LogicalNor        -- "!||"
 
+    | LogicalXor       -- "^^"
+    | LogicalXnor      -- "!^"
+
     | LogicalAnd       -- "&&"
     | LogicalNand       -- "!&&"
     | LogicalNot       -- "!"

@@ -423,6 +423,9 @@ data Operator =
     -- 15: logical-and
     LogicalAnd | LogicalNand |
 
+    -- logical-xor
+    LogicalXor | LogicalXnor |
+
     -- 16: logical-or
     LogicalOr | LogicalNor |
 
@@ -451,7 +454,8 @@ operatorTextMap = Map.fromList [
 
     (BitRShift, ">>"), (BitLShift, "<<"), (BitURShift, ">>>"),
 
-    (LogicalOr, "|"), (LogicalNor, "!||"), (LogicalAnd, "&"), (LogicalNand, "!&&"),
+    (LogicalOr, "|"), (LogicalNor, "!||"), (LogicalXor, "^^"), (LogicalXnor, "!^"),
+    (LogicalAnd, "&"), (LogicalNand, "!&&"),
     (LogicalImply, "->"), (LogicalNimply, "!->"), (LogicalNot, "!"),
     (BitOr, "|"), (BitNor, "nor"), (BitXor, "^"), (BitXnor, "!^"), (BitAnd, "&"), (BitNand, "nand"), (BitInv, "~"),
 
@@ -1649,6 +1653,8 @@ instantiateTemplateCallsProgramWithDefs externalDefs (decls, stmts0) =
             Binary Equal _ _ _ -> Just Bool
             Binary NotEqual _ _ _ -> Just Bool
             Binary LogicalAnd _ _ _ -> Just Bool
+            Binary LogicalXor _ _ _ -> Just Bool
+            Binary LogicalXnor _ _ _ -> Just Bool
             Binary LogicalOr _ _ _ -> Just Bool
             Binary LogicalImply _ _ _ -> Just Bool
             Binary LogicalNimply _ _ _ -> Just Bool
@@ -2811,7 +2817,9 @@ desugarStructProgramWithExternalStructsAndStaticValues externalStructStmts exter
     let tops = flattenStmtGroups stmts0
         externalTops = flattenStmtGroups externalStructStmts
         structs = [s | s@Struct {} <- (externalTops ++ tops)]
-        metas = Map.unionWith mergeExternalLocalStructMeta (externalStaticStructMetas externalStaticStructValues) (Map.fromList (map toPair structs))
+        metas = Map.unionWith mergeExternalLocalStructMeta
+            (externalStaticStructMetas externalStaticStructValues)
+            (Map.fromListWith mergeStructMeta (map toPair structs))
         expandTop st = case st of
             Struct {} -> expandStructStmt metas st
             _ -> [st]

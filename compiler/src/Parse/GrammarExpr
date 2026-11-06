@@ -347,6 +347,12 @@ Expr :: { Expression }
     | Expr '!&&' Expr                             { Binary LogicalNand $1 $3 $2 }
     | Expr '!&&' error                            { Error [$2] (expectedExpression 1 "!&&") }
 
+    -- logical-xor / logical-xnor
+    | Expr '^^' Expr                              { Binary LogicalXor $1 $3 $2 }
+    | Expr '^^' error                             { Error [$2] (expectedExpression 1 "^^") }
+    | Expr '!^' Expr                              { Binary LogicalXnor $1 $3 $2 }
+    | Expr '!^' error                             { Error [$2] (expectedExpression 1 "!^") }
+
     -- 16: logical-or (reserved)
     | Expr '||' Expr                              { Binary LogicalOr $1 $3 $2 }
     | Expr '||' error                             { Error [$2] (expectedExpression 1 "||") }

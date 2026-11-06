@@ -336,11 +336,11 @@ binOpInfer = foldr Map.union Map.empty [loadCompare, loadShift, loadBitOp, loadL
                 rb = Map.findWithDefault (error ("missing integer rank for " ++ show b)) b basicTypeRank
             in if ra >= rb then a else b
 
-        -- | Build rules for logical operators (||, !||, &&, !&&, ->, !->).
+        -- | Build rules for logical operators (||, !||, ^^, !^, &&, !&&, ->, !->).
         --   Logical expressions always produce Bool.
         loadLogicalOp :: Map (Operator, Class, Class) Class
         loadLogicalOp =
-            let op = [LogicalOr, LogicalNor, LogicalAnd, LogicalNand, LogicalImply, LogicalNimply]
+            let op = [LogicalOr, LogicalNor, LogicalXor, LogicalXnor, LogicalAnd, LogicalNand, LogicalImply, LogicalNimply]
                 pairs = map (, Bool, Bool) op
             in Map.fromList $ map (, Bool) pairs
 

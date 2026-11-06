@@ -1076,6 +1076,18 @@ exprLowing (AST.Binary op e1 e2 _) = do
                             IRInstr (TAC.IBinary andAtom AST.BitAnd atom1' atom2')] ++ tailRev,
                             nAtom)
 
+                    AST.LogicalXor -> do
+                        nAtom <- newSubCVar resClass
+                        return (IRInstr (TAC.IBinary nAtom AST.BitXor atom1' atom2') : tailRev, nAtom)
+
+                    AST.LogicalXnor -> do
+                        xorAtom <- newSubCVar resClass
+                        nAtom <- newSubCVar resClass
+                        return ([
+                            IRInstr (TAC.IUnary nAtom AST.LogicalNot xorAtom),
+                            IRInstr (TAC.IBinary xorAtom AST.BitXor atom1' atom2')] ++ tailRev,
+                            nAtom)
+
                     AST.BitXnor -> do
                         xorAtom <- newSubCVar resClass
                         nAtom <- newSubCVar resClass

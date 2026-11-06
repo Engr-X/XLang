@@ -848,6 +848,57 @@ normalizeStructProgramTests = testGroup "Parse.SyntaxTree.normalizeStructProgram
         assertBool "sb.length should not remain as an unresolved qualified name" (not hasRawQualified)
         assertBool "sb.length should lower to a struct-field dereference" hasFieldLoad
     ,
+    testCase "merge methods from structs sharing a simple name" $ do
+        let tokStruct = mkIdD "struct"
+            tokRecursiveParser = mkIdD "RecursiveParser"
+            tokAddRule = mkIdD "addRule"
+            tokParse = mkIdD "parse"
+            tokMain = mkIdD "main"
+            tokParser = mkIdD "parser"
+
+            parserWithAddRule =
+                Struct [] [] (tokStruct, Variable "RecursiveParser" tokRecursiveParser)
+                    [ InstanceMethod [] [] (Void, [tokAddRule])
+                        (Variable "addRule" tokAddRule) [] (Multiple [])
+                    ]
+
+            parserWithoutAddRule =
+                Struct [] [] (tokStruct, Variable "RecursiveParser" tokRecursiveParser)
+                    [ InstanceMethod [] [] (Void, [tokParse])
+                        (Variable "parse" tokParse) [] (Multiple [])
+                    ]
+
+            mainStmt =
+                Function (Void, [tokMain]) (Variable "main" tokMain) []
+                    (Multiple
+                        [ DefVar ["parser"]
+                            (Just (Pointer (Class ["xlang", "parser", "RecursiveParser"] [])))
+                            Nothing
+                            [tokParser]
+                        , Expr (Call
+                            (Qualified ["parser", "addRule"] [tokParser, tokAddRule])
+                            [])
+                        ])
+
+            (_, outStmts) = normalizeProgram
+                ([], [parserWithAddRule, parserWithoutAddRule, mainStmt])
+            mainBody = case [b | Function _ (Variable "main" _) _ b <- outStmts] of
+                (b:_) -> b
+                _ -> Multiple []
+            flatMainExprs = flattenBlock (Just mainBody)
+            hasRewrittenCall =
+                any (\e -> case e of
+                    Call (Variable "RecursiveParser$addRule" _) _ -> True
+                    CallT (Variable "RecursiveParser$addRule" _) _ _ -> True
+                    _ -> False) flatMainExprs
+            hasRawQualified =
+                any (\e -> case e of
+                    Qualified ["parser", "addRule"] _ -> True
+                    _ -> False) flatMainExprs
+
+        assertBool "same-named structs should retain addRule metadata" hasRewrittenCall
+        assertBool "addRule call should not remain unresolved" (not hasRawQualified)
+    ,
     testCase "sizeof(struct) rewrites to struct storage size" $ do
         let tokStruct = mkIdD "struct"
             tokToken = mkIdD "Token"
