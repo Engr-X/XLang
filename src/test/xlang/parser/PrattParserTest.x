@@ -80,10 +80,11 @@ private fun parseTest() -> int
 private fun doParseEntryTest() -> int
 {
     val parser: pointer<Parser> =
-        xlang.parser.ParserAPI.fromPratt(parserWithBinary())
+        xlang.compiler.parser.Parser.fromPratt(parserWithBinary())
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
-    val result: pointer<ParserResult> = ParserAPI.parse(parser, tokens, 0)
+    val result: pointer<ParserResult> =
+        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
 
     if result == null || result.hasError() || result.getConsumed() != 3:
         return 1
@@ -164,7 +165,7 @@ private fun parserWithAtom() -> pointer<PrattParser>
 private fun parserWithBinary() -> pointer<PrattParser>
 {
     val root: pointer<Parser> =
-        xlang.parser.ParserAPI.fromPratt(null)
+        xlang.compiler.parser.Parser.fromPratt(null)
     val atom: pointer<ParserRule> = atomRule()
     val plus: pointer<InputRule> =
         continuationRule(root, Tokenizer.PLUS, 10)
@@ -177,7 +178,7 @@ private fun parserWithBinary() -> pointer<PrattParser>
         RuleExpression.fromSequence(new RuleSequence()))
     val parser: pointer<PrattParser> =
         new PrattParser(EXPR_ID, atom, continuation)
-    ParserAPI.setPrattHost(root, parser)
+    xlang.compiler.parser.Parser.setPrattHost(root, parser)
     return parser
 }
 

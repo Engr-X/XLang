@@ -426,7 +426,7 @@ private fun parseValue(
         return null
 
     val result: pointer<ParserResult> =
-        xlang.parser.ParserTestAdapter.parseForTest(parser, parseTokens, 0)
+        Parser.parse(parser, parseTokens, 0)
 
     if result == null || result.hasError():
         return null

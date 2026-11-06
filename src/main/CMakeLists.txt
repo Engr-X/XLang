@@ -250,7 +250,6 @@ set(XLANG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(XLANG_OBJ_ROOT "${CMAKE_BINARY_DIR}/objs/main")
 set(XLANG_LIBS_DIR "${CMAKE_BINARY_DIR}/3rd-party/libs")
 set(XLANG_LIBS
-    "${XLANG_LIBS_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}cjson${CMAKE_STATIC_LIBRARY_SUFFIX}"
     "${XLANG_LIBS_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}tiny-regex${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
 
@@ -384,7 +383,7 @@ if (XLANG_SRCS)
             "--include-runtime"
             --main=xlang.compiler.Xlang.main
 
-        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} cjson tiny-regex ${XLANG}
+        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} tiny-regex ${XLANG}
 
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 

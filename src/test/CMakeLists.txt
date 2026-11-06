@@ -43,7 +43,6 @@ set(XLANG_TEST_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(XLANG_TEST_OBJ_ROOT "${CMAKE_BINARY_DIR}/objs/test")
 set(XLANG_TEST_LIBS_DIR "${CMAKE_BINARY_DIR}/3rd-party/libs")
 set(XLANG_TEST_LIBS
-    "${XLANG_TEST_LIBS_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}cjson${CMAKE_STATIC_LIBRARY_SUFFIX}"
     "${XLANG_TEST_LIBS_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}tiny-regex${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
 
@@ -94,7 +93,6 @@ if (XLANG_TEST_SRCS)
         DEPENDS
             ${XLANG_COMPILER_OBJS}
             ${XLANG_C_OBJS}
-            cjson
             tiny-regex
             ${XLANG_TEST_SOURCES}
             ${XLANG}
@@ -140,7 +138,7 @@ if (XLANG_TEST_SRCS)
             "--include-runtime"
             "--main=${XLANG_TEST_MAIN}"
 
-        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} ${XLANG_TEST_OBJS} cjson tiny-regex ${XLANG}
+        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} ${XLANG_TEST_OBJS} tiny-regex ${XLANG}
 
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 
@@ -185,7 +183,7 @@ if (XLANG_TEST_SRCS)
             "--include-runtime"
             "--main=${XLANG_TOKENIZER_BENCHMARK_MAIN}"
 
-        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} ${XLANG_TEST_OBJS} cjson tiny-regex ${XLANG}
+        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} ${XLANG_TEST_OBJS} tiny-regex ${XLANG}
 
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 

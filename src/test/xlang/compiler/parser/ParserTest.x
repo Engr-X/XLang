@@ -91,7 +91,7 @@ private fun parseValue(
         return null
 
     val result: pointer<ParserResult> =
-        xlang.parser.ParserTestAdapter.parseForTest(parser, parseTokens, 0)
+        Parser.parse(parser, parseTokens, 0)
 
     if result == null || result.hasError():
         return null
@@ -720,10 +720,7 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
     // consume the same list so the returned consumed count uses the same
     // index space as the list checked by this test.
     val result: pointer<ParserResult> =
-        xlang.parser.ParserTestAdapter.parseForTest(
-            Parser.PROGRAM_PARSER,
-            tokens,
-            0)
+        Parser.parse(Parser.PROGRAM_PARSER, tokens, 0)
 
     if result == null || result.hasError():
     {
@@ -765,10 +762,7 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
 
         val functionTokens: pointer<TokenList> = tokens.subToken(0, tokens.length())
         val functionResult: pointer<ParserResult> =
-            xlang.parser.ParserTestAdapter.parseForTest(
-                Parser.FUNCTION_PARSER,
-                functionTokens,
-                0)
+            Parser.parse(Parser.FUNCTION_PARSER, functionTokens, 0)
 
         if functionResult != null:
         {

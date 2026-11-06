@@ -2116,6 +2116,24 @@ private inline fun makeProgram(results: pointer<ArrayList>) -> pointer<*>
         .setImportDeclarations(imports.toImportDeclarations())
 }
 
+fun parse(parser: pointer<*>, input: pointer<TokenList>, fromIndex: int) -> pointer<ParserResult>
+{
+    val parserPtr: pointer<Parser> = parser as pointer<Parser>
+    return parserPtr.parse(input, fromIndex)
+}
+
+fun getParserId(parser: pointer<*>) -> int
+{
+    val parserPtr: pointer<Parser> = parser as pointer<Parser>
+    return parserPtr.getId()
+}
+
+fun fromPratt(parser: pointer<PrattParser>) -> pointer<Parser> =
+    Parser.fromPratt(parser)
+
+fun setPrattHost(parser: pointer<Parser>, host: pointer<PrattParser>) -> pointer<Parser> =
+    parser.setPrattHost(host)
+
 private inline fun parse(input: pointer<TokenList>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
 {
     val result: pointer<ParserResult> = PROGRAM_PARSER.parse(input, 0)

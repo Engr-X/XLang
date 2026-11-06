@@ -136,13 +136,14 @@ private fun parseTypeValue(input: pointer<char>, expectedConsumed: int) -> point
     val parser: pointer<Parser> =
         xlang.compiler.parser.Parser.TYPE_PARSER
     val container: pointer<ParserResult> =
-        ParserAPI.parse(parser, tokens, 0)
+        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
 
     if container == null || container.hasError() ||
         container.getConsumed() != expectedConsumed:
         return null
 
-    if container == null || !container.isKind(ParserAPI.getId(parser)):
+    if container == null ||
+        !container.isKind(xlang.compiler.parser.Parser.getParserId(parser)):
         return null
 
     return container.getValue() as pointer<Type>
@@ -472,13 +473,14 @@ private fun parseTypeTokens(input: pointer<char>, expectedConsumed: int) -> poin
     val parser: pointer<Parser> =
         xlang.compiler.parser.Parser.TYPE_PARSER
     val container: pointer<ParserResult> =
-        ParserAPI.parse(parser, tokens, 0)
+        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
 
     if container == null || container.hasError() ||
         container.getConsumed() != expectedConsumed:
         return null
 
-    if container == null || !container.isKind(ParserAPI.getId(parser)):
+    if container == null ||
+        !container.isKind(xlang.compiler.parser.Parser.getParserId(parser)):
         return null
 
     val parsedType: pointer<Type> = container.getValue() as pointer<Type>
@@ -496,7 +498,7 @@ private fun pointerVoidTest() -> int
     val parser: pointer<Parser> =
         xlang.compiler.parser.Parser.TYPE_PARSER
     val container: pointer<ParserResult> =
-        ParserAPI.parse(parser, tokens, 0)
+        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
 
     if container == null || container.hasError():
         return 1
@@ -504,7 +506,8 @@ private fun pointerVoidTest() -> int
     if container.getConsumed() != 4:
         return 2
 
-    if container == null || !container.isKind(ParserAPI.getId(parser)):
+    if container == null ||
+        !container.isKind(xlang.compiler.parser.Parser.getParserId(parser)):
         return 3
 
     val parsedType: pointer<Type> = container.getValue() as pointer<Type>
@@ -732,7 +735,7 @@ private fun topLevelStarTest() -> int
     val parser: pointer<Parser> =
         xlang.compiler.parser.Parser.TYPE_PARSER
     val result: pointer<ParserResult> =
-        ParserAPI.parse(parser, tokens, 0)
+        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
 
     if result == null:
         return 1
