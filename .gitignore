@@ -1,5 +1,5 @@
-.agents/
-.vscode/
-build/
+/.agents/
+/.vscode/
+/build/
 comment_format.txt
 TODO.txt

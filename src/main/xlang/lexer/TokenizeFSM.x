@@ -25,6 +25,7 @@ package xlang.lexer
 
 import xlang.Diagnostic
 import xlang.System
+import xlang.util.string.Regex
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
 
@@ -66,6 +67,23 @@ struct TokenizeRule
     var pattern: pointer<char>
 
     /**
+     * Points to the compiled regular-expression pattern used by this rule.
+     *
+     * The compiled pattern is used to perform regular-expression matching
+     * without recompiling the original pattern string for each match.
+     *
+     * The compiled pattern is referenced directly and is not copied or cloned.
+     *
+     * @note                    The compiled pattern must correspond to the regular
+     *                          expression stored in the pattern field.
+     *
+     * @warning                 The compiled pattern must remain valid while this
+     *                          rule uses it and must be released appropriately
+     *                          when it is no longer needed.
+     */
+    var compiledPattern: pointer<*>
+
+    /**
      * Stores the action executed after this rule matches.
      *
      * The action receives the reusable LexInput describing the matched text
@@ -93,12 +111,19 @@ struct TokenizeRule
      * @warning                 A null or invalid pattern or action may cause undefined
      *                          behavior when the rule is evaluated.
      */
-    constructor(id: int, state: int, pattern: pointer<char>, action: (pointer<LexInput>, pointer<TokenizeFSM>) -> pointer<Token>)
+    constructor(
+        id: int,
+        state: int,
+        pattern: pointer<char>,
+        action: (pointer<LexInput>, pointer<TokenizeFSM>) -> pointer<Token>)
     {
         this.id = id
         this.state = state
         this.pattern = pattern
         this.action = action
+
+        this.compiledPattern = System.allocMemory(Regex.compileSize())
+        Regex.compile(pattern, this.compiledPattern)
     }
 }
 
@@ -360,7 +385,7 @@ struct TokenizeFSM
 
             if rule.state == this.state:
             {
-                val matchLength: int = String.strRegMatch(rule.pattern, currentPtr)
+                val matchLength: int = Regex.regexMatch(rule.compiledPattern, currentPtr)
 
                 if matchLength >= 0:
                 {

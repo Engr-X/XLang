@@ -28,6 +28,17 @@ private fun printNumber(label: pointer<char>, value: int)
 }
 
 
+private fun printMilliseconds(label: pointer<char>, value: int)
+{
+    val space: blob[64 * sizeof(char)]
+    val text: pointer<char> = space as pointer<char>
+    TypeConvert.intToString(text, value, 10)
+    IO.print(label)
+    IO.print(text)
+    IO.println(" ms")
+}
+
+
 fun main()
 {
     val path: pointer<char> =
@@ -64,17 +75,33 @@ fun main()
 
     val rawTokenCount: int = rawTokens.length()
 
-    // LinkedList-backed TokenList currently has O(n) indexed access. Keep the
-    // expensive normalization pass to one repetition so this executable also
-    // remains useful while that implementation is being developed.
-    val normalizeStart: long = nowMs()
-    val tokens: pointer<TokenList> = TokenNormalizer.normalize(rawTokens)
-    val normalizeElapsed: int = (nowMs() - normalizeStart) as int
+    val normalizeRepetitions: int = 3
+    var normalizeElapsed: int = 0
+    var tokens: pointer<TokenList> = null
 
-    if tokens == null:
+    for (var i: int = 0; i < normalizeRepetitions; i++):
     {
-        IO.println("normalize failed")
-        return
+        val normalizeInput: pointer<TokenList> =
+            if i == 0:
+                rawTokens
+            else:
+                Tokenizer.pureTokenize(source, new Diagnostics())
+
+        if normalizeInput == null:
+        {
+            IO.println("normalize input tokenize failed")
+            return
+        }
+
+        val normalizeStart: long = nowMs()
+        tokens = TokenNormalizer.normalize(normalizeInput)
+        normalizeElapsed += (nowMs() - normalizeStart) as int
+
+        if tokens == null:
+        {
+            IO.println("normalize failed")
+            return
+        }
     }
 
     val tokenArray: pointer<ArrayList> = tokens.toArray()
@@ -118,13 +145,16 @@ fun main()
     IO.println("source: src/main/xlang/compiler/parser/Parser.x")
     printNumber("raw token count: ", rawTokenCount)
     printNumber("normalized token count: ", tokens.length())
-    printNumber("pure tokenize 3 runs ms: ", pureTokenizeElapsed)
-    printNumber(
-        "pure tokenize average ms: ",
+    printMilliseconds("pure tokenize 3 runs: ", pureTokenizeElapsed)
+    printMilliseconds(
+        "pure tokenize average: ",
         pureTokenizeElapsed / tokenizeRepetitions)
-    printNumber("normalize 1 run ms: ", normalizeElapsed)
-    printNumber("linked-list build ms: ", linkedBuildElapsed)
-    printNumber("array indexed scan 100 runs ms: ", arrayScanElapsed)
-    printNumber("linked node scan 100 runs ms: ", linkedScanElapsed)
+    printMilliseconds("normalize 3 runs: ", normalizeElapsed)
+    printMilliseconds(
+        "normalize average: ",
+        normalizeElapsed / normalizeRepetitions)
+    printMilliseconds("linked-list build: ", linkedBuildElapsed)
+    printMilliseconds("array indexed scan 100 runs: ", arrayScanElapsed)
+    printMilliseconds("linked node scan 100 runs: ", linkedScanElapsed)
     printNumber("checksum: ", checksum)
 }

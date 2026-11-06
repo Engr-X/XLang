@@ -27,6 +27,7 @@
 #include "util.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,9 +36,20 @@
 
 
 #define REGEX_PATTERN_BUFFER_SIZE 4096
+#define COMPILED_REGEX_MAX_BRANCHES 16
+#define COMPILED_REGEX_MAGIC UINT32_C(0x584C5247)
 
 
 static x_char regex_pattern_buffer[REGEX_PATTERN_BUFFER_SIZE];
+
+
+typedef struct compiled_regex_t
+{
+    uint32_t magic;
+    size_t branch_count;
+    bool match_eof;
+    regex_t branches[COMPILED_REGEX_MAX_BRANCHES][RE_MAX_REGEXP_OBJECTS];
+} compiled_regex_t;
 
 
 static int regex_match_raw(const x_char* const pattern, const x_char* const str)
@@ -324,33 +336,188 @@ x_i32 regex_match(const x_char* const pattern, const x_char* const str)
 }
 
 
-x_i32 regex_match_compiled(struct regex_t* pattern, const x_char* const str)
+static bool compile_regex_branch(
+    compiled_regex_t* const compiled,
+    const x_char* const pattern,
+    const size_t begin,
+    const size_t end)
 {
-    int match_index;
-    int match_length;
+    if (compiled->branch_count >= COMPILED_REGEX_MAX_BRANCHES)
+        return false;
 
+    const size_t length = end - begin;
+    x_char* normalized = regex_pattern_buffer;
+    bool heap_allocated = false;
+
+    if (length + 2 > REGEX_PATTERN_BUFFER_SIZE)
+    {
+        normalized = malloc((length + 2) * sizeof(x_char));
+
+        if (normalized == NULL)
+            return false;
+
+        heap_allocated = true;
+    }
+
+    const size_t normalized_length =
+        copy_normalized_pattern_range(normalized, pattern, begin, end);
+
+    if (normalized[0] != '^')
+    {
+        memmove(
+            normalized + 1,
+            normalized,
+            (normalized_length + 1) * sizeof(x_char));
+        normalized[0] = '^';
+    }
+
+    regex_t* const branch = compiled->branches[compiled->branch_count];
+    memset(branch, 0, sizeof(compiled->branches[0]));
+    re_compile_into(normalized, branch);
+    compiled->branch_count++;
+
+    if (heap_allocated)
+        free(normalized);
+
+    return true;
+}
+
+
+static bool compile_regex_range(
+    compiled_regex_t* const compiled,
+    const x_char* const pattern,
+    size_t begin,
+    size_t end)
+{
+    while (is_wrapped_by_parentheses(pattern, begin, end))
+    {
+        begin++;
+        end--;
+    }
+
+    size_t branch_begin = begin;
+    int depth = 0;
+    bool escaped = false;
+    bool in_class = false;
+    bool has_branch = false;
+
+    for (size_t i = begin; i < end; i++)
+    {
+        const x_char ch = pattern[i];
+
+        if (escaped)
+        {
+            escaped = false;
+            continue;
+        }
+
+        if (ch == '\\')
+        {
+            escaped = true;
+            continue;
+        }
+
+        if (in_class)
+        {
+            if (ch == ']')
+                in_class = false;
+
+            continue;
+        }
+
+        if (ch == '[')
+        {
+            in_class = true;
+            continue;
+        }
+
+        if (ch == '(')
+        {
+            depth++;
+            continue;
+        }
+
+        if (ch == ')')
+        {
+            if (depth > 0)
+                depth--;
+
+            continue;
+        }
+
+        if (ch != '|' || depth != 0)
+            continue;
+
+        has_branch = true;
+
+        if (i > branch_begin &&
+            !compile_regex_range(compiled, pattern, branch_begin, i))
+            return false;
+
+        branch_begin = i + 1;
+    }
+
+    if (has_branch)
+    {
+        if (end > branch_begin)
+            return compile_regex_range(compiled, pattern, branch_begin, end);
+
+        return true;
+    }
+
+    if (end <= begin)
+        return false;
+
+    if (is_eof_pattern_range(pattern, begin, end))
+    {
+        compiled->match_eof = true;
+        return true;
+    }
+
+    return compile_regex_branch(compiled, pattern, begin, end);
+}
+
+
+x_i32 regex_match_compiled(void* pattern, const x_char* const str)
+{
     if (pattern == NULL || str == NULL)
         return -1;
 
-    match_index = re_matchp(pattern, str, &match_length);
+    compiled_regex_t* const compiled = pattern;
 
-    if (match_index != 0)
+    if (compiled->magic != COMPILED_REGEX_MAGIC)
         return -1;
 
-    return match_length;
+    int best_match_length =
+        compiled->match_eof && str[0] == '\0' ? 0 : -1;
+
+    for (size_t i = 0; i < compiled->branch_count; i++)
+    {
+        int match_length;
+        const int match_index =
+            re_matchp(compiled->branches[i], str, &match_length);
+
+        if (match_index == 0 && match_length > best_match_length)
+            best_match_length = match_length;
+    }
+
+    return best_match_length;
 }
 
 
 x_i32 regex_compile_size(void)
 {
-    return sizeof(regex_t) * RE_MAX_REGEXP_OBJECTS;
+    return (x_i32) sizeof(compiled_regex_t);
 }
 
 
-void regex_compile(const x_char* const pattern, struct regex_t* dest)
+void regex_compile(const x_char* const pattern, void* dest)
 {
     if (pattern == NULL || dest == NULL)
         return;
 
-    re_compile_into(pattern, dest);
+    compiled_regex_t* const compiled = dest;
+    memset(compiled, 0, sizeof(*compiled));
+    compiled->magic = COMPILED_REGEX_MAGIC;
+    compile_regex_range(compiled, pattern, 0, xchar_strlen(pattern));
 }

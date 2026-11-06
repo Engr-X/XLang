@@ -36,13 +36,13 @@
 x_i32 regex_match(const x_char* const pattern, const x_char* const str);
 
 
-x_i32 regex_match_compiled(struct regex_t* pattern, const x_char* const str);
+x_i32 regex_match_compiled(void* pattern, const x_char* const str);
 
 
 x_i32 regex_compile_size(void);
 
 
-void regex_compile(const x_char* const pattern, struct regex_t* dest);
+void regex_compile(const x_char* const pattern, void* dest);
 
 
 #endif
