@@ -80,7 +80,7 @@ val TEST_GROUP: pointer<TestGroup> = genTest()
 
 
 private fun parseValue(
-    parser: pointer<*>,
+    parser: pointer<xlang.parser.Parser>,
     tokens: pointer<TokenList>
 ) -> pointer<*>
 {
@@ -91,7 +91,7 @@ private fun parseValue(
         return null
 
     val result: pointer<ParserResult> =
-        Parser.parse(parser, parseTokens, 0)
+        parser.parse(parseTokens, 0)
 
     if result == null || result.hasError():
         return null
@@ -719,8 +719,9 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
     // Program parsing may run after-functions that insert tokens. Parse and
     // consume the same list so the returned consumed count uses the same
     // index space as the list checked by this test.
+    val programParser: pointer<xlang.parser.Parser> = Parser.PROGRAM_PARSER
     val result: pointer<ParserResult> =
-        Parser.parse(Parser.PROGRAM_PARSER, tokens, 0)
+        programParser.parse(tokens, 0)
 
     if result == null || result.hasError():
     {
@@ -761,8 +762,9 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
         printProgramFailure(path, "parseProgram left token", token)
 
         val functionTokens: pointer<TokenList> = tokens.subToken(0, tokens.length())
+        val functionParser: pointer<xlang.parser.Parser> = Parser.FUNCTION_PARSER
         val functionResult: pointer<ParserResult> =
-            Parser.parse(Parser.FUNCTION_PARSER, functionTokens, 0)
+            functionParser.parse(functionTokens, 0)
 
         if functionResult != null:
         {

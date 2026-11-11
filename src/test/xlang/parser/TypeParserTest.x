@@ -133,17 +133,17 @@ fun genTest() -> pointer<TestGroup>
 private fun parseTypeValue(input: pointer<char>, expectedConsumed: int) -> pointer<Type>
 {
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(input, new Diagnostics())
-    val parser: pointer<Parser> =
+    val parser: pointer<xlang.parser.Parser> =
         xlang.compiler.parser.Parser.TYPE_PARSER
     val container: pointer<ParserResult> =
-        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
+        parser.parse(tokens, 0)
 
     if container == null || container.hasError() ||
         container.getConsumed() != expectedConsumed:
         return null
 
     if container == null ||
-        !container.isKind(xlang.compiler.parser.Parser.getParserId(parser)):
+        !container.isKind(parser.getId()):
         return null
 
     return container.getValue() as pointer<Type>
@@ -470,17 +470,17 @@ private fun tokenTextAt(tokens: pointer<ArrayList>, index: int, text: pointer<ch
 private fun parseTypeTokens(input: pointer<char>, expectedConsumed: int) -> pointer<ArrayList>
 {
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize(input, new Diagnostics())
-    val parser: pointer<Parser> =
+    val parser: pointer<xlang.parser.Parser> =
         xlang.compiler.parser.Parser.TYPE_PARSER
     val container: pointer<ParserResult> =
-        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
+        parser.parse(tokens, 0)
 
     if container == null || container.hasError() ||
         container.getConsumed() != expectedConsumed:
         return null
 
     if container == null ||
-        !container.isKind(xlang.compiler.parser.Parser.getParserId(parser)):
+        !container.isKind(parser.getId()):
         return null
 
     val parsedType: pointer<Type> = container.getValue() as pointer<Type>
@@ -495,10 +495,10 @@ private fun parseTypeTokens(input: pointer<char>, expectedConsumed: int) -> poin
 private fun pointerVoidTest() -> int
 {
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("pointer<*>", new Diagnostics())
-    val parser: pointer<Parser> =
+    val parser: pointer<xlang.parser.Parser> =
         xlang.compiler.parser.Parser.TYPE_PARSER
     val container: pointer<ParserResult> =
-        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
+        parser.parse(tokens, 0)
 
     if container == null || container.hasError():
         return 1
@@ -507,7 +507,7 @@ private fun pointerVoidTest() -> int
         return 2
 
     if container == null ||
-        !container.isKind(xlang.compiler.parser.Parser.getParserId(parser)):
+        !container.isKind(parser.getId()):
         return 3
 
     val parsedType: pointer<Type> = container.getValue() as pointer<Type>
@@ -732,10 +732,10 @@ private fun mixedFunctionTest() -> int
 private fun topLevelStarTest() -> int
 {
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("*", new Diagnostics())
-    val parser: pointer<Parser> =
+    val parser: pointer<xlang.parser.Parser> =
         xlang.compiler.parser.Parser.TYPE_PARSER
     val result: pointer<ParserResult> =
-        xlang.compiler.parser.Parser.parse(parser, tokens, 0)
+        parser.parse(tokens, 0)
 
     if result == null:
         return 1

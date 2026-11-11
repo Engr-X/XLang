@@ -415,7 +415,7 @@ private fun arrayListSublistFunctionTest() -> int
 
 
 private fun parseValue(
-    parser: pointer<*>,
+    parser: pointer<xlang.parser.Parser>,
     tokens: pointer<TokenList>
 ) -> pointer<*>
 {
@@ -426,7 +426,7 @@ private fun parseValue(
         return null
 
     val result: pointer<ParserResult> =
-        Parser.parse(parser, parseTokens, 0)
+        parser.parse(parseTokens, 0)
 
     if result == null || result.hasError():
         return null
