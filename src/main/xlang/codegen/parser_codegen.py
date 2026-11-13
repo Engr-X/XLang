@@ -25,6 +25,7 @@ from codegen.util import (
 
 PARSER_RULES_TYPE: str = "compiler_parser_rules"
 RECURSIVE_PARSER: str = "recursively-down"
+PROCEDURAL_PARSER: str = "procedural"
 PRATT_PARSER: str = "pratt"
 FIRST_RULE_ID: int = 100
 
@@ -208,7 +209,7 @@ def getRuleClass(rule: JsonObject) -> str:
 def getParserType(rule: JsonObject) -> str:
     value = rule.get("parser", RECURSIVE_PARSER)
 
-    if value not in {RECURSIVE_PARSER, PRATT_PARSER}:
+    if value not in {RECURSIVE_PARSER, PROCEDURAL_PARSER, PRATT_PARSER}:
         raise ValueError(f"unsupported parser type {value!r} for {getRuleClass(rule)!r}")
 
     return value
@@ -995,6 +996,13 @@ def genParserDecls(rules: list[JsonObject], tabs: int) -> str:
                 f"{indent}        {getPrattRoleParserRuleName(rule, 'continuation')}))",
                 "",
             ])
+        elif getParserType(rule) == PROCEDURAL_PARSER:
+            lines.extend([
+                f"{indent}val {parser_name}: pointer<Parser> =",
+                f"{indent}    Parser.fromProcedural(",
+                f"{indent}        new ProceduralParser({parser_rule_name}))",
+                "",
+            ])
         else:
             lines.extend([
                 f"{indent}val {parser_name}: pointer<Parser> =",
@@ -1024,7 +1032,12 @@ def genParserGraphDecls(rules: list[JsonObject], tabs: int) -> str:
 
     for rule in rules:
         parser_name = getParserName(getRuleClass(rule))
-        factory = "fromPratt" if getParserType(rule) == PRATT_PARSER else "fromRecursive"
+        parser_type = getParserType(rule)
+        factory = (
+            "fromPratt" if parser_type == PRATT_PARSER else
+            "fromProcedural" if parser_type == PROCEDURAL_PARSER else
+            "fromRecursive"
+        )
         lines.append(
             f"{indent}val {parser_name}: pointer<Parser> = Parser.{factory}(null)"
         )
@@ -1273,6 +1286,10 @@ def genParserGraphInitialization(rules: list[JsonObject], tabs: int) -> str:
                 f"{body_indent}    {getPrattRoleParserRuleName(rule, 'starter')},",
                 f"{body_indent}    {getPrattRoleParserRuleName(rule, 'continuation')}))",
             ])
+        elif getParserType(rule) == PROCEDURAL_PARSER:
+            lines.append(
+                f"{body_indent}{parser_name}.setProceduralHost(new ProceduralParser({parser_rule_name}))"
+            )
         else:
             lines.append(
                 f"{body_indent}{parser_name}.setRecursiveHost(new RecursiveParser({parser_rule_name}))"
