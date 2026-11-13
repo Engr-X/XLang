@@ -84,7 +84,8 @@ private fun resultLifetimeTest() -> int
     val recursiveParser: pointer<RecursiveParser> =
         new RecursiveParser(rule)
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("true", new Diagnostics())
-    val result: pointer<ParserResult> = recursiveParser.parse(tokens, 0)
+    val result: pointer<ParserResult> =
+        recursiveParser.parse(tokens, tokens.getHead())
 
     if result == null || result.getConsumed() != 1:
         return 1
@@ -121,7 +122,8 @@ private fun constructFailureTest() -> int
         new RecursiveParser(rule)
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("true", new Diagnostics())
     val originalLength: int = tokens.length()
-    val result: pointer<ParserResult> = recursiveParser.parse(tokens, 0)
+    val result: pointer<ParserResult> =
+        recursiveParser.parse(tokens, tokens.getHead())
 
     if result == null || result.getConsumed() != 1:
         return 1

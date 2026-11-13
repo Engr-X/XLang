@@ -27,6 +27,7 @@ import xlang.parser.pratt.PrattParser
 import xlang.parser.recursive.ProceduralParser
 import xlang.parser.recursive.RecursiveParser
 import xlang.parser.rule.ParserRule
+import xlang.util.LinkedListNode
 
 
 struct Parser
@@ -77,24 +78,40 @@ struct Parser
     }
 
 
-    fun parse(tokens: pointer<TokenList>, fromIndex: int) -> pointer<ParserResult> =
+    fun parse(
+        tokens: pointer<TokenList>,
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<ParserResult> =
         if this.kind == RECURSIVE_KIND:
         {
             val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
-            parser.parse(tokens, fromIndex)
+            parser.parse(tokens, fromToken)
         }
         elif this.kind == PRATT_KIND:
         {
             val parser: pointer<PrattParser> = this.host as pointer<PrattParser>
-            parser.parse(tokens, fromIndex)
+            parser.parse(tokens, fromToken)
         }
         elif this.kind == PROCEDURAL_KIND:
         {
             val parser: pointer<ProceduralParser> = this.host as pointer<ProceduralParser>
-            parser.parse(tokens, fromIndex)
+            parser.parse(tokens, fromToken)
         }
         else:
             null
+
+
+    fun parse(
+        tokens: pointer<TokenList>,
+        fromIndex: int
+    ) -> pointer<ParserResult>
+    {
+        if tokens == null || fromIndex < 0 || fromIndex >= tokens.length():
+            return null
+
+        val tokenPtr: pointer<LinkedListNode> = tokens.getHead().forward(fromIndex)
+        return this.parse(tokens, tokenPtr)
+    }
 
 
     fun getId() -> int =

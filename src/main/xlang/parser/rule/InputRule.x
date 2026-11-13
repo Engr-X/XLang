@@ -29,6 +29,7 @@ import xlang.SourceLocation
 import xlang.lexer.TokenList
 import xlang.parser.ParserResult
 import xlang.util.ArrayList
+import xlang.util.LinkedListNode
 
 
 struct InputRule
@@ -152,12 +153,41 @@ struct InputRule
     fun getOperation() -> pointer<Operation> = this.operation
 
 
-    fun getResult(id: int, input: pointer<ArrayList>, consumed: int) -> pointer<ParserResult> =
-        new ParserResult(id, consumed, this.resultConstructor(input))
+    fun getResult(
+        id: int,
+        input: pointer<ArrayList>,
+        consumed: int,
+        endToken: pointer<LinkedListNode>
+    ) -> pointer<ParserResult> =
+        new ParserResult(
+            id,
+            consumed,
+            endToken,
+            this.resultConstructor(input))
 
 
-    fun after(token: pointer<TokenList>, index: int) -> pointer<TokenList> =
-        this.afterFun(token, index)
+    fun after(
+        tokens: pointer<TokenList>,
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<TokenList>
+    {
+        if tokens == null:
+            return tokens
+
+        var current: pointer<LinkedListNode> = tokens.getHead()
+        var index: int = 0
+
+        while current != null && current != fromToken:
+        {
+            current = current.next
+            index++
+        }
+
+        if fromToken != null && current == null:
+            return tokens
+
+        return this.afterFun(tokens, index)
+    }
 }
 
 
@@ -222,12 +252,14 @@ struct InputRules
     fun getResult(
         index: int,
         input: pointer<ArrayList>,
-        consumed: int
+        consumed: int,
+        endToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult>
     {
         if index < 0 || index >= this.rules.length:
         {
-            val result: pointer<ParserResult> = ParserResult.fromEmpty()
+            val result: pointer<ParserResult> =
+                ParserResult.fromEmpty(endToken)
             result.pushDiagnostic(Diagnostic.makeInternalError(
                 Diagnostic.CANNOT_CONSTRUCT_AST,
                 new ArrayList(sizeof(SourceLocation)),
@@ -237,21 +269,45 @@ struct InputRules
 
         val rule: pointer<InputRule> =
             this.rules.get(index) as pointer<InputRule>
-        return rule.getResult(this.id, input, consumed)
+        return rule.getResult(this.id, input, consumed, endToken)
     }
 
 
-    fun before(token: pointer<TokenList>, index: int) -> pointer<TokenList> =
-        this.beforeFun(token, index)
+    fun before(
+        tokens: pointer<TokenList>,
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<TokenList>
+    {
+        if tokens == null:
+            return tokens
+
+        var current: pointer<LinkedListNode> = tokens.getHead()
+        var index: int = 0
+
+        while current != null && current != fromToken:
+        {
+            current = current.next
+            index++
+        }
+
+        if fromToken != null && current == null:
+            return tokens
+
+        return this.beforeFun(tokens, index)
+    }
 
 
-    fun after(ruleIndex: int, token: pointer<TokenList>, index: int) -> pointer<TokenList>
+    fun after(
+        ruleIndex: int,
+        tokens: pointer<TokenList>,
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<TokenList>
     {
         if ruleIndex < 0 || ruleIndex >= this.rules.length:
-            return token
+            return tokens
 
         val rule: pointer<InputRule> =
             this.rules.get(ruleIndex) as pointer<InputRule>
-        return rule.after(token, index)
+        return rule.after(tokens, fromToken)
     }
 }

@@ -40,6 +40,7 @@ import xlang.parser.rule.RuleSequence
 import xlang.parser.rule.RuleExpression
 import xlang.util.ArrayList
 import xlang.util.HashSet
+import xlang.util.LinkedListNode
 import xlang.util.string.StringBuilder
 
 
@@ -104,36 +105,22 @@ struct RecursiveParser
     private fun parseOpticalAtom(
         rule: pointer<OptionalAtomRule>,
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult>
     {
         val parser: pointer<RecursiveParser> = this.clone()
-        val result: pointer<ParserResult> = parser.parse(rule.getRule(), tokens, fromIndex)
-        return if result.hasError(): ParserResult.fromEmpty() else: result
-    }
-
-
-    private fun parseLoopAtom(
-        rule: pointer<LoopAtomRule>,
-        tokens: pointer<TokenList>,
-        fromIndex: int
-    ) -> pointer<ParserResult>
-    {
-        val loopParser: pointer<Parser> = rule.getLoopParser()
-        val splitParser: pointer<Parser> = rule.getSplitByParser()
-        val allowTrailing: bool = rule.getAllowTrailing()
-
-        return Loop.parseLoop(
-            loopParser,
-            splitParser,
-            allowTrailing, tokens, fromIndex)
+        val result: pointer<ParserResult> = parser.parse(rule.getRule(), tokens, fromToken)
+        return if result == null || result.hasError():
+            ParserResult.fromEmpty(fromToken)
+        else:
+            result
     }
 
 
     private fun parseAtom(
         rule: pointer<RuleAtom>,
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult>
     {
         if rule != null:
@@ -142,19 +129,20 @@ struct RecursiveParser
             this.atoms.push(rule)
 
             if rule.isToken():
-                return ParserUtil.parseRegAtom(rule.getTokenRule(), tokens, fromIndex)
+                return ParserUtil.parseRegAtom(rule.getTokenRule(), tokens, fromToken)
 
             if rule.isRef():
-                return rule.getRefParser().parse(tokens, fromIndex)
+                return rule.getRefParser().parse(tokens, fromToken)
 
             if rule.isOptical():
-                return this.parseOpticalAtom(rule.getOpticalRule(), tokens, fromIndex)
+                return this.parseOpticalAtom(rule.getOpticalRule(), tokens, fromToken)
 
             if rule.isLoop():
-                return this.parseLoopAtom(rule.getLoopRule(), tokens, fromIndex)
+                return ParserUtil.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
         }
 
-        val result: pointer<ParserResult> = ParserResult.fromEmpty()
+        val result: pointer<ParserResult> =
+            ParserResult.fromEmpty(fromToken)
         result.pushDiagnostic(Diagnostic.makeError(
             Diagnostic.INVALID_PATTERN_ATOM,
             new ArrayList(sizeof(SourceLocation)),
@@ -163,22 +151,37 @@ struct RecursiveParser
     }
 
 
+    /**
+     * Parses one expression selected from a group of alternatives.
+     *
+     * Every alternative begins at the same fromToken. The first successful
+     * alternative is returned and its recorded atom path is appended to the
+     * path that existed before selection began. If every alternative fails,
+     * the failure with the greatest consumed-token count is returned.
+     *
+     * @param rule              the alternative expressions to try
+     * @param tokens            the token list that owns the parsed nodes
+     * @param fromToken         the first token node supplied to every alternative
+     *
+     * @return                  the first successful result, the longest failure,
+     *                          or an internal-error result when no alternative
+     *                          produces a result
+     */
     private fun parseSelect(
         rule: pointer<RuleSelect>,
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult>
     {
-        val results: pointer<ArrayList> = new ArrayList(sizeof(ParserResult))
         val atomsBackup: pointer<ArrayList> = this.atoms.clone()
+        var longest: pointer<ParserResult> = null
 
-        // select here
         for (var i: int = 0; i < rule.length(); i++):
         {
             this.atoms = new ArrayList(sizeof(RuleAtom))
 
             val result: pointer<ParserResult> =
-                this.parse(rule.get(i), tokens, fromIndex)
+                this.parse(rule.get(i), tokens, fromToken)
 
             if result == null:
                 continue
@@ -190,47 +193,50 @@ struct RecursiveParser
                 return result
             }
 
-            results.push(result)
+            if longest == null ||
+                result.getConsumed() > longest.getConsumed():
+                longest = result
         }
 
         this.atoms = atomsBackup
 
-        // all of rule are fail
-        val selectResult: pointer<ParserResult> = ParserResult.fromEmpty()
-
-        if results.length <= 0:
-            return ParserUtil.internalErrorParseResult()
-
-        var longest: pointer<ParserResult> =
-            results.get(0) as pointer<ParserResult>
-
-        for (var i: int = 1; i < results.length; i++):
-        {
-            val result: pointer<ParserResult> =
-                results.get(i) as pointer<ParserResult>
-
-            if result.getConsumed() > longest.getConsumed():
-                longest = result
-        }
+        if longest == null:
+            return ParserUtil.internalErrorParseResult(fromToken)
 
         return longest
     }
 
 
+    /**
+     * Parses an ordered sequence of rule expressions.
+     *
+     * Every expression begins at the previous result's end token. The returned
+     * result retains the combined consumed-token count and stores the first
+     * token node that remains unconsumed after the sequence.
+     *
+     * @param rule              the ordered expressions to parse
+     * @param tokens            the token list that owns the parsed nodes
+     * @param fromToken         the first token node of the sequence
+     *
+     * @return                  the completed sequence result, the first error
+     *                          result wrapped with prior values, or null when a
+     *                          child parser returns null
+     */
     private fun parseSequence(
         rule: pointer<RuleSequence>,
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult>
     {
         var consumed: int = 0
+        var currentToken: pointer<LinkedListNode> = fromToken
         val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
         val parsedTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
 
         for (var i: int = 0; i < rule.length(); i++):
         {
             val result: pointer<ParserResult> =
-                this.parse(rule.get(i), tokens, fromIndex + consumed)
+                this.parse(rule.get(i), tokens, currentToken)
 
             if result == null:
                 return result
@@ -238,7 +244,10 @@ struct RecursiveParser
             if result.hasError():
             {
                 val sequenceResult: pointer<ParserResult> =
-                    ParserResult.fromList(consumed + result.getConsumed(), results)
+                    ParserResult.fromList(
+                        consumed + result.getConsumed(),
+                        result.getEndToken(),
+                        results)
                 sequenceResult.pushTokens(parsedTokens)
                 sequenceResult.pushTokens(result.getTokens())
                 sequenceResult.pushDiagnostics(result.getDiagnostics())
@@ -248,9 +257,10 @@ struct RecursiveParser
             results.push(result.ref)
             parsedTokens.pushAll(result.getTokens())
             consumed += result.getConsumed()
+            currentToken = result.getEndToken()
         }
 
-        return ParserResult.fromList(consumed, results)
+        return ParserResult.fromList(consumed, currentToken, results)
             .pushTokens(parsedTokens)
     }
 
@@ -258,31 +268,31 @@ struct RecursiveParser
     private fun parse(
         rule: pointer<ParserRule>,
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult>
     {
         if rule == null:
-            return ParserUtil.internalErrorParseResult()
+            return ParserUtil.internalErrorParseResult(fromToken)
 
         this.atoms = new ArrayList(sizeof(RuleAtom))
 
         val parseTokens: pointer<TokenList> =
-            rule.getInputRule().before(tokens, fromIndex)
+            rule.getInputRule().before(tokens, fromToken)
 
         val expression: pointer<RuleExpression> = rule.getExpression()
 
         if expression == null:
-            return ParserUtil.internalErrorParseResult()
+            return ParserUtil.internalErrorParseResult(fromToken)
 
         var result: pointer<ParserResult> =
             if expression.isAtom():
-                this.parseAtom(expression.getAtomRule(), parseTokens, fromIndex)
+                this.parseAtom(expression.getAtomRule(), parseTokens, fromToken)
             elif expression.isSelect():
-                this.parseSelect(expression.getSelectRule(), parseTokens, fromIndex)
+                this.parseSelect(expression.getSelectRule(), parseTokens, fromToken)
             elif expression.isSequence():
-                this.parseSequence(expression.getSequenceRule(), parseTokens, fromIndex)
+                this.parseSequence(expression.getSequenceRule(), parseTokens, fromToken)
             else:
-                ParserUtil.internalErrorParseResult()
+                ParserUtil.internalErrorParseResult(fromToken)
 
         if result == null || result.hasError():
             return result
@@ -301,21 +311,25 @@ struct RecursiveParser
         val parseResult: pointer<ParserResult> = rule.getInputRule().getResult(
             ruleIndex,
             input,
-            result.getConsumed())
+            result.getConsumed(),
+            result.getEndToken())
         parseResult.pushTokens(result.getTokens())
 
         if ruleIndex >= 0:
             rule.getInputRule().after(
                 ruleIndex,
                 parseTokens,
-                fromIndex + result.getConsumed())
+                result.getEndToken())
 
         return parseResult
     }
 
 
-    fun parse(tokens: pointer<TokenList>, fromIndex: int) -> pointer<ParserResult>:
-        this.parse(this.rule, tokens, fromIndex)
+    fun parse(
+        tokens: pointer<TokenList>,
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<ParserResult> =
+        this.parse(this.rule, tokens, fromToken)
 
 
     fun reset() -> pointer<RecursiveParser>

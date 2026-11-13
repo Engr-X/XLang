@@ -65,7 +65,8 @@ private fun parseTest() -> int
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
-    val result: pointer<ParserResult> = parser.parse(tokens, 0)
+    val result: pointer<ParserResult> =
+        parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError() || result.getConsumed() != 3:
         return 1
@@ -84,7 +85,7 @@ private fun doParseEntryTest() -> int
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
     val result: pointer<ParserResult> =
-        parser.parse(tokens, 0)
+        parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError() || result.getConsumed() != 3:
         return 1
@@ -233,7 +234,8 @@ private fun tryParseAtomTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithAtom()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1", new Diagnostics())
-    val result: pointer<ParserResult> = parser.parse(tokens, 0)
+    val result: pointer<ParserResult> =
+        parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError() || result.getConsumed() != 1:
         return 1
@@ -254,7 +256,8 @@ private fun tryParsePlusTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
-    val result: pointer<ParserResult> = parser.parse(tokens, 0)
+    val result: pointer<ParserResult> =
+        parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError() || result.getConsumed() != 3:
         return 1
@@ -283,7 +286,8 @@ private fun tryParsePriorityTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2 * 3", new Diagnostics())
-    val result: pointer<ParserResult> = parser.parse(tokens, 0)
+    val result: pointer<ParserResult> =
+        parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError() || result.getConsumed() != 5:
         return 1
@@ -307,7 +311,8 @@ private fun tryParseMinPriorityTest() -> int
 {
     val parser: pointer<PrattParser> = parserWithBinary()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
-    val result: pointer<ParserResult> = parser.parse(tokens, 0)
+    val result: pointer<ParserResult> =
+        parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError():
         return 1

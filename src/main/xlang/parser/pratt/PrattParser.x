@@ -84,9 +84,23 @@ struct PrattParser
     }
 
 
+    /**
+     * Parses a prefix starter rule at the specified token node.
+     *
+     * The rule head is parsed procedurally. Its final self-reference is parsed
+     * recursively as the right operand using the prefix rule's priority. The
+     * returned result keeps the combined consumed count and the right operand's
+     * end token.
+     *
+     * @param tokens            the token list that owns the parsed nodes
+     * @param fromToken         the first token node of the prefix expression
+     *
+     * @return                  the parsed prefix result, an operand error, or
+     *                          null when no prefix starter rule matches
+     */
     private fun parsePrefixStart(
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult>
     {
         val rules: pointer<InputRules> = this.starterRules.getInputRule()
@@ -119,14 +133,14 @@ struct PrattParser
                 continue
 
             val head: pointer<ParserResult> =
-                parser.parse(headRule, tokens, fromIndex)
+                parser.parse(headRule, tokens, fromToken)
 
             if head == null || head.hasError():
                 continue
 
             val right: pointer<ParserResult> = this.parse(
                 tokens,
-                fromIndex + head.getConsumed(),
+                head.getEndToken(),
                 rule.getPriority())
 
             if right == null || right.hasError():
@@ -138,10 +152,14 @@ struct PrattParser
 
             val consumed: int = head.getConsumed() + right.getConsumed()
             val result: pointer<ParserResult> =
-                rule.getResult(this.id, results, consumed)
+                rule.getResult(
+                    this.id,
+                    results,
+                    consumed,
+                    right.getEndToken())
             result.pushTokens(head.getTokens())
             result.pushTokens(right.getTokens())
-            rule.after(tokens, fromIndex + consumed)
+            rule.after(tokens, right.getEndToken())
             return result
         }
 
@@ -151,14 +169,14 @@ struct PrattParser
 
     private fun parseStart(
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult>
     {
         val prefix: pointer<ParserResult> =
-            this.parsePrefixStart(tokens, fromIndex)
+            this.parsePrefixStart(tokens, fromToken)
 
         return if prefix == null:
-            this.proceduralSParser.parse(tokens, fromIndex)
+            this.proceduralSParser.parse(tokens, fromToken)
         else:
             prefix
     }
@@ -173,26 +191,38 @@ struct PrattParser
     }
 
 
+    /**
+     * Finds a continuation rule by eliminating candidates one atom at a time.
+     *
+     * The first atom of every candidate represents the already parsed left
+     * result, so matching begins at atom index one. A cursor list is maintained
+     * in parallel with the candidate-rule list. Each successful atom advances
+     * only its candidate's cursor to the result's end token. A failed candidate
+     * and its cursor are removed together in constant time.
+     *
+     * @param left              the already parsed left result, used to report
+     *                          an ambiguous continuation
+     * @param rules             the mutable continuation candidates
+     * @param tokens            the token list that owns the parsed nodes
+     * @param fromToken         the first token node after the left result
+     *
+     * @return                  the selected continuation rule, or null when all
+     *                          candidates are eliminated
+     */
     private fun findContinuation(
         left: pointer<ParserResult>,
         rules: pointer<LinkedList>,
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<InputRule>
     {
         if rules == null || rules.length <= 0:
             return null
 
-        val consumes: pointer<LinkedList> = new LinkedList()
-        val consumeValues: pointer<ArrayList> =
-            new ArrayList(sizeof(int), rules.length + 1, 1.0)
-        var initialConsume: int = 0
+        val cursors: pointer<LinkedList> = new LinkedList()
 
         for (var i: int = 0; i < rules.length; i++):
-        {
-            consumeValues.push(initialConsume.ref)
-            consumes.push(consumeValues.get(i))
-        }
+            cursors.push(fromToken)
 
         val parser: pointer<ProceduralParser> =
             new ProceduralParser(this.continuationRules)
@@ -203,14 +233,13 @@ struct PrattParser
             var completedCount: int = 0
             var firstCompleted: pointer<InputRule> = null
             var ruleNode: pointer<LinkedListNode> = rules.getHead()
-            var consumeNode: pointer<LinkedListNode> = consumes.getHead()
+            var cursorNode: pointer<LinkedListNode> = cursors.getHead()
 
             while ruleNode != null:
             {
                 val nextRuleNode: pointer<LinkedListNode> = ruleNode.next
-                val nextConsumeNode: pointer<LinkedListNode> = consumeNode.next
+                val nextCursorNode: pointer<LinkedListNode> = cursorNode.next
                 val rule: pointer<InputRule> = ruleNode.value as pointer<InputRule>
-                val consumed: pointer<int> = consumeNode.value as pointer<int>
 
                 if atomIndex >= rule.length():
                 {
@@ -225,16 +254,16 @@ struct PrattParser
                     val result: pointer<ParserResult> = parser.parseAtom(
                         atom,
                         tokens,
-                        fromIndex + consumed.deref)
+                        cursorNode.value as pointer<LinkedListNode>)
 
                     if result == null || result.hasError():
                     {
                         rules.remove(ruleNode)
-                        consumes.remove(consumeNode)
+                        cursors.remove(cursorNode)
                     }
                     else:
                     {
-                        consumed.deref += result.getConsumed()
+                        cursorNode.value = result.getEndToken()
 
                         if atomIndex + 1 >= rule.length():
                         {
@@ -247,7 +276,7 @@ struct PrattParser
                 }
 
                 ruleNode = nextRuleNode
-                consumeNode = nextConsumeNode
+                cursorNode = nextCursorNode
             }
 
             if rules.length <= 0:
@@ -268,10 +297,25 @@ struct PrattParser
     }
 
 
+    /**
+     * Finds a continuation rule matching the left result and following tokens.
+     *
+     * Continuation rules are processed in priority groups. Within each group,
+     * rules whose first atom does not reference the left result kind are
+     * discarded before the remaining candidates are matched atom by atom.
+     *
+     * @param left              the already parsed left result
+     * @param tokens            the token list that owns the parsed nodes
+     * @param fromToken         the first token node after the left result
+     *
+     * @return                  the first matching continuation rule, or null
+     *                          when no priority group matches
+     */
     private fun findContinuation(
         left: pointer<ParserResult>,
         tokens: pointer<TokenList>,
-        fromIndex: int) -> pointer<InputRule>
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<InputRule>
     {
         val continuationRules: pointer<InputRules> = this.continuationRules.getInputRule()
 
@@ -310,7 +354,7 @@ struct PrattParser
             }
 
             val matched: pointer<InputRule> =
-                this.findContinuation(left, rules, tokens, fromIndex)
+                this.findContinuation(left, rules, tokens, fromToken)
 
             if matched != null:
                 return matched
@@ -320,18 +364,34 @@ struct PrattParser
     }
 
 
+    /**
+     * Parses one continuation of an existing left result.
+     *
+     * The continuation body begins at fromToken. When the rule ends with a
+     * self-reference, the right operand begins at the continuation body's end
+     * token and is parsed with the minimum priority required by the operation's
+     * associativity.
+     *
+     * @param left              the already parsed left result
+     * @param tokens            the token list that owns the parsed nodes
+     * @param fromToken         the first token node after the left result
+     * @param minPriority       the minimum continuation priority accepted here
+     *
+     * @return                  the combined continuation result, the first
+     *                          nested error, or null when no rule is applicable
+     */
     private fun parseContinuation(
         left: pointer<ParserResult>,
         tokens: pointer<TokenList>,
-        fromIndex: int,
+        fromToken: pointer<LinkedListNode>,
         minPriority: int
     ) -> pointer<ParserResult>
     {
-        val rule: pointer<InputRule> =
-            this.findContinuation(left, tokens, fromIndex)
-
         if left.hasError():
             return left
+
+        val rule: pointer<InputRule> =
+            this.findContinuation(left, tokens, fromToken)
 
         if rule == null || rule.getPriority() < minPriority:
             return null
@@ -353,7 +413,7 @@ struct PrattParser
         val parser: pointer<ProceduralParser> =
             new ProceduralParser(this.continuationRules)
         val continuation: pointer<ParserResult> =
-            parser.parse(continuationRule, tokens, fromIndex)
+            parser.parse(continuationRule, tokens, fromToken)
 
         if continuation == null || continuation.hasError():
             return continuation
@@ -375,7 +435,7 @@ struct PrattParser
                     rule.getPriority() + 1
             right = this.parse(
                 tokens,
-                fromIndex + continuation.getConsumed(),
+                continuation.getEndToken(),
                 rightMinPriority)
 
             if right == null || right.hasError():
@@ -388,15 +448,20 @@ struct PrattParser
         val continuationConsumed: int =
             continuation.getConsumed() + rightConsumed
         val consumed: int = left.getConsumed() + continuationConsumed
+        val endToken: pointer<LinkedListNode> =
+            if hasRight:
+                right.getEndToken()
+            else:
+                continuation.getEndToken()
         val result: pointer<ParserResult> =
-            rule.getResult(this.id, results, consumed)
+            rule.getResult(this.id, results, consumed, endToken)
         result.pushTokens(left.getTokens())
         result.pushTokens(continuation.getTokens())
 
         if hasRight:
             result.pushTokens(right.getTokens())
 
-        rule.after(tokens, fromIndex + continuationConsumed)
+        rule.after(tokens, endToken)
         return result
     }
 
@@ -404,18 +469,32 @@ struct PrattParser
     private fun parseContinuation(
         left: pointer<ParserResult>,
         tokens: pointer<TokenList>,
-        fromIndex: int
+        fromToken: pointer<LinkedListNode>
     ) -> pointer<ParserResult> =
-        this.parseContinuation(left, tokens, fromIndex, MIN_PRIORITY)
+        this.parseContinuation(left, tokens, fromToken, MIN_PRIORITY)
 
 
+    /**
+     * Parses a Pratt expression from the specified token node.
+     *
+     * A starter expression is parsed first. Continuations then begin directly
+     * at the current left result's end token and replace the left result while
+     * they satisfy minPriority and advance the input cursor.
+     *
+     * @param tokens            the token list that owns the parsed nodes
+     * @param fromToken         the first token node of the expression
+     * @param minPriority       the minimum continuation priority accepted here
+     *
+     * @return                  the completed expression result or the first
+     *                          starter/continuation error
+     */
     private fun parse(
         tokens: pointer<TokenList>,
-        fromIndex: int,
+        fromToken: pointer<LinkedListNode>,
         minPriority: int
     ) -> pointer<ParserResult>
     {
-        var left: pointer<ParserResult> = this.parseStart(tokens, fromIndex)
+        var left: pointer<ParserResult> = this.parseStart(tokens, fromToken)
 
         if left == null || left.hasError():
             return left
@@ -425,7 +504,7 @@ struct PrattParser
             val continuation: pointer<ParserResult> = this.parseContinuation(
                 left,
                 tokens,
-                fromIndex + left.getConsumed(),
+                left.getEndToken(),
                 minPriority)
 
             if continuation == null:
@@ -434,7 +513,8 @@ struct PrattParser
             if continuation.hasError():
                 return continuation
 
-            if continuation.getConsumed() <= left.getConsumed():
+            if continuation.getConsumed() <= left.getConsumed() ||
+                continuation.getEndToken() == left.getEndToken():
                 return left
 
             left = continuation
@@ -444,8 +524,11 @@ struct PrattParser
     }
 
 
-    fun parse(tokens: pointer<TokenList>, fromIndex: int) -> pointer<ParserResult> =
-        this.parse(tokens, fromIndex, MIN_PRIORITY)
+    fun parse(
+        tokens: pointer<TokenList>,
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<ParserResult> =
+        this.parse(tokens, fromToken, MIN_PRIORITY)
 
 
     fun getId() -> int = this.id

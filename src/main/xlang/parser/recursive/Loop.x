@@ -30,50 +30,59 @@ import xlang.parser.ParserResult
 import xlang.parser.rule.LoopAtomRule
 import xlang.parser.rule.ParserRule
 import xlang.util.ArrayList
+import xlang.util.LinkedListNode
 
 
 /**
  * Parses consecutive repetitions without a separator rule.
  *
- * <p>Beginning at {@code fromIndex}, {@code loopRule} is repeatedly applied
+ * <p>Beginning at {@code fromToken}, {@code loopParser} is repeatedly applied
  * immediately after the previously consumed element. Repetition stops at the
  * end of the token list or when parsing returns {@code null}, reports an error,
- * or consumes no tokens. Rejecting zero-length progress prevents an infinite
- * loop.
+ * consumes no tokens, or leaves the token cursor unchanged. Rejecting a result
+ * without cursor progress prevents an infinite loop.
  *
  * <p>Every successful element result is stored in an array-list result. The
  * returned result's consumed count is the combined number of tokens consumed by
- * those elements.
+ * those elements. Its end token is the first token that was not consumed.
  *
  * @param loopParser            a pointer to the parser applied to every repeated element
  * @param tokens                a pointer to the token list being parsed
- * @param fromIndex             the token index at which the repeated sequence begins
+ * @param fromToken             the first token node of the repeated sequence
  *
  * @return                      an {@code ARRAY_LIST_KIND} result containing the successful
- *                              element results and their total consumed count
+ *                              element results, their total consumed count, and
+ *                              the first unconsumed token node
  */
 private fun parseWithoutSplit(
     loopParser: pointer<Parser>,
     tokens: pointer<TokenList>,
-    fromIndex: int
+    fromToken: pointer<LinkedListNode>
 ) -> pointer<ParserResult>
 {
     val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
     var consumed: int = 0
+    var currentToken: pointer<LinkedListNode> = fromToken
 
-    while fromIndex + consumed < tokens.length():
+    while currentToken != null:
     {
         val parser: pointer<Parser> = loopParser.clone()
-        val result: pointer<ParserResult> = parser.parse(tokens, fromIndex + consumed)
+        val result: pointer<ParserResult> = parser.parse(tokens, currentToken)
 
         if result == null || result.hasError() || result.getConsumed() <= 0:
             break
 
+        val endToken: pointer<LinkedListNode> = result.getEndToken()
+
+        if endToken == currentToken:
+            break
+
         results.push(result.ref)
         consumed += result.getConsumed()
+        currentToken = endToken
     }
 
-    return ParserResult.fromList(consumed, results)
+    return ParserResult.fromList(consumed, currentToken, results)
 }
 
 
@@ -86,61 +95,77 @@ private fun parseWithoutSplit(
  * succeeds, unless {@code allowTrailing} accepts it as the final separator.
  *
  * <p>Only element results are stored in the returned array list. Separator
- * results contribute to the consumed count but are not stored. A null result,
- * an error result, or a result that consumes no tokens stops repetition.
+ * results contribute to the consumed count but are not stored. Parsing advances
+ * through each successful result's end token. A null result, an error result,
+ * a result that consumes no tokens, or a result that does not advance its end
+ * token stops repetition.
  *
  * @param loopParser            a pointer to the parser applied to every repeated element
  * @param splitParser           a pointer to the parser applied between repeated elements
  * @param allowTrailing         whether one final separator may be consumed
  * @param tokens                a pointer to the token list being parsed
- * @param fromIndex             the token index at which the repeated sequence begins
+ * @param fromToken             the first token node of the repeated sequence
  *
  * @return                      an {@code ARRAY_LIST_KIND} result containing the successful
- *                              element results and the total consumed count, including all
- *                              accepted separators
+ *                              element results, the total consumed count including all
+ *                              accepted separators, and the first unconsumed token node
  */
 fun parseWithSplit(
     loopParser: pointer<Parser>,
     splitParser: pointer<Parser>,
     allowTrailing: bool,
     tokens: pointer<TokenList>,
-    fromIndex: int
+    fromToken: pointer<LinkedListNode>
 ) -> pointer<ParserResult>
 {
     val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
     val parsedTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
+
+    if fromToken == null:
+        return ParserResult.fromList(0, fromToken, results)
+
     val firstParser: pointer<Parser> = loopParser.clone()
-    val firstResult: pointer<ParserResult> = firstParser.parse(tokens, fromIndex)
+    val firstResult: pointer<ParserResult> = firstParser.parse(tokens, fromToken)
 
     if firstResult == null || firstResult.hasError() || firstResult.getConsumed() <= 0:
-        return ParserResult.fromList(0, results)
+        return ParserResult.fromList(0, fromToken, results)
+
+    var currentToken: pointer<LinkedListNode> = firstResult.getEndToken()
+
+    if currentToken == fromToken:
+        return ParserResult.fromList(0, fromToken, results)
 
     results.push(firstResult.ref)
     var consumed: int = firstResult.getConsumed()
 
-    while fromIndex + consumed < tokens.length():
+    while currentToken != null:
     {
         val separatorParser: pointer<Parser> = splitParser.clone()
         val splitResult: pointer<ParserResult> =
-            separatorParser.parse(tokens, fromIndex + consumed)
+            separatorParser.parse(tokens, currentToken)
 
         if splitResult == null || splitResult.hasError() || splitResult.getConsumed() <= 0:
             break
 
-        val nextIndex: int = fromIndex + consumed + splitResult.getConsumed()
+        val splitEndToken: pointer<LinkedListNode> = splitResult.getEndToken()
 
-        if nextIndex >= tokens.length():
+        if splitEndToken == currentToken:
+            break
+
+        if splitEndToken == null:
         {
             if allowTrailing:
             {
                 consumed += splitResult.getConsumed()
                 parsedTokens.pushAll(splitResult.getTokens())
+                currentToken = splitEndToken
             }
             break
         }
 
         val elementParser: pointer<Parser> = loopParser.clone()
-        val result: pointer<ParserResult> = elementParser.parse(tokens, nextIndex)
+        val result: pointer<ParserResult> =
+            elementParser.parse(tokens, splitEndToken)
 
         if result == null:
         {
@@ -148,6 +173,7 @@ fun parseWithSplit(
             {
                 consumed += splitResult.getConsumed()
                 parsedTokens.pushAll(splitResult.getTokens())
+                currentToken = splitEndToken
             }
             else:
                 return null
@@ -160,11 +186,13 @@ fun parseWithSplit(
             {
                 consumed += splitResult.getConsumed()
                 parsedTokens.pushAll(splitResult.getTokens())
+                currentToken = splitEndToken
                 break
             }
 
             val failure: pointer<ParserResult> = ParserResult.fromList(
                 consumed + splitResult.getConsumed() + result.getConsumed(),
+                result.getEndToken(),
                 results)
             failure.pushTokens(parsedTokens)
             failure.pushTokens(splitResult.getTokens())
@@ -172,12 +200,15 @@ fun parseWithSplit(
             return failure
         }
 
-        if result.getConsumed() <= 0:
+        val elementEndToken: pointer<LinkedListNode> = result.getEndToken()
+
+        if result.getConsumed() <= 0 || elementEndToken == splitEndToken:
         {
             if allowTrailing:
             {
                 consumed += splitResult.getConsumed()
                 parsedTokens.pushAll(splitResult.getTokens())
+                currentToken = splitEndToken
             }
             break
         }
@@ -185,22 +216,46 @@ fun parseWithSplit(
         results.push(result.ref)
         parsedTokens.pushAll(splitResult.getTokens())
         consumed += splitResult.getConsumed() + result.getConsumed()
+        currentToken = elementEndToken
     }
 
-    return ParserResult.fromList(consumed, results)
+    return ParserResult.fromList(consumed, currentToken, results)
         .pushTokens(parsedTokens)
 }
 
 
 
+/**
+ * Parses a repeated rule beginning at the specified token node.
+ *
+ * When splitParser is null, elements are parsed consecutively. Otherwise the
+ * first element is parsed directly and every following element must be preceded
+ * by splitParser. The allowTrailing flag is used only for the separated form.
+ *
+ * The returned result retains the total consumed-token count for the public
+ * index-based interface and stores the first unconsumed token node as its end
+ * token.
+ *
+ * @param loopParser           the parser applied to every repeated element
+ * @param splitParser          the parser applied between elements, or null for
+ *                             an unseparated repetition
+ * @param allowTrailing        whether the separated form may consume one final
+ *                             separator without a following element
+ * @param tokens               the token list that owns the parsed nodes
+ * @param fromToken            the first token node at which repetition begins
+ *
+ * @return                     an array-list parser result containing the parsed
+ *                             elements, total consumed count, and first
+ *                             unconsumed token node
+ */
 fun parseLoop(
     loopParser: pointer<Parser>,
     splitParser: pointer<Parser>,
     allowTrailing: bool,
     tokens: pointer<TokenList>,
-    fromIndex: int
+    fromToken: pointer<LinkedListNode>
 ) -> pointer<ParserResult> =
     if splitParser == null:
-        parseWithoutSplit(loopParser, tokens, fromIndex)
+        parseWithoutSplit(loopParser, tokens, fromToken)
     else:
-        parseWithSplit(loopParser, splitParser, allowTrailing, tokens, fromIndex)
+        parseWithSplit(loopParser, splitParser, allowTrailing, tokens, fromToken)

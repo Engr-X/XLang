@@ -35,7 +35,8 @@ import xlang.util.ArrayList
  *
  * <p>A {@code ParserResult} stores an untyped result value together with a
  * kind identifier describing how the value should be interpreted and the
- * number of input tokens consumed to produce the result.
+ * number of input tokens consumed to produce the result. During the cursor
+ * migration it also stores the first token node that remains unconsumed.
  *
  * <p>The container does not copy or own the referenced value. The lifetime of
  * the stored object is managed by the code that created it.
@@ -58,69 +59,76 @@ struct ParserResult
 
 
     /**
-     * Creates an empty parser result.
+     * Creates an empty parser result at the specified token position.
      *
      * The returned ParserResult uses EMPTY_KIND as its kind, consumes zero
-     * tokens, and stores null as its value.
+     * tokens, stores endToken as the first unconsumed token node, and stores
+     * null as its value. For a non-consuming parse, endToken should normally
+     * be the same node at which parsing started.
      *
-     * @return                  a newly allocated empty parser result.
+     * @param endToken          the first token node that remains unconsumed
      *
-     * @note                    The returned parser result is considered empty
-     *                          by the isEmpty method.
+     * @return                  a newly allocated empty parser result
      */
-    static fun fromEmpty() -> pointer<ParserResult> =
-        new ParserResult(EMPTY_KIND, 0, null)
+    static fun fromEmpty(
+        endToken: pointer<LinkedListNode>
+    ) -> pointer<ParserResult> =
+        new ParserResult(EMPTY_KIND, 0, endToken, null)
 
     /**
-     * Creates a parser result containing a single token.
+     * Creates a parser result containing one token and its ending cursor.
      *
      * The returned ParserResult uses TOKEN_KIND as its kind, consumes one
-     * token, and stores the provided token pointer as its value.
+     * token, stores token as its value, and records endToken as the first token
+     * node that remains unconsumed. The token is referenced directly without
+     * being copied or cloned.
      *
-     * The token is referenced directly without being copied or cloned.
+     * @param token             the consumed token stored in the result
+     * @param endToken          the first token node that remains unconsumed
      *
-     * @param token             the token to store in the parser result.
-     *
-     * @return                  a newly allocated parser result containing the token.
-     *
-     * @note                    The returned parser result always reports one
-     *                          consumed token, regardless of the token's validity.
+     * @return                  a newly allocated parser result containing token
      *
      * @warning                 The token is not cloned. The caller must ensure
-     *                          that it remains valid while the parser result uses it.
+     *                          that it remains valid while the result uses it.
      */
-    static fun fromToken(token: pointer<Token>) -> pointer<ParserResult>
+    static fun fromToken(
+        token: pointer<Token>,
+        endToken: pointer<LinkedListNode>
+    ) -> pointer<ParserResult>
     {
         val stableToken: pointer<Token> = token
         val result: pointer<ParserResult> =
-            new ParserResult(TOKEN_KIND, 1, stableToken)
+            new ParserResult(TOKEN_KIND, 1, endToken, stableToken)
         result.pushToken(stableToken)
         return result
     }
 
 
     /**
-     * Creates a parser result containing an array of parsed values.
+     * Creates a parser result containing an array and its ending cursor.
      *
-     * The returned ParserResult uses ARRAY_LIST_KIND as its kind, records
-     * the specified number of consumed tokens, and stores the provided
-     * ArrayList pointer as its value.
+     * The returned ParserResult uses ARRAY_LIST_KIND as its kind, records the
+     * public consumed-token count, records endToken as the first unconsumed
+     * token node, and stores array directly without copying it.
      *
-     * The array is referenced directly without being copied or cloned.
+     * @param consumed          the number of tokens consumed during parsing
+     * @param endToken          the first token node that remains unconsumed
+     * @param array             the array of parsed values to store
      *
-     * @param consumed           the number of tokens consumed during parsing.
-     * @param array             the array of parsed values to store.
+     * @return                  a newly allocated parser result containing array
      *
-     * @return                  a newly allocated parser result containing the array.
-     *
-     * @note                    The consumed token count is stored directly without
-     *                          validation and is independent of the array length.
+     * @note                    consumed is retained for compatibility and is
+     *                          independent of the array length.
      *
      * @warning                 The array is not cloned. The caller must ensure
-     *                          that it remains valid while the parser result uses it.
+     *                          that it remains valid while the result uses it.
      */
-    static fun fromList(consumed: int, array: pointer<ArrayList>) -> pointer<ParserResult> =
-        new ParserResult(ARRAY_LIST_KIND, consumed, array)
+    static fun fromList(
+        consumed: int,
+        endToken: pointer<LinkedListNode>,
+        array: pointer<ArrayList>
+    ) -> pointer<ParserResult> =
+        new ParserResult(ARRAY_LIST_KIND, consumed, endToken, array)
 
 
     /**
@@ -156,6 +164,14 @@ struct ParserResult
     // Diagnostics produced while parsing.
     private var diagnostics: pointer<Diagnostics>
 
+    /**
+     * First token node that remains unconsumed after this result.
+     *
+     * This cursor is maintained independently from consumed while index-based
+     * and node-based parser interfaces coexist. A null value means either the
+     * parser reached the end of the list or a legacy factory could not provide
+     * cursor information.
+     */
     private var endToken: pointer<LinkedListNode>
 
 
@@ -167,13 +183,14 @@ struct ParserResult
      *
      * @param kind              the kind identifier describing the stored value
      * @param consumed           the number of input tokens consumed to produce the result
+     * @param endToken          the first token node that remains unconsumed
      * @param value             a pointer to the parse result value
      */
-    constructor(kind: int, consumed: int, /*endToken: pointer<LinkedListNode>,*/ value: pointer<*>)
+    constructor(kind: int, consumed: int, endToken: pointer<LinkedListNode>, value: pointer<*>)
     {
         this.kind = kind
         this.consumed = consumed
-        // this.endToken = endToken
+        this.endToken = endToken
         this.value = value
         this.tokens = new ArrayList(sizeof(Token))
         this.diagnostics = new Diagnostics()
@@ -226,6 +243,18 @@ struct ParserResult
      * @return                  the consumed input token count
      */
     fun getConsumed() -> int = this.consumed
+
+
+    /**
+     * Returns the first token node that remains unconsumed.
+     *
+     * The returned node is the cursor at which a following parser should begin.
+     * A null result means parsing ended after the final token.
+     *
+     * @return                  the first unconsumed token node, or null at the
+     *                          end of the token list
+     */
+    fun getEndToken() -> pointer<LinkedListNode> = this.endToken
 
 
     /**
