@@ -41,6 +41,7 @@ import xlang.test.TestCase
 import xlang.test.TestGroup
 import xlang.test.TestUnion
 import xlang.util.ArrayList
+import xlang.util.LinkedListNode
 
 
 val TEST_GROUP: pointer<TestGroup> = genTest()
@@ -101,7 +102,7 @@ private fun makeExpr(results: pointer<ArrayList>) -> pointer<*> =
 
 
 private fun tokenIdentity(
-    tokens: pointer<TokenList>, index: int
+    tokens: pointer<TokenList>, token: pointer<LinkedListNode>
 ) -> pointer<TokenList> = tokens
 
 

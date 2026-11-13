@@ -11,7 +11,8 @@
         "xlang.compiler.parser.statement.Statement",
         "xlang.compiler.parser.stmtexpr.Block",
         "xlang.compiler.parser.stmtexpr.IfExpression",
-        "xlang.compiler.parser.stmtexpr.IfElseExpression"
+        "xlang.compiler.parser.stmtexpr.IfElseExpression",
+        "xlang.util.LinkedListNode"
     ],
     "constants": [
         
@@ -305,21 +306,22 @@
         ],
 
 
-        [   "private fun prependLineTerminator(tokens: pointer<TokenList>, index: int) -> pointer<TokenList>",
+        [   "private fun prependLineTerminator(",
+            "    tokens: pointer<TokenList>,",
+            "    fromToken: pointer<LinkedListNode>",
+            ") -> pointer<TokenList>",
             "{",
-            "    if tokens == null || index < 0 || index > tokens.length():",
+            "    if tokens == null || fromToken == null:",
             "        return tokens",
             "",
-            "    if index < tokens.length():",
-            "    {",
-            "        val current: pointer<Token> = tokens.get(index)",
+            "    val current: pointer<Token> = fromToken.value as pointer<Token>",
             "",
-            "        if current != null && current.kind == Tokenizer.TK_LINE_TERMINATOR:",
-            "            return tokens",
-            "    }",
+            "    if current == null || current.kind == Tokenizer.TK_LINE_TERMINATOR:",
+            "        return tokens",
             "",
             "    val terminator: pointer<Token> = new Token(Tokenizer.TK_LINE_TERMINATOR, TokenPosition.autoGenPos(), \"\\n\")",
-            "    tokens.add(index, terminator)",
+            "    tokens.add(fromToken.next, current)",
+            "    fromToken.value = terminator",
             "",
             "    return tokens",
             "}" ]

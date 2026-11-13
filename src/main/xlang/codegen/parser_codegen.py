@@ -704,7 +704,7 @@ def genInputRuleDecls(rules: list[JsonObject], tabs: int) -> str:
     indent = " " * (tabs * 4)
     lines = [
         f"{indent}private inline fun parserRuleIdentity(",
-        f"{indent}    tokens: pointer<TokenList>, index: int",
+        f"{indent}    tokens: pointer<TokenList>, token: pointer<LinkedListNode>",
         f"{indent}) -> pointer<TokenList> = tokens",
         "",
     ]
@@ -1297,7 +1297,7 @@ def genParserGraphHelpers(tabs: int) -> str:
         f"{indent}) -> pointer<*> = results",
         "",
         f"{indent}private inline fun parserRuleIdentity(",
-        f"{indent}    tokens: pointer<TokenList>, index: int",
+        f"{indent}    tokens: pointer<TokenList>, token: pointer<LinkedListNode>",
         f"{indent}) -> pointer<TokenList> = tokens",
         "",
         f"{indent}private fun createCombinatorRegex(",

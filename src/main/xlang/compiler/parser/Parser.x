@@ -79,6 +79,7 @@ import xlang.parser.rule.RuleAtom
 import xlang.parser.rule.RuleExpression
 import xlang.util.ArrayList
 import xlang.util.HashSet
+import xlang.util.LinkedListNode
 import xlang.util.string.String
 
 
@@ -234,14 +235,15 @@ private fun toOperation(
 }
 private fun preprocessTypeTokens(
     tokens: pointer<TokenList>,
-    fromIndex: int
+    fromToken: pointer<LinkedListNode>
 ) -> pointer<TokenList>
 {
-    if tokens == null || fromIndex < 0 || fromIndex + 1 >= tokens.length():
+    if tokens == null || fromToken == null || fromToken.next == null:
         return tokens
 
-    val first: pointer<Token> = tokens.get(fromIndex)
-    val open: pointer<Token> = tokens.get(fromIndex + 1)
+    val first: pointer<Token> = fromToken.value as pointer<Token>
+    val openNode: pointer<LinkedListNode> = fromToken.next
+    val open: pointer<Token> = openNode.value as pointer<Token>
 
     if first == null:
         return tokens
@@ -253,53 +255,47 @@ private fun preprocessTypeTokens(
     if open == null || open.kind != Tokenizer.LESS:
         return tokens
 
-    val result: pointer<TokenList> =
-        tokens.subToken(0, fromIndex + 2)
     var depth: int = 1
-    var index: int = fromIndex + 2
+    var current: pointer<LinkedListNode> = openNode.next
 
-    while index < tokens.length() && depth > 0:
+    while current != null && depth > 0:
     {
-        val token: pointer<Token> = tokens.get(index)
+        val next: pointer<LinkedListNode> = current.next
+        val token: pointer<Token> = current.value as pointer<Token>
 
         if token.kind == Tokenizer.LESS:
-        {
             depth++
-            result.push(token)
-        }
         elif token.kind == Tokenizer.GREATER:
-        {
             depth--
-            result.push(token)
-        }
         else:
         {
             val split: pointer<TokenList> =
                 ParserUtil.splitRightAngleToken(token)
 
-            if split == null:
-                result.push(token)
-            else:
+            if split != null:
             {
-                for (var j: int = 0; j < split.length(); j++):
+                var splitNode: pointer<LinkedListNode> = split.getHead()
+
+                while splitNode != null:
                 {
-                    val splitToken: pointer<Token> = split.get(j)
-                    result.push(splitToken)
+                    val splitToken: pointer<Token> =
+                        splitNode.value as pointer<Token>
+                    tokens.add(current, splitToken)
 
                     if splitToken.kind == Tokenizer.GREATER:
                         depth--
+
+                    splitNode = splitNode.next
                 }
+
+                tokens.remove(current)
             }
         }
 
-        index++
+        current = next
     }
 
-    val suffix: pointer<TokenList> =
-        tokens.subToken(index, tokens.length())
-    result.addAll(result.length(), suffix.toArray())
-
-    return result
+    return tokens
 }
 
 private fun makeRawNormalType(qualifiedName: pointer<QualifiedName>) -> pointer<NormalType>
@@ -1638,21 +1634,22 @@ private fun makeElseStmtFromExpr(results: pointer<ArrayList>) -> pointer<*>
        .addExtraToken(elseToken).addExtraToken(colonToken)
 }
 
-private fun prependLineTerminator(tokens: pointer<TokenList>, index: int) -> pointer<TokenList>
+private fun prependLineTerminator(
+    tokens: pointer<TokenList>,
+    fromToken: pointer<LinkedListNode>
+) -> pointer<TokenList>
 {
-    if tokens == null || index < 0 || index > tokens.length():
+    if tokens == null || fromToken == null:
         return tokens
 
-    if index < tokens.length():
-    {
-        val current: pointer<Token> = tokens.get(index)
+    val current: pointer<Token> = fromToken.value as pointer<Token>
 
-        if current != null && current.kind == Tokenizer.TK_LINE_TERMINATOR:
-            return tokens
-    }
+    if current == null || current.kind == Tokenizer.TK_LINE_TERMINATOR:
+        return tokens
 
     val terminator: pointer<Token> = new Token(Tokenizer.TK_LINE_TERMINATOR, TokenPosition.autoGenPos(), "\n")
-    tokens.add(index, terminator)
+    tokens.add(fromToken.next, current)
+    fromToken.value = terminator
 
     return tokens
 }
@@ -2173,7 +2170,7 @@ private inline fun parserRuleResult(
 ) -> pointer<*> = results
 
 private inline fun parserRuleIdentity(
-    tokens: pointer<TokenList>, index: int
+    tokens: pointer<TokenList>, token: pointer<LinkedListNode>
 ) -> pointer<TokenList> = tokens
 
 private fun createCombinatorRegex(

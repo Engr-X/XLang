@@ -35,7 +35,8 @@ import xlang.util.LinkedListNode
 struct InputRule
 {
     private static fun ident(
-        input: pointer<TokenList>, index: int
+        input: pointer<TokenList>,
+        token: pointer<LinkedListNode>
     ) -> pointer<TokenList> = input
 
 
@@ -62,7 +63,7 @@ struct InputRule
 
     private var resultConstructor: (pointer<ArrayList>) -> pointer<*>
 
-    private var afterFun: (pointer<TokenList>, int) -> pointer<TokenList>
+    private var afterFun: (pointer<TokenList>, pointer<LinkedListNode>) -> pointer<TokenList>
 
 
     constructor(resultConstructor: (pointer<ArrayList>) -> pointer<*>)
@@ -78,7 +79,7 @@ struct InputRule
     constructor(
         operation: pointer<Operation>,
         resultConstructor: (pointer<ArrayList>) -> pointer<*>,
-        afterFun: (pointer<TokenList>, int) -> pointer<TokenList>)
+        afterFun: (pointer<TokenList>, pointer<LinkedListNode>) -> pointer<TokenList>)
     {
         this.priority = operation.priority
         this.operation = operation
@@ -92,7 +93,7 @@ struct InputRule
         priority: int,
         operation: pointer<Operation>,
         resultConstructor: (pointer<ArrayList>) -> pointer<*>,
-        afterFun: (pointer<TokenList>, int) -> pointer<TokenList>)
+        afterFun: (pointer<TokenList>, pointer<LinkedListNode>) -> pointer<TokenList>)
     {
         this.priority = priority
         this.operation = operation
@@ -107,7 +108,7 @@ struct InputRule
         operation: pointer<Operation>,
         atoms: pointer<ArrayList>,
         resultConstructor: (pointer<ArrayList>) -> pointer<*>,
-        afterFun: (pointer<TokenList>, int) -> pointer<TokenList>)
+        afterFun: (pointer<TokenList>, pointer<LinkedListNode>) -> pointer<TokenList>)
     {
         this.priority = priority
         this.operation = operation
@@ -169,32 +170,16 @@ struct InputRule
     fun after(
         tokens: pointer<TokenList>,
         fromToken: pointer<LinkedListNode>
-    ) -> pointer<TokenList>
-    {
-        if tokens == null:
-            return tokens
-
-        var current: pointer<LinkedListNode> = tokens.getHead()
-        var index: int = 0
-
-        while current != null && current != fromToken:
-        {
-            current = current.next
-            index++
-        }
-
-        if fromToken != null && current == null:
-            return tokens
-
-        return this.afterFun(tokens, index)
-    }
+    ) -> pointer<TokenList> =
+        this.afterFun(tokens, fromToken)
 }
 
 
 struct InputRules
 {
     private static fun ident(
-        input: pointer<TokenList>, index: int
+        input: pointer<TokenList>,
+        token: pointer<LinkedListNode>
     ) -> pointer<TokenList> = input
 
 
@@ -210,7 +195,7 @@ struct InputRules
 
     private var rules: pointer<ArrayList>
 
-    private var beforeFun: (pointer<TokenList>, int) -> pointer<TokenList>
+    private var beforeFun: (pointer<TokenList>, pointer<LinkedListNode>) -> pointer<TokenList>
 
 
     constructor(id: int)
@@ -223,7 +208,7 @@ struct InputRules
 
     constructor(
         id: int,
-        beforeFun: (pointer<TokenList>, int) -> pointer<TokenList>)
+        beforeFun: (pointer<TokenList>, pointer<LinkedListNode>) -> pointer<TokenList>)
     {
         this.id = id
         this.rules = new ArrayList(sizeof(InputRule))
@@ -276,25 +261,8 @@ struct InputRules
     fun before(
         tokens: pointer<TokenList>,
         fromToken: pointer<LinkedListNode>
-    ) -> pointer<TokenList>
-    {
-        if tokens == null:
-            return tokens
-
-        var current: pointer<LinkedListNode> = tokens.getHead()
-        var index: int = 0
-
-        while current != null && current != fromToken:
-        {
-            current = current.next
-            index++
-        }
-
-        if fromToken != null && current == null:
-            return tokens
-
-        return this.beforeFun(tokens, index)
-    }
+    ) -> pointer<TokenList> =
+        this.beforeFun(tokens, fromToken)
 
 
     fun after(
