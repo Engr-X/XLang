@@ -342,5 +342,6 @@ struct RecursiveParser
     fun getId() -> int = this.rule.getId()
 
 
-    fun clone() -> pointer<RecursiveParser> = new RecursiveParser(this.rule)
+    fun clone() -> pointer<RecursiveParser> =
+        new RecursiveParser(this.rule)
 }

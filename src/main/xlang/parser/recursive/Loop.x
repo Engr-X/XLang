@@ -254,8 +254,8 @@ fun parseLoop(
     allowTrailing: bool,
     tokens: pointer<TokenList>,
     fromToken: pointer<LinkedListNode>
-) -> pointer<ParserResult> =
-    if splitParser == null:
+) -> pointer<ParserResult>
+    = if splitParser == null:
         parseWithoutSplit(loopParser, tokens, fromToken)
     else:
         parseWithSplit(loopParser, splitParser, allowTrailing, tokens, fromToken)

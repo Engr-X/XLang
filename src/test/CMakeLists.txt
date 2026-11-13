@@ -205,3 +205,48 @@ else()
         COMMENT "No xlang test object files available to build tokenizer benchmark"
     )
 endif()
+
+
+###############################################################
+
+# step 5: build standalone parser benchmark executable
+
+set(XLANG_PARSER_BENCHMARK_EXE
+    "${XLANG_TEST_DIR}/xlang-parser-benchmark${CMAKE_EXECUTABLE_SUFFIX}"
+)
+set(XLANG_PARSER_BENCHMARK_MAIN "xlang.benchmark.ParserBenchmark.main")
+
+if (XLANG_TEST_SRCS)
+    add_custom_command(
+        OUTPUT "${XLANG_PARSER_BENCHMARK_EXE}"
+
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${XLANG_TEST_DIR}"
+        COMMAND ${XLANG}
+            --target=x64
+            -lib ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} ${XLANG_TEST_OBJS} ${XLANG_TEST_LIBS}
+            -d "${XLANG_PARSER_BENCHMARK_EXE}"
+            "--include-runtime"
+            "--main=${XLANG_PARSER_BENCHMARK_MAIN}"
+
+        DEPENDS ${XLANG_COMPILER_OBJS} ${XLANG_C_OBJS} ${XLANG_TEST_OBJS} tiny-regex ${XLANG}
+
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+
+        COMMENT "Linking xlang-parser-benchmark executable"
+        VERBATIM
+        COMMAND_EXPAND_LISTS
+    )
+
+    add_custom_target(xlang_parser_benchmark_executable ALL
+        DEPENDS "${XLANG_PARSER_BENCHMARK_EXE}"
+    )
+    add_dependencies(xlang_parser_benchmark_executable
+        xlang_test_objects
+        xlang_c_objects
+        xlang_objects
+    )
+else()
+    add_custom_target(xlang_parser_benchmark_executable
+        COMMENT "No xlang test object files available to build parser benchmark"
+    )
+endif()
