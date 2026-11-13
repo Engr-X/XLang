@@ -41,6 +41,7 @@ DEFAULT_IMPORTS: set[str] = {
     "xlang.parser.rule.RuleExpression",
     "xlang.parser.pratt.PrattParser",
     "xlang.parser.recursive.ProceduralParser",
+    "xlang.parser.recursive.RecursiveParser",
     "xlang.util.ArrayList",
     "xlang.util.string.String",
 }
@@ -856,7 +857,7 @@ def genSequenceParserRuleDecl(
             f"{indent}                .push(new ParserRule({input_rules_name}, {atom_expr}))"
         )
 
-    lines[-1] += "))"
+    lines[-1] += f")).setResultIndex({sub_rule_index})"
     lines.append("")
     return lines
 
@@ -997,8 +998,8 @@ def genParserDecls(rules: list[JsonObject], tabs: int) -> str:
         else:
             lines.extend([
                 f"{indent}val {parser_name}: pointer<Parser> =",
-                f"{indent}    Parser.fromProcedural(",
-                f"{indent}        new ProceduralParser({parser_rule_name}))",
+                f"{indent}    Parser.fromRecursive(",
+                f"{indent}        new RecursiveParser({parser_rule_name}))",
                 "",
             ])
 
@@ -1023,7 +1024,7 @@ def genParserGraphDecls(rules: list[JsonObject], tabs: int) -> str:
 
     for rule in rules:
         parser_name = getParserName(getRuleClass(rule))
-        factory = "fromPratt" if getParserType(rule) == PRATT_PARSER else "fromProcedural"
+        factory = "fromPratt" if getParserType(rule) == PRATT_PARSER else "fromRecursive"
         lines.append(
             f"{indent}val {parser_name}: pointer<Parser> = Parser.{factory}(null)"
         )
@@ -1120,7 +1121,7 @@ def genSequenceParserRuleAssignment(
             f"{indent}                .push(new ParserRule({input_rules_name}, {atom_expr}))"
         )
 
-    lines[-1] += "))"
+    lines[-1] += f")).setResultIndex({sub_rule_index})"
     return lines
 
 
@@ -1274,7 +1275,7 @@ def genParserGraphInitialization(rules: list[JsonObject], tabs: int) -> str:
             ])
         else:
             lines.append(
-                f"{body_indent}{parser_name}.setProceduralHost(new ProceduralParser({parser_rule_name}))"
+                f"{body_indent}{parser_name}.setRecursiveHost(new RecursiveParser({parser_rule_name}))"
             )
 
         lines.append("")

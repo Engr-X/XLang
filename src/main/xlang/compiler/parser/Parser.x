@@ -72,6 +72,7 @@ import xlang.parser.ParserResult
 import xlang.parser.ParserUtil
 import xlang.parser.pratt.PrattParser
 import xlang.parser.recursive.ProceduralParser
+import xlang.parser.recursive.RecursiveParser
 import xlang.parser.rule.InputRule
 import xlang.parser.rule.InputRules
 import xlang.parser.rule.ParserRule
@@ -2192,44 +2193,44 @@ private fun createCombinatorRegex(
     expression.getAtomRule().getTokenRule().addRuleId(ruleIndex)
     return expression
 }
-val TYPE_TEMP_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val TYPE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val TYPE_TEMP_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val TYPE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
 val EXPRESSION_PARSER: pointer<Parser> = Parser.fromPratt(null)
-val ATOM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val SIZE_OF_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val EXPRESSION_TUPLE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val LIST_LITERAL_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val ELSE_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val WHILE_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val FOR_HEADER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val FOR_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val VARIABLE_DEFINE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val RETURN_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val BLOCK_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val IF_EXPRESSION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val IF_ELSE_EXPRESSION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val MODIFIER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val MODIFIER_LIST_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val PREPROCESS_SETTING_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val ANNOTATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val ANNOTATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val QUALIFIED_NAME_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val PACKAGE_DECLARATION_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val NAMESPACE_IMPORT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val IMPORTED_SYMBOL_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val SELECTIVE_IMPORTS_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val IMPORT_DECLARATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val IMPORT_DECLARATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val FUNCTION_PARAM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val FUNCTION_PARAMS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val FIELD_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val FUNCTION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val STRUCT_CONSTRUCTOR_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val MEMBER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val STRUCT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val PROGRAM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val ATOM_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val SIZE_OF_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val EXPRESSION_TUPLE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val LIST_LITERAL_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val ELSE_STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val WHILE_STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val FOR_HEADER_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val FOR_STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val VARIABLE_DEFINE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val RETURN_STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val BLOCK_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val IF_EXPRESSION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val IF_ELSE_EXPRESSION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val MODIFIER_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val MODIFIER_LIST_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val PREPROCESS_SETTING_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val ANNOTATION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val ANNOTATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val QUALIFIED_NAME_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val PACKAGE_DECLARATION_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val NAMESPACE_IMPORT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val IMPORTED_SYMBOL_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val SELECTIVE_IMPORTS_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val IMPORT_DECLARATION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val IMPORT_DECLARATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val FUNCTION_PARAM_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val FUNCTION_PARAMS_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val FIELD_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val FUNCTION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val STRUCT_CONSTRUCTOR_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val MEMBER_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val STRUCT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val PROGRAM_PARSER: pointer<Parser> = Parser.fromRecursive(null)
 
 private val TYPE_TEMP_RULE: pointer<InputRules> =
     new InputRules(100, preprocessTypeTokens)
@@ -4920,7 +4921,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_POINTER, 0)))
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LESS, 0)))
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.STAR, 0)))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 0)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 0))))).setResultIndex(0)
 
     TYPE_TEMP_CRULE_1 =
         new ParserRule(
@@ -4930,70 +4931,70 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_POINTER, 1)))
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LESS, 1)))
                     .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(TYPE_PARSER)))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 1)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 1))))).setResultIndex(1)
 
     TYPE_TEMP_CRULE_2 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_BOOL, 2)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_BOOL, 2))))).setResultIndex(2)
 
     TYPE_TEMP_CRULE_3 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_BYTE, 3)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_BYTE, 3))))).setResultIndex(3)
 
     TYPE_TEMP_CRULE_4 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_CHAR, 4)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_CHAR, 4))))).setResultIndex(4)
 
     TYPE_TEMP_CRULE_5 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_DOUBLE, 5)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_DOUBLE, 5))))).setResultIndex(5)
 
     TYPE_TEMP_CRULE_6 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_FLOAT, 6)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_FLOAT, 6))))).setResultIndex(6)
 
     TYPE_TEMP_CRULE_7 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_INT, 7)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_INT, 7))))).setResultIndex(7)
 
     TYPE_TEMP_CRULE_8 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_LONG, 8)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_LONG, 8))))).setResultIndex(8)
 
     TYPE_TEMP_CRULE_9 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_SHORT, 9)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_SHORT, 9))))).setResultIndex(9)
 
     TYPE_TEMP_CRULE_10 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_VOID, 10)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_VOID, 10))))).setResultIndex(10)
 
     TYPE_TEMP_CRULE_11 =
         new ParserRule(
@@ -5004,7 +5005,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createLoop(TYPE_PARSER, Parser.createProcedural(TYPE_TEMP_RULE_11_SPLIT_1_PARSER_RULE), false)))
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 11)))
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.ARROW, 11)))
-                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(TYPE_PARSER))))).setResultIndex(11)
 
     TYPE_TEMP_CRULE_12 =
         new ParserRule(
@@ -5014,7 +5015,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.KW_BLOB, 12)))
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACKET, 12)))
                     .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACKET, 12)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACKET, 12))))).setResultIndex(12)
 
     TYPE_TEMP_CRULE_13 =
         new ParserRule(
@@ -5024,14 +5025,14 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
                     .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.LESS, 13)))
                     .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createLoop(TYPE_PARSER, Parser.createProcedural(TYPE_TEMP_RULE_13_SPLIT_2_PARSER_RULE), false)))
-                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 13)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, createCombinatorRegex(Tokenizer.GREATER, 13))))).setResultIndex(13)
 
     TYPE_TEMP_CRULE_14 =
         new ParserRule(
             TYPE_TEMP_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))))
+                    .push(new ParserRule(TYPE_TEMP_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER))))).setResultIndex(14)
 
     TYPE_TEMP_CRULE =
         RuleExpression.createSelect(
@@ -5058,7 +5059,7 @@ private fun initializeParserGraph() -> bool
             TYPE_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(TYPE_RULE, RuleExpression.createRef(TYPE_TEMP_PARSER)))))
+                    .push(new ParserRule(TYPE_RULE, RuleExpression.createRef(TYPE_TEMP_PARSER))))).setResultIndex(0)
 
     TYPE_CRULE_1 =
         new ParserRule(
@@ -5067,7 +5068,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(TYPE_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 1)))
                     .push(new ParserRule(TYPE_RULE, RuleExpression.createRef(TYPE_PARSER)))
-                    .push(new ParserRule(TYPE_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))))
+                    .push(new ParserRule(TYPE_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1))))).setResultIndex(1)
 
     TYPE_CRULE =
         RuleExpression.createSelect(
@@ -5083,7 +5084,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NEW, 0)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER))))).setResultIndex(0)
 
     EXPRESSION_CRULE_1 =
         new ParserRule(
@@ -5091,14 +5092,14 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NEW, 1)))
-                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1))))).setResultIndex(1)
 
     EXPRESSION_CRULE_2 =
         new ParserRule(
             EXPRESSION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(SIZE_OF_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(SIZE_OF_PARSER))))).setResultIndex(2)
 
     EXPRESSION_CRULE_3 =
         new ParserRule(
@@ -5106,35 +5107,35 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER))))).setResultIndex(3)
 
     EXPRESSION_CRULE_4 =
         new ParserRule(
             EXPRESSION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER))))).setResultIndex(4)
 
     EXPRESSION_CRULE_5 =
         new ParserRule(
             EXPRESSION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(IF_EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(IF_EXPRESSION_PARSER))))).setResultIndex(5)
 
     EXPRESSION_CRULE_6 =
         new ParserRule(
             EXPRESSION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER))))).setResultIndex(6)
 
     EXPRESSION_CRULE_7 =
         new ParserRule(
             EXPRESSION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(ATOM_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(ATOM_PARSER))))).setResultIndex(7)
 
     EXPRESSION_CRULE_8 =
         new ParserRule(
@@ -5143,7 +5144,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 8)))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 8)))))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 8))))).setResultIndex(8)
 
     EXPRESSION_CRULE_9 =
         new ParserRule(
@@ -5151,7 +5152,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PLUS, 9)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(9)
 
     EXPRESSION_CRULE_10 =
         new ParserRule(
@@ -5159,7 +5160,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.MINUS, 10)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(10)
 
     EXPRESSION_CRULE_11 =
         new ParserRule(
@@ -5167,7 +5168,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_PLUS, 11)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(11)
 
     EXPRESSION_CRULE_12 =
         new ParserRule(
@@ -5175,7 +5176,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_MINUS, 12)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(12)
 
     EXPRESSION_CRULE_13 =
         new ParserRule(
@@ -5183,7 +5184,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_INV, 13)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(13)
 
     EXPRESSION_CRULE_14 =
         new ParserRule(
@@ -5191,7 +5192,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG, 14)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(14)
 
     EXPRESSION_CRULE_15 =
         new ParserRule(
@@ -5199,7 +5200,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(LIST_LITERAL_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(LIST_LITERAL_PARSER))))).setResultIndex(15)
 
     EXPRESSION_CRULE_16 =
         new ParserRule(
@@ -5209,7 +5210,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOT, 16)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 16)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_TUPLE_PARSER))))).setResultIndex(16)
 
     EXPRESSION_CRULE_17 =
         new ParserRule(
@@ -5218,7 +5219,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOT, 17)))
-                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 17)))))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 17))))).setResultIndex(17)
 
     EXPRESSION_CRULE_18 =
         new ParserRule(
@@ -5226,7 +5227,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_PLUS, 18)))))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_PLUS, 18))))).setResultIndex(18)
 
     EXPRESSION_CRULE_19 =
         new ParserRule(
@@ -5234,7 +5235,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_MINUS, 19)))))
+                    .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_MINUS, 19))))).setResultIndex(19)
 
     EXPRESSION_CRULE_20 =
         new ParserRule(
@@ -5243,7 +5244,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_AS, 20)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(TYPE_PARSER))))).setResultIndex(20)
 
     EXPRESSION_CRULE_21 =
         new ParserRule(
@@ -5252,7 +5253,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_STAR, 21)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(21)
 
     EXPRESSION_CRULE_22 =
         new ParserRule(
@@ -5261,7 +5262,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.STAR, 22)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(22)
 
     EXPRESSION_CRULE_23 =
         new ParserRule(
@@ -5270,7 +5271,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.SLASH, 23)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(23)
 
     EXPRESSION_CRULE_24 =
         new ParserRule(
@@ -5279,7 +5280,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PERCENT, 24)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(24)
 
     EXPRESSION_CRULE_25 =
         new ParserRule(
@@ -5288,7 +5289,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PLUS, 25)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(25)
 
     EXPRESSION_CRULE_26 =
         new ParserRule(
@@ -5297,7 +5298,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.MINUS, 26)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(26)
 
     EXPRESSION_CRULE_27 =
         new ParserRule(
@@ -5306,7 +5307,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_SHL, 27)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(27)
 
     EXPRESSION_CRULE_28 =
         new ParserRule(
@@ -5315,7 +5316,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_SHR, 28)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(28)
 
     EXPRESSION_CRULE_29 =
         new ParserRule(
@@ -5324,7 +5325,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_USHR, 29)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(29)
 
     EXPRESSION_CRULE_30 =
         new ParserRule(
@@ -5333,7 +5334,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.GREATER, 30)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(30)
 
     EXPRESSION_CRULE_31 =
         new ParserRule(
@@ -5342,7 +5343,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.LESS, 31)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(31)
 
     EXPRESSION_CRULE_32 =
         new ParserRule(
@@ -5351,7 +5352,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.GREATER_EQUAL, 32)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(32)
 
     EXPRESSION_CRULE_33 =
         new ParserRule(
@@ -5360,7 +5361,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.LESS_EQUAL, 33)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(33)
 
     EXPRESSION_CRULE_34 =
         new ParserRule(
@@ -5369,7 +5370,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TRIPLE_EQUAL, 34)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(34)
 
     EXPRESSION_CRULE_35 =
         new ParserRule(
@@ -5378,7 +5379,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_EQUAL, 35)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(35)
 
     EXPRESSION_CRULE_36 =
         new ParserRule(
@@ -5387,7 +5388,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_DOUBLE_EQUAL, 36)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(36)
 
     EXPRESSION_CRULE_37 =
         new ParserRule(
@@ -5396,7 +5397,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.NOT_EQUAL, 37)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(37)
 
     EXPRESSION_CRULE_38 =
         new ParserRule(
@@ -5405,7 +5406,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_AND, 38)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(38)
 
     EXPRESSION_CRULE_39 =
         new ParserRule(
@@ -5414,7 +5415,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NAND, 39)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(39)
 
     EXPRESSION_CRULE_40 =
         new ParserRule(
@@ -5423,7 +5424,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_XOR, 40)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(40)
 
     EXPRESSION_CRULE_41 =
         new ParserRule(
@@ -5432,7 +5433,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_XNOR, 41)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(41)
 
     EXPRESSION_CRULE_42 =
         new ParserRule(
@@ -5441,7 +5442,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_OR, 42)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(42)
 
     EXPRESSION_CRULE_43 =
         new ParserRule(
@@ -5450,7 +5451,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NOR, 43)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(43)
 
     EXPRESSION_CRULE_44 =
         new ParserRule(
@@ -5459,7 +5460,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IMPLIES, 44)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(44)
 
     EXPRESSION_CRULE_45 =
         new ParserRule(
@@ -5468,7 +5469,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NIMPLIES, 45)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(45)
 
     EXPRESSION_CRULE_46 =
         new ParserRule(
@@ -5477,7 +5478,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IFF, 46)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(46)
 
     EXPRESSION_CRULE_47 =
         new ParserRule(
@@ -5486,7 +5487,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_NIFF, 47)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(47)
 
     EXPRESSION_CRULE_48 =
         new ParserRule(
@@ -5495,7 +5496,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_AMPERSAND, 48)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(48)
 
     EXPRESSION_CRULE_49 =
         new ParserRule(
@@ -5504,7 +5505,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_DOUBLE_AMPERSAND, 49)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(49)
 
     EXPRESSION_CRULE_50 =
         new ParserRule(
@@ -5513,7 +5514,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.CARET, 50)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(50)
 
     EXPRESSION_CRULE_51 =
         new ParserRule(
@@ -5522,7 +5523,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_CARET, 51)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(51)
 
     EXPRESSION_CRULE_52 =
         new ParserRule(
@@ -5531,7 +5532,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_PIPE, 52)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(52)
 
     EXPRESSION_CRULE_53 =
         new ParserRule(
@@ -5540,7 +5541,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_DOUBLE_PIPE, 53)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(53)
 
     EXPRESSION_CRULE_54 =
         new ParserRule(
@@ -5549,7 +5550,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.ARROW, 54)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(54)
 
     EXPRESSION_CRULE_55 =
         new ParserRule(
@@ -5558,7 +5559,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.NOT_ARROW, 55)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(55)
 
     EXPRESSION_CRULE_56 =
         new ParserRule(
@@ -5567,7 +5568,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_ARROW, 56)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(56)
 
     EXPRESSION_CRULE_57 =
         new ParserRule(
@@ -5576,7 +5577,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_DOUBLE_ARROW, 57)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(57)
 
     EXPRESSION_CRULE_58 =
         new ParserRule(
@@ -5585,7 +5586,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.EQUAL, 58)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(58)
 
     EXPRESSION_CRULE_59 =
         new ParserRule(
@@ -5594,7 +5595,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_STAR_EQUAL, 59)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(59)
 
     EXPRESSION_CRULE_60 =
         new ParserRule(
@@ -5603,7 +5604,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.STAR_EQUAL, 60)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(60)
 
     EXPRESSION_CRULE_61 =
         new ParserRule(
@@ -5612,7 +5613,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.SLASH_EQUAL, 61)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(61)
 
     EXPRESSION_CRULE_62 =
         new ParserRule(
@@ -5621,7 +5622,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PERCENT_EQUAL, 62)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(62)
 
     EXPRESSION_CRULE_63 =
         new ParserRule(
@@ -5630,7 +5631,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PLUS_EQUAL, 63)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(63)
 
     EXPRESSION_CRULE_64 =
         new ParserRule(
@@ -5639,7 +5640,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.MINUS_EQUAL, 64)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(64)
 
     EXPRESSION_CRULE_65 =
         new ParserRule(
@@ -5648,7 +5649,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_LESS_EQUAL, 65)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(65)
 
     EXPRESSION_CRULE_66 =
         new ParserRule(
@@ -5657,7 +5658,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.DOUBLE_GREATER_EQUAL, 66)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(66)
 
     EXPRESSION_CRULE_67 =
         new ParserRule(
@@ -5666,7 +5667,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TRIPLE_LESS_EQUAL, 67)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(67)
 
     EXPRESSION_CRULE_68 =
         new ParserRule(
@@ -5675,7 +5676,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TRIPLE_GREATER_EQUAL, 68)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(68)
 
     EXPRESSION_CRULE_69 =
         new ParserRule(
@@ -5684,7 +5685,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.AMPERSAND_EQUAL, 69)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(69)
 
     EXPRESSION_CRULE_70 =
         new ParserRule(
@@ -5693,7 +5694,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_AMPERSAND_EQUAL, 70)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(70)
 
     EXPRESSION_CRULE_71 =
         new ParserRule(
@@ -5702,7 +5703,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.PIPE_EQUAL, 71)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(71)
 
     EXPRESSION_CRULE_72 =
         new ParserRule(
@@ -5711,7 +5712,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(EXPRESSION_RULE, createCombinatorRegex(Tokenizer.BANG_PIPE_EQUAL, 72)))
-                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(72)
 
     EXPRESSION_CRULE =
         RuleExpression.createSelect(
@@ -5796,77 +5797,77 @@ private fun initializeParserGraph() -> bool
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_NULL, 0)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_NULL, 0))))).setResultIndex(0)
 
     ATOM_CRULE_1 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_TRUE, 1)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_TRUE, 1))))).setResultIndex(1)
 
     ATOM_CRULE_2 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_FALSE, 2)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.KW_FALSE, 2))))).setResultIndex(2)
 
     ATOM_CRULE_3 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_CHAR, 3)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_CHAR, 3))))).setResultIndex(3)
 
     ATOM_CRULE_4 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_STRING, 4)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_STRING, 4))))).setResultIndex(4)
 
     ATOM_CRULE_5 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_INTEGER, 5)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_INTEGER, 5))))).setResultIndex(5)
 
     ATOM_CRULE_6 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_LONG, 6)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_LONG, 6))))).setResultIndex(6)
 
     ATOM_CRULE_7 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_FLOAT, 7)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_FLOAT, 7))))).setResultIndex(7)
 
     ATOM_CRULE_8 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_DOUBLE, 8)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_DOUBLE, 8))))).setResultIndex(8)
 
     ATOM_CRULE_9 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_LONG_DOUBLE, 9)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_LONG_DOUBLE, 9))))).setResultIndex(9)
 
     ATOM_CRULE_10 =
         new ParserRule(
             ATOM_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 10)))))
+                    .push(new ParserRule(ATOM_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 10))))).setResultIndex(10)
 
     ATOM_CRULE =
         RuleExpression.createSelect(
@@ -5892,7 +5893,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(SIZE_OF_RULE, createCombinatorRegex(Tokenizer.KW_SIZEOF, 0)))
                     .push(new ParserRule(SIZE_OF_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
                     .push(new ParserRule(SIZE_OF_RULE, RuleExpression.createRef(TYPE_PARSER)))
-                    .push(new ParserRule(SIZE_OF_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))))
+                    .push(new ParserRule(SIZE_OF_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0))))).setResultIndex(0)
 
     SIZE_OF_CRULE =
         RuleExpression.createSelect(
@@ -5907,7 +5908,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(EXPRESSION_TUPLE_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
                     .push(new ParserRule(EXPRESSION_TUPLE_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(EXPRESSION_TUPLE_RULE_0_SPLIT_1_PARSER_RULE), false)))
-                    .push(new ParserRule(EXPRESSION_TUPLE_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))))
+                    .push(new ParserRule(EXPRESSION_TUPLE_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0))))).setResultIndex(0)
 
     EXPRESSION_TUPLE_CRULE =
         RuleExpression.createSelect(
@@ -5922,7 +5923,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(LIST_LITERAL_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACKET, 0)))
                     .push(new ParserRule(LIST_LITERAL_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(LIST_LITERAL_RULE_0_SPLIT_1_PARSER_RULE), false)))
-                    .push(new ParserRule(LIST_LITERAL_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACKET, 0)))))
+                    .push(new ParserRule(LIST_LITERAL_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACKET, 0))))).setResultIndex(0)
 
     LIST_LITERAL_CRULE =
         RuleExpression.createSelect(
@@ -5937,7 +5938,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 0)))
                     .push(new ParserRule(STATEMENT_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(STATEMENT_RULE_0_SPLIT_1_PARSER_RULE), false)))
-                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     STATEMENT_CRULE_1 =
         new ParserRule(
@@ -5946,28 +5947,28 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_VAL, 1)))
                     .push(new ParserRule(STATEMENT_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(STATEMENT_RULE_1_SPLIT_1_PARSER_RULE), false)))
-                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1))))).setResultIndex(1)
 
     STATEMENT_CRULE_2 =
         new ParserRule(
             STATEMENT_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(WHILE_STATEMENT_PARSER)))))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(WHILE_STATEMENT_PARSER))))).setResultIndex(2)
 
     STATEMENT_CRULE_3 =
         new ParserRule(
             STATEMENT_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(FOR_STATEMENT_PARSER)))))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(FOR_STATEMENT_PARSER))))).setResultIndex(3)
 
     STATEMENT_CRULE_4 =
         new ParserRule(
             STATEMENT_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(RETURN_STATEMENT_PARSER)))))
+                    .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(RETURN_STATEMENT_PARSER))))).setResultIndex(4)
 
     STATEMENT_CRULE_5 =
         new ParserRule(
@@ -5975,7 +5976,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_BREAK, 5)))
-                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 5)))))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 5))))).setResultIndex(5)
 
     STATEMENT_CRULE_6 =
         new ParserRule(
@@ -5983,7 +5984,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_CONTINUE, 6)))
-                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6)))))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6))))).setResultIndex(6)
 
     STATEMENT_CRULE_7 =
         new ParserRule(
@@ -5991,7 +5992,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_PASS, 7)))
-                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 7)))))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 7))))).setResultIndex(7)
 
     STATEMENT_CRULE_8 =
         new ParserRule(
@@ -5999,7 +6000,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 8)))))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 8))))).setResultIndex(8)
 
     STATEMENT_CRULE_9 =
         new ParserRule(
@@ -6007,7 +6008,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STATEMENT_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(STATEMENT_RULE_9_SPLIT_0_PARSER_RULE), false)))
-                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 9)))))
+                    .push(new ParserRule(STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 9))))).setResultIndex(9)
 
     STATEMENT_CRULE =
         RuleExpression.createSelect(
@@ -6032,7 +6033,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 0)))
                     .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
                     .push(new ParserRule(ELSE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
-                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     ELSE_STATEMENT_CRULE_1 =
         new ParserRule(
@@ -6041,7 +6042,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 1)))
                     .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
-                    .push(new ParserRule(ELSE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER))))).setResultIndex(1)
 
     ELSE_STATEMENT_CRULE_2 =
         new ParserRule(
@@ -6050,7 +6051,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 2)))
                     .push(new ParserRule(ELSE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
-                    .push(new ParserRule(ELSE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(ELSE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(2)
 
     ELSE_STATEMENT_CRULE =
         RuleExpression.createSelect(
@@ -6069,7 +6070,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))
-                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER))))).setResultIndex(0)
 
     WHILE_STATEMENT_CRULE_1 =
         new ParserRule(
@@ -6079,7 +6080,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_LOOP, 1)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
-                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER))))).setResultIndex(1)
 
     WHILE_STATEMENT_CRULE_2 =
         new ParserRule(
@@ -6089,7 +6090,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_LOOP, 2)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
-                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2))))).setResultIndex(2)
 
     WHILE_STATEMENT_CRULE_3 =
         new ParserRule(
@@ -6098,7 +6099,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_LOOP, 3)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
-                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER))))).setResultIndex(3)
 
     WHILE_STATEMENT_CRULE_4 =
         new ParserRule(
@@ -6110,7 +6111,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 4)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 4)))
-                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER))))).setResultIndex(4)
 
     WHILE_STATEMENT_CRULE_5 =
         new ParserRule(
@@ -6121,7 +6122,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 5)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
-                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER))))).setResultIndex(5)
 
     WHILE_STATEMENT_CRULE_6 =
         new ParserRule(
@@ -6132,7 +6133,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 6)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
-                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6)))))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6))))).setResultIndex(6)
 
     WHILE_STATEMENT_CRULE_7 =
         new ParserRule(
@@ -6142,7 +6143,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_WHILE, 7)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(WHILE_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 7)))
-                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+                    .push(new ParserRule(WHILE_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER))))).setResultIndex(7)
 
     WHILE_STATEMENT_CRULE =
         RuleExpression.createSelect(
@@ -6165,7 +6166,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 0)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 0)))
-                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0))))).setResultIndex(0)
 
     FOR_HEADER_CRULE_1 =
         new ParserRule(
@@ -6176,7 +6177,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 1)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 1)))
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_1_SPLIT_3_PARSER_RULE), false)))
-                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1))))).setResultIndex(1)
 
     FOR_HEADER_CRULE_2 =
         new ParserRule(
@@ -6187,7 +6188,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 2)))
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 2)))
-                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 2)))))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 2))))).setResultIndex(2)
 
     FOR_HEADER_CRULE_3 =
         new ParserRule(
@@ -6199,7 +6200,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 3)))
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_3_SPLIT_4_PARSER_RULE), false)))
-                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 3)))))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 3))))).setResultIndex(3)
 
     FOR_HEADER_CRULE_4 =
         new ParserRule(
@@ -6211,7 +6212,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(VARIABLE_DEFINE_PARSER, Parser.createProcedural(FOR_HEADER_RULE_4_SPLIT_2_PARSER_RULE), false)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 4)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 4)))
-                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 4)))))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 4))))).setResultIndex(4)
 
     FOR_HEADER_CRULE_5 =
         new ParserRule(
@@ -6224,7 +6225,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 5)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 5)))
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_5_SPLIT_5_PARSER_RULE), false)))
-                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 5)))))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 5))))).setResultIndex(5)
 
     FOR_HEADER_CRULE_6 =
         new ParserRule(
@@ -6237,7 +6238,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 6)))
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 6)))
-                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 6)))))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 6))))).setResultIndex(6)
 
     FOR_HEADER_CRULE_7 =
         new ParserRule(
@@ -6251,7 +6252,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.SEMICOLON, 7)))
                     .push(new ParserRule(FOR_HEADER_RULE, RuleExpression.createLoop(EXPRESSION_PARSER, Parser.createProcedural(FOR_HEADER_RULE_7_SPLIT_6_PARSER_RULE), false)))
-                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 7)))))
+                    .push(new ParserRule(FOR_HEADER_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 7))))).setResultIndex(7)
 
     FOR_HEADER_CRULE =
         RuleExpression.createSelect(
@@ -6276,7 +6277,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))
-                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER))))).setResultIndex(0)
 
     FOR_STATEMENT_CRULE_1 =
         new ParserRule(
@@ -6287,7 +6288,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
-                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER)))))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(ELSE_STATEMENT_PARSER))))).setResultIndex(1)
 
     FOR_STATEMENT_CRULE_2 =
         new ParserRule(
@@ -6298,7 +6299,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(BLOCK_PARSER)))
-                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2))))).setResultIndex(2)
 
     FOR_STATEMENT_CRULE_3 =
         new ParserRule(
@@ -6308,7 +6309,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_FOR, 3)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
-                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(STATEMENT_PARSER))))).setResultIndex(3)
 
     FOR_STATEMENT_CRULE_4 =
         new ParserRule(
@@ -6317,7 +6318,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_FOR, 4)))
                     .push(new ParserRule(FOR_STATEMENT_RULE, RuleExpression.createRef(FOR_HEADER_PARSER)))
-                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 4)))))
+                    .push(new ParserRule(FOR_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 4))))).setResultIndex(4)
 
     FOR_STATEMENT_CRULE =
         RuleExpression.createSelect(
@@ -6336,7 +6337,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
                     .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.EQUAL, 0)))
-                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(0)
 
     VARIABLE_DEFINE_CRULE_1 =
         new ParserRule(
@@ -6347,7 +6348,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
                     .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(TYPE_PARSER)))
                     .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.EQUAL, 1)))
-                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(1)
 
     VARIABLE_DEFINE_CRULE_2 =
         new ParserRule(
@@ -6356,14 +6357,14 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 2)))
                     .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
-                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, RuleExpression.createRef(TYPE_PARSER))))).setResultIndex(2)
 
     VARIABLE_DEFINE_CRULE_3 =
         new ParserRule(
             VARIABLE_DEFINE_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))))
+                    .push(new ParserRule(VARIABLE_DEFINE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3))))).setResultIndex(3)
 
     VARIABLE_DEFINE_CRULE =
         RuleExpression.createSelect(
@@ -6380,7 +6381,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_RETURN, 0)))
-                    .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     RETURN_STATEMENT_CRULE_1 =
         new ParserRule(
@@ -6389,7 +6390,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.KW_RETURN, 1)))
                     .push(new ParserRule(RETURN_STATEMENT_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+                    .push(new ParserRule(RETURN_STATEMENT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1))))).setResultIndex(1)
 
     RETURN_STATEMENT_CRULE =
         RuleExpression.createSelect(
@@ -6404,7 +6405,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 0)))
-                    .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 0)))))
+                    .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 0))))).setResultIndex(0)
 
     BLOCK_CRULE_1 =
         new ParserRule(
@@ -6413,7 +6414,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 1)))
                     .push(new ParserRule(BLOCK_RULE, RuleExpression.createLoop(STATEMENT_PARSER, false)))
-                    .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 1)))))
+                    .push(new ParserRule(BLOCK_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 1))))).setResultIndex(1)
 
     BLOCK_CRULE =
         RuleExpression.createSelect(
@@ -6430,7 +6431,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IF, 0)))
                     .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
-                    .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER))))).setResultIndex(0)
 
     IF_EXPRESSION_CRULE_1 =
         new ParserRule(
@@ -6440,7 +6441,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_IF, 1)))
                     .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
-                    .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+                    .push(new ParserRule(IF_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER))))).setResultIndex(1)
 
     IF_EXPRESSION_CRULE =
         RuleExpression.createSelect(
@@ -6459,7 +6460,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER))))).setResultIndex(0)
 
     IF_ELSE_EXPRESSION_CRULE_1 =
         new ParserRule(
@@ -6470,7 +6471,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER))))).setResultIndex(1)
 
     IF_ELSE_EXPRESSION_CRULE_2 =
         new ParserRule(
@@ -6481,7 +6482,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER))))).setResultIndex(2)
 
     IF_ELSE_EXPRESSION_CRULE_3 =
         new ParserRule(
@@ -6493,7 +6494,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER))))).setResultIndex(3)
 
     IF_ELSE_EXPRESSION_CRULE_4 =
         new ParserRule(
@@ -6504,7 +6505,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 4)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER))))).setResultIndex(4)
 
     IF_ELSE_EXPRESSION_CRULE_5 =
         new ParserRule(
@@ -6515,7 +6516,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 5)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(IF_ELSE_EXPRESSION_PARSER))))).setResultIndex(5)
 
     IF_ELSE_EXPRESSION_CRULE_6 =
         new ParserRule(
@@ -6524,7 +6525,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 6)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 6)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER))))).setResultIndex(6)
 
     IF_ELSE_EXPRESSION_CRULE_7 =
         new ParserRule(
@@ -6533,7 +6534,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 7)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 7)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER))))).setResultIndex(7)
 
     IF_ELSE_EXPRESSION_CRULE_8 =
         new ParserRule(
@@ -6542,7 +6543,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELSE, 8)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 8)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(8)
 
     IF_ELSE_EXPRESSION_CRULE_9 =
         new ParserRule(
@@ -6552,7 +6553,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 9)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 9)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(BLOCK_PARSER))))).setResultIndex(9)
 
     IF_ELSE_EXPRESSION_CRULE_10 =
         new ParserRule(
@@ -6562,7 +6563,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 10)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 10)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(STATEMENT_PARSER))))).setResultIndex(10)
 
     IF_ELSE_EXPRESSION_CRULE_11 =
         new ParserRule(
@@ -6572,7 +6573,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.KW_ELIF, 11)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
                     .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, createCombinatorRegex(Tokenizer.COLON, 11)))
-                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))))
+                    .push(new ParserRule(IF_ELSE_EXPRESSION_RULE, RuleExpression.createRef(EXPRESSION_PARSER))))).setResultIndex(11)
 
     IF_ELSE_EXPRESSION_CRULE =
         RuleExpression.createSelect(
@@ -6596,56 +6597,56 @@ private fun initializeParserGraph() -> bool
             MODIFIER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PRIVATE, 0)))))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PRIVATE, 0))))).setResultIndex(0)
 
     MODIFIER_CRULE_1 =
         new ParserRule(
             MODIFIER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PROTECTED, 1)))))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PROTECTED, 1))))).setResultIndex(1)
 
     MODIFIER_CRULE_2 =
         new ParserRule(
             MODIFIER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PUBLIC, 2)))))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_PUBLIC, 2))))).setResultIndex(2)
 
     MODIFIER_CRULE_3 =
         new ParserRule(
             MODIFIER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_STATIC, 3)))))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_STATIC, 3))))).setResultIndex(3)
 
     MODIFIER_CRULE_4 =
         new ParserRule(
             MODIFIER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_FINAL, 4)))))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_FINAL, 4))))).setResultIndex(4)
 
     MODIFIER_CRULE_5 =
         new ParserRule(
             MODIFIER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_INLINE, 5)))))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_INLINE, 5))))).setResultIndex(5)
 
     MODIFIER_CRULE_6 =
         new ParserRule(
             MODIFIER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_NATIVE, 6)))))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_NATIVE, 6))))).setResultIndex(6)
 
     MODIFIER_CRULE_7 =
         new ParserRule(
             MODIFIER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_INTRINSIC, 7)))))
+                    .push(new ParserRule(MODIFIER_RULE, createCombinatorRegex(Tokenizer.KW_INTRINSIC, 7))))).setResultIndex(7)
 
     MODIFIER_CRULE =
         RuleExpression.createSelect(
@@ -6665,13 +6666,13 @@ private fun initializeParserGraph() -> bool
             MODIFIER_LIST_MAYBE_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_LIST_MAYBE_RULE, RuleExpression.createLoop(MODIFIER_PARSER, false)))))
+                    .push(new ParserRule(MODIFIER_LIST_MAYBE_RULE, RuleExpression.createLoop(MODIFIER_PARSER, false))))).setResultIndex(0)
 
     MODIFIER_LIST_MAYBE_CRULE_1 =
         new ParserRule(
             MODIFIER_LIST_MAYBE_RULE,
             RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule))))
+                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
 
     MODIFIER_LIST_MAYBE_CRULE =
         RuleExpression.createSelect(
@@ -6690,7 +6691,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
                     .push(new ParserRule(PREPROCESS_SETTING_RULE, RuleExpression.createLoop(ATOM_PARSER, Parser.createProcedural(PREPROCESS_SETTING_RULE_0_SPLIT_3_PARSER_RULE), false)))
                     .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
-                    .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(PREPROCESS_SETTING_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     PREPROCESS_SETTING_CRULE =
         RuleExpression.createSelect(
@@ -6707,7 +6708,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(ANNOTATION_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
                     .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
                     .push(new ParserRule(ANNOTATION_RULE, RuleExpression.createLoop(ATOM_PARSER, Parser.createProcedural(ANNOTATION_RULE_0_SPLIT_3_PARSER_RULE), false)))
-                    .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))))
+                    .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0))))).setResultIndex(0)
 
     ANNOTATION_CRULE_1 =
         new ParserRule(
@@ -6715,7 +6716,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.AT, 1)))
-                    .push(new ParserRule(ANNOTATION_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))))
+                    .push(new ParserRule(ANNOTATION_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER))))).setResultIndex(1)
 
     ANNOTATION_CRULE =
         RuleExpression.createSelect(
@@ -6730,13 +6731,13 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(ANNOTATIONS_MAYBE_RULE, RuleExpression.createLoop(ANNOTATION_PARSER, false)))
-                    .push(new ParserRule(ANNOTATIONS_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(ANNOTATIONS_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     ANNOTATIONS_MAYBE_CRULE_1 =
         new ParserRule(
             ANNOTATIONS_MAYBE_RULE,
             RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule))))
+                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
 
     ANNOTATIONS_MAYBE_CRULE =
         RuleExpression.createSelect(
@@ -6752,14 +6753,14 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
                     .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.DOT, 0)))
-                    .push(new ParserRule(QUALIFIED_NAME_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))))
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER))))).setResultIndex(0)
 
     QUALIFIED_NAME_CRULE_1 =
         new ParserRule(
             QUALIFIED_NAME_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))))
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1))))).setResultIndex(1)
 
     QUALIFIED_NAME_CRULE =
         RuleExpression.createSelect(
@@ -6775,13 +6776,13 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, createCombinatorRegex(Tokenizer.KW_PACKAGE, 0)))
                     .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
-                    .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     PACKAGE_DECLARATION_MAYBE_CRULE_1 =
         new ParserRule(
             PACKAGE_DECLARATION_MAYBE_RULE,
             RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule))))
+                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
 
     PACKAGE_DECLARATION_MAYBE_CRULE =
         RuleExpression.createSelect(
@@ -6799,7 +6800,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(NAMESPACE_IMPORT_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
                     .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.DOT, 0)))
                     .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.STAR, 0)))
-                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     NAMESPACE_IMPORT_CRULE_1 =
         new ParserRule(
@@ -6808,7 +6809,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 1)))
                     .push(new ParserRule(NAMESPACE_IMPORT_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
-                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+                    .push(new ParserRule(NAMESPACE_IMPORT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1))))).setResultIndex(1)
 
     NAMESPACE_IMPORT_CRULE =
         RuleExpression.createSelect(
@@ -6823,13 +6824,13 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE, createCombinatorRegex(Tokenizer.KW_AS, 0)))
-                    .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))))
+                    .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0))))).setResultIndex(0)
 
     IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_1 =
         new ParserRule(
             IMPORTED_SYMBOL_ALIAS_MAYBE_RULE,
             RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule))))
+                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
 
     IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE =
         RuleExpression.createSelect(
@@ -6847,7 +6848,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createLoop(TYPE_PARSER, Parser.createProcedural(IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE), false)))
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
-                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER)))))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER))))).setResultIndex(0)
 
     IMPORTED_SYMBOL_CRULE_1 =
         new ParserRule(
@@ -6855,7 +6856,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
-                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER)))))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER))))).setResultIndex(1)
 
     IMPORTED_SYMBOL_CRULE =
         RuleExpression.createSelect(
@@ -6873,7 +6874,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 0)))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.STAR, 0)))
-                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     SELECTIVE_IMPORTS_CRULE_1 =
         new ParserRule(
@@ -6887,7 +6888,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createLoop(IMPORTED_SYMBOL_PARSER, Parser.createProcedural(SELECTIVE_IMPORTS_RULE_1_SPLIT_4_PARSER_RULE), false)))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 1)))
-                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1))))).setResultIndex(1)
 
     SELECTIVE_IMPORTS_CRULE_2 =
         new ParserRule(
@@ -6900,7 +6901,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 2)))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createLoop(IMPORTED_SYMBOL_PARSER, Parser.createProcedural(SELECTIVE_IMPORTS_RULE_2_SPLIT_4_PARSER_RULE), false)))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 2)))
-                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2))))).setResultIndex(2)
 
     SELECTIVE_IMPORTS_CRULE_3 =
         new ParserRule(
@@ -6911,7 +6912,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.KW_IMPORT, 3)))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_PARSER)))
-                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3)))))
+                    .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3))))).setResultIndex(3)
 
     SELECTIVE_IMPORTS_CRULE =
         RuleExpression.createSelect(
@@ -6927,14 +6928,14 @@ private fun initializeParserGraph() -> bool
             IMPORT_DECLARATION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(IMPORT_DECLARATION_RULE, RuleExpression.createRef(NAMESPACE_IMPORT_PARSER)))))
+                    .push(new ParserRule(IMPORT_DECLARATION_RULE, RuleExpression.createRef(NAMESPACE_IMPORT_PARSER))))).setResultIndex(0)
 
     IMPORT_DECLARATION_CRULE_1 =
         new ParserRule(
             IMPORT_DECLARATION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(IMPORT_DECLARATION_RULE, RuleExpression.createRef(SELECTIVE_IMPORTS_PARSER)))))
+                    .push(new ParserRule(IMPORT_DECLARATION_RULE, RuleExpression.createRef(SELECTIVE_IMPORTS_PARSER))))).setResultIndex(1)
 
     IMPORT_DECLARATION_CRULE =
         RuleExpression.createSelect(
@@ -6948,13 +6949,13 @@ private fun initializeParserGraph() -> bool
             IMPORT_DECLARATIONS_MAYBE_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(IMPORT_DECLARATIONS_MAYBE_RULE, RuleExpression.createLoop(IMPORT_DECLARATION_PARSER, false)))))
+                    .push(new ParserRule(IMPORT_DECLARATIONS_MAYBE_RULE, RuleExpression.createLoop(IMPORT_DECLARATION_PARSER, false))))).setResultIndex(0)
 
     IMPORT_DECLARATIONS_MAYBE_CRULE_1 =
         new ParserRule(
             IMPORT_DECLARATIONS_MAYBE_RULE,
             RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule))))
+                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
 
     IMPORT_DECLARATIONS_MAYBE_CRULE =
         RuleExpression.createSelect(
@@ -6970,7 +6971,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
                     .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
-                    .push(new ParserRule(FUNCTION_PARAM_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, RuleExpression.createRef(TYPE_PARSER))))).setResultIndex(0)
 
     FUNCTION_PARAM_CRULE_1 =
         new ParserRule(
@@ -6980,7 +6981,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.KW_MUT, 1)))
                     .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
                     .push(new ParserRule(FUNCTION_PARAM_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
-                    .push(new ParserRule(FUNCTION_PARAM_RULE, RuleExpression.createRef(TYPE_PARSER)))))
+                    .push(new ParserRule(FUNCTION_PARAM_RULE, RuleExpression.createRef(TYPE_PARSER))))).setResultIndex(1)
 
     FUNCTION_PARAM_CRULE =
         RuleExpression.createSelect(
@@ -6994,13 +6995,13 @@ private fun initializeParserGraph() -> bool
             FUNCTION_PARAMS_MAYBE_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_PARAMS_MAYBE_RULE, RuleExpression.createLoop(FUNCTION_PARAM_PARSER, Parser.createProcedural(FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE), false)))))
+                    .push(new ParserRule(FUNCTION_PARAMS_MAYBE_RULE, RuleExpression.createLoop(FUNCTION_PARAM_PARSER, Parser.createProcedural(FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE), false))))).setResultIndex(0)
 
     FUNCTION_PARAMS_MAYBE_CRULE_1 =
         new ParserRule(
             FUNCTION_PARAMS_MAYBE_RULE,
             RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule))))
+                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
 
     FUNCTION_PARAMS_MAYBE_CRULE =
         RuleExpression.createSelect(
@@ -7022,7 +7023,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(TYPE_PARSER)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.EQUAL, 0)))
                     .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     FIELD_CRULE_1 =
         new ParserRule(
@@ -7037,7 +7038,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(TYPE_PARSER)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.EQUAL, 1)))
                     .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1))))).setResultIndex(1)
 
     FIELD_CRULE_2 =
         new ParserRule(
@@ -7050,7 +7051,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 2)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
                     .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(TYPE_PARSER)))
-                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2))))).setResultIndex(2)
 
     FIELD_CRULE_3 =
         new ParserRule(
@@ -7063,7 +7064,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
                     .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(TYPE_PARSER)))
-                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3)))))
+                    .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3))))).setResultIndex(3)
 
     FIELD_CRULE =
         RuleExpression.createSelect(
@@ -7090,7 +7091,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.EQUAL, 0)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     FUNCTION_CRULE_1 =
         new ParserRule(
@@ -7108,7 +7109,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1))))).setResultIndex(1)
 
     FUNCTION_CRULE_2 =
         new ParserRule(
@@ -7125,7 +7126,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 2)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2)))))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 2))))).setResultIndex(2)
 
     FUNCTION_CRULE_3 =
         new ParserRule(
@@ -7141,7 +7142,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 3)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 3)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3)))))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 3))))).setResultIndex(3)
 
     FUNCTION_CRULE_4 =
         new ParserRule(
@@ -7157,7 +7158,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 4)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.COLON, 4)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 4)))))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 4))))).setResultIndex(4)
 
     FUNCTION_CRULE_5 =
         new ParserRule(
@@ -7172,7 +7173,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 5)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 5)))))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 5))))).setResultIndex(5)
 
     FUNCTION_CRULE_6 =
         new ParserRule(
@@ -7186,7 +7187,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 6)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 6)))
-                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6)))))
+                    .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6))))).setResultIndex(6)
 
     FUNCTION_CRULE =
         RuleExpression.createSelect(
@@ -7212,7 +7213,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
-                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     STRUCT_CONSTRUCTOR_CRULE_1 =
         new ParserRule(
@@ -7225,7 +7226,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(BLOCK_PARSER)))
-                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1)))))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1))))).setResultIndex(1)
 
     STRUCT_CONSTRUCTOR_CRULE =
         RuleExpression.createSelect(
@@ -7239,28 +7240,28 @@ private fun initializeParserGraph() -> bool
             MEMBER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(FIELD_PARSER)))))
+                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(FIELD_PARSER))))).setResultIndex(0)
 
     MEMBER_CRULE_1 =
         new ParserRule(
             MEMBER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(FUNCTION_PARSER)))))
+                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(FUNCTION_PARSER))))).setResultIndex(1)
 
     MEMBER_CRULE_2 =
         new ParserRule(
             MEMBER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(STRUCT_CONSTRUCTOR_PARSER)))))
+                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(STRUCT_CONSTRUCTOR_PARSER))))).setResultIndex(2)
 
     MEMBER_CRULE_3 =
         new ParserRule(
             MEMBER_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(STRUCT_PARSER)))))
+                    .push(new ParserRule(MEMBER_RULE, RuleExpression.createRef(STRUCT_PARSER))))).setResultIndex(3)
 
     MEMBER_CRULE =
         RuleExpression.createSelect(
@@ -7282,7 +7283,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 0)))
                     .push(new ParserRule(STRUCT_RULE, RuleExpression.createLoop(MEMBER_PARSER, false)))
                     .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.RIGHT_BRACE, 0)))
-                    .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0)))))
+                    .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
     STRUCT_CRULE =
         RuleExpression.createSelect(
@@ -7298,7 +7299,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(PROGRAM_RULE, RuleExpression.createLoop(PREPROCESS_SETTING_PARSER, false)))
                     .push(new ParserRule(PROGRAM_RULE, RuleExpression.createRef(PACKAGE_DECLARATION_MAYBE_PARSER)))
                     .push(new ParserRule(PROGRAM_RULE, RuleExpression.createRef(IMPORT_DECLARATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createLoop(MEMBER_PARSER, false)))))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createLoop(MEMBER_PARSER, false))))).setResultIndex(0)
 
     PROGRAM_CRULE =
         RuleExpression.createSelect(
@@ -7306,9 +7307,9 @@ private fun initializeParserGraph() -> bool
                 .push(PROGRAM_CRULE_0))
     PROGRAM_PARSER_RULE.setExpression(PROGRAM_CRULE)
 
-    TYPE_TEMP_PARSER.setProceduralHost(new ProceduralParser(TYPE_TEMP_PARSER_RULE))
+    TYPE_TEMP_PARSER.setRecursiveHost(new RecursiveParser(TYPE_TEMP_PARSER_RULE))
 
-    TYPE_PARSER.setProceduralHost(new ProceduralParser(TYPE_PARSER_RULE))
+    TYPE_PARSER.setRecursiveHost(new RecursiveParser(TYPE_PARSER_RULE))
 
     EXPRESSION_STARTER_PARSER_RULE = new ParserRule(
         EXPRESSION_STARTER_RULE,
@@ -7321,75 +7322,75 @@ private fun initializeParserGraph() -> bool
         EXPRESSION_STARTER_PARSER_RULE,
         EXPRESSION_CONTINUATION_PARSER_RULE))
 
-    ATOM_PARSER.setProceduralHost(new ProceduralParser(ATOM_PARSER_RULE))
+    ATOM_PARSER.setRecursiveHost(new RecursiveParser(ATOM_PARSER_RULE))
 
-    SIZE_OF_PARSER.setProceduralHost(new ProceduralParser(SIZE_OF_PARSER_RULE))
+    SIZE_OF_PARSER.setRecursiveHost(new RecursiveParser(SIZE_OF_PARSER_RULE))
 
-    EXPRESSION_TUPLE_PARSER.setProceduralHost(new ProceduralParser(EXPRESSION_TUPLE_PARSER_RULE))
+    EXPRESSION_TUPLE_PARSER.setRecursiveHost(new RecursiveParser(EXPRESSION_TUPLE_PARSER_RULE))
 
-    LIST_LITERAL_PARSER.setProceduralHost(new ProceduralParser(LIST_LITERAL_PARSER_RULE))
+    LIST_LITERAL_PARSER.setRecursiveHost(new RecursiveParser(LIST_LITERAL_PARSER_RULE))
 
-    STATEMENT_PARSER.setProceduralHost(new ProceduralParser(STATEMENT_PARSER_RULE))
+    STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(STATEMENT_PARSER_RULE))
 
-    ELSE_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(ELSE_STATEMENT_PARSER_RULE))
+    ELSE_STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(ELSE_STATEMENT_PARSER_RULE))
 
-    WHILE_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(WHILE_STATEMENT_PARSER_RULE))
+    WHILE_STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(WHILE_STATEMENT_PARSER_RULE))
 
-    FOR_HEADER_PARSER.setProceduralHost(new ProceduralParser(FOR_HEADER_PARSER_RULE))
+    FOR_HEADER_PARSER.setRecursiveHost(new RecursiveParser(FOR_HEADER_PARSER_RULE))
 
-    FOR_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(FOR_STATEMENT_PARSER_RULE))
+    FOR_STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(FOR_STATEMENT_PARSER_RULE))
 
-    VARIABLE_DEFINE_PARSER.setProceduralHost(new ProceduralParser(VARIABLE_DEFINE_PARSER_RULE))
+    VARIABLE_DEFINE_PARSER.setRecursiveHost(new RecursiveParser(VARIABLE_DEFINE_PARSER_RULE))
 
-    RETURN_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(RETURN_STATEMENT_PARSER_RULE))
+    RETURN_STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(RETURN_STATEMENT_PARSER_RULE))
 
-    BLOCK_PARSER.setProceduralHost(new ProceduralParser(BLOCK_PARSER_RULE))
+    BLOCK_PARSER.setRecursiveHost(new RecursiveParser(BLOCK_PARSER_RULE))
 
-    IF_EXPRESSION_PARSER.setProceduralHost(new ProceduralParser(IF_EXPRESSION_PARSER_RULE))
+    IF_EXPRESSION_PARSER.setRecursiveHost(new RecursiveParser(IF_EXPRESSION_PARSER_RULE))
 
-    IF_ELSE_EXPRESSION_PARSER.setProceduralHost(new ProceduralParser(IF_ELSE_EXPRESSION_PARSER_RULE))
+    IF_ELSE_EXPRESSION_PARSER.setRecursiveHost(new RecursiveParser(IF_ELSE_EXPRESSION_PARSER_RULE))
 
-    MODIFIER_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_PARSER_RULE))
+    MODIFIER_PARSER.setRecursiveHost(new RecursiveParser(MODIFIER_PARSER_RULE))
 
-    MODIFIER_LIST_MAYBE_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_LIST_MAYBE_PARSER_RULE))
+    MODIFIER_LIST_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(MODIFIER_LIST_MAYBE_PARSER_RULE))
 
-    PREPROCESS_SETTING_PARSER.setProceduralHost(new ProceduralParser(PREPROCESS_SETTING_PARSER_RULE))
+    PREPROCESS_SETTING_PARSER.setRecursiveHost(new RecursiveParser(PREPROCESS_SETTING_PARSER_RULE))
 
-    ANNOTATION_PARSER.setProceduralHost(new ProceduralParser(ANNOTATION_PARSER_RULE))
+    ANNOTATION_PARSER.setRecursiveHost(new RecursiveParser(ANNOTATION_PARSER_RULE))
 
-    ANNOTATIONS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(ANNOTATIONS_MAYBE_PARSER_RULE))
+    ANNOTATIONS_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(ANNOTATIONS_MAYBE_PARSER_RULE))
 
-    QUALIFIED_NAME_PARSER.setProceduralHost(new ProceduralParser(QUALIFIED_NAME_PARSER_RULE))
+    QUALIFIED_NAME_PARSER.setRecursiveHost(new RecursiveParser(QUALIFIED_NAME_PARSER_RULE))
 
-    PACKAGE_DECLARATION_MAYBE_PARSER.setProceduralHost(new ProceduralParser(PACKAGE_DECLARATION_MAYBE_PARSER_RULE))
+    PACKAGE_DECLARATION_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(PACKAGE_DECLARATION_MAYBE_PARSER_RULE))
 
-    NAMESPACE_IMPORT_PARSER.setProceduralHost(new ProceduralParser(NAMESPACE_IMPORT_PARSER_RULE))
+    NAMESPACE_IMPORT_PARSER.setRecursiveHost(new RecursiveParser(NAMESPACE_IMPORT_PARSER_RULE))
 
-    IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE))
+    IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE))
 
-    IMPORTED_SYMBOL_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_PARSER_RULE))
+    IMPORTED_SYMBOL_PARSER.setRecursiveHost(new RecursiveParser(IMPORTED_SYMBOL_PARSER_RULE))
 
-    SELECTIVE_IMPORTS_PARSER.setProceduralHost(new ProceduralParser(SELECTIVE_IMPORTS_PARSER_RULE))
+    SELECTIVE_IMPORTS_PARSER.setRecursiveHost(new RecursiveParser(SELECTIVE_IMPORTS_PARSER_RULE))
 
-    IMPORT_DECLARATION_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATION_PARSER_RULE))
+    IMPORT_DECLARATION_PARSER.setRecursiveHost(new RecursiveParser(IMPORT_DECLARATION_PARSER_RULE))
 
-    IMPORT_DECLARATIONS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATIONS_MAYBE_PARSER_RULE))
+    IMPORT_DECLARATIONS_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(IMPORT_DECLARATIONS_MAYBE_PARSER_RULE))
 
-    FUNCTION_PARAM_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAM_PARSER_RULE))
+    FUNCTION_PARAM_PARSER.setRecursiveHost(new RecursiveParser(FUNCTION_PARAM_PARSER_RULE))
 
-    FUNCTION_PARAMS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAMS_MAYBE_PARSER_RULE))
+    FUNCTION_PARAMS_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(FUNCTION_PARAMS_MAYBE_PARSER_RULE))
 
-    FIELD_PARSER.setProceduralHost(new ProceduralParser(FIELD_PARSER_RULE))
+    FIELD_PARSER.setRecursiveHost(new RecursiveParser(FIELD_PARSER_RULE))
 
-    FUNCTION_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARSER_RULE))
+    FUNCTION_PARSER.setRecursiveHost(new RecursiveParser(FUNCTION_PARSER_RULE))
 
-    STRUCT_CONSTRUCTOR_PARSER.setProceduralHost(new ProceduralParser(STRUCT_CONSTRUCTOR_PARSER_RULE))
+    STRUCT_CONSTRUCTOR_PARSER.setRecursiveHost(new RecursiveParser(STRUCT_CONSTRUCTOR_PARSER_RULE))
 
-    MEMBER_PARSER.setProceduralHost(new ProceduralParser(MEMBER_PARSER_RULE))
+    MEMBER_PARSER.setRecursiveHost(new RecursiveParser(MEMBER_PARSER_RULE))
 
-    STRUCT_PARSER.setProceduralHost(new ProceduralParser(STRUCT_PARSER_RULE))
+    STRUCT_PARSER.setRecursiveHost(new RecursiveParser(STRUCT_PARSER_RULE))
 
-    PROGRAM_PARSER.setProceduralHost(new ProceduralParser(PROGRAM_PARSER_RULE))
+    PROGRAM_PARSER.setRecursiveHost(new RecursiveParser(PROGRAM_PARSER_RULE))
 
     return true
 }

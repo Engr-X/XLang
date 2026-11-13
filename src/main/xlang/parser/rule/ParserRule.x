@@ -31,12 +31,15 @@ struct ParserRule
 
     private var expression: pointer<RuleExpression>
 
+    private var resultIndex: int
+
 
     constructor(inputRule: pointer<InputRules>, expression: pointer<RuleExpression>)
     {
         this.inputRule = inputRule
         this.expression = expression
         this.id = inputRule.id
+        this.resultIndex = -1
     }
 
 
@@ -47,6 +50,16 @@ struct ParserRule
 
 
     fun getId() -> int = this.id
+
+
+    fun getResultIndex() -> int = this.resultIndex
+
+
+    fun setResultIndex(resultIndex: int) -> pointer<ParserRule>
+    {
+        this.resultIndex = resultIndex
+        return this
+    }
 
 
     fun setExpression(expression: pointer<RuleExpression>) -> pointer<ParserRule>
