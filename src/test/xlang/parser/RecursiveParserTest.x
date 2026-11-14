@@ -35,6 +35,8 @@ import xlang.parser.rule.ParserRule
 import xlang.parser.rule.RegexAtomRule
 import xlang.parser.rule.RuleAtom
 import xlang.parser.rule.RuleExpression
+import xlang.parser.rule.RuleSelect
+import xlang.parser.rule.RuleSequence
 import xlang.parser.recursive.RecursiveParser
 import xlang.test.TestCase
 import xlang.test.TestGroup
@@ -53,9 +55,22 @@ fun genTest() -> pointer<TestGroup>
     val resultLifetimeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, resultLifetimeTC, null)
     val constructFailureTC: pointer<TestCase> = new TestCase("constructFailure", constructFailureTest)
     val constructFailureUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, constructFailureTC, null)
+    val ruleAtomEqualsTC: pointer<TestCase> = new TestCase("ruleAtomEquals", ruleAtomEqualsTest)
+    val ruleAtomEqualsUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, ruleAtomEqualsTC, null)
+    val commonPrefixLengthTC: pointer<TestCase> =
+        new TestCase("commonPrefixLength", commonPrefixLengthTest)
+    val commonPrefixLengthUnion: pointer<TestUnion> =
+        new TestUnion(TestCase.TYPE, commonPrefixLengthTC, null)
+    val computeCommonPrefixTableTC: pointer<TestCase> =
+        new TestCase("computeCommonPrefixTable", computeCommonPrefixTableTest)
+    val computeCommonPrefixTableUnion: pointer<TestUnion> =
+        new TestUnion(TestCase.TYPE, computeCommonPrefixTableTC, null)
 
     result.addTestUnion(resultLifetimeUnion)
     result.addTestUnion(constructFailureUnion)
+    result.addTestUnion(ruleAtomEqualsUnion)
+    result.addTestUnion(commonPrefixLengthUnion)
+    result.addTestUnion(computeCommonPrefixTableUnion)
 
     return result
 }
@@ -136,6 +151,246 @@ private fun constructFailureTest() -> int
 
     if result.hasError():
         return 4
+
+    return 0
+}
+
+
+private fun ruleAtomEqualsTest() -> int
+{
+    val trueAtom: pointer<RuleAtom> = RuleAtom.fromRegex(Tokenizer.KW_TRUE)
+    val otherTrueAtom: pointer<RuleAtom> = RuleAtom.fromRegex(Tokenizer.KW_TRUE)
+    val falseAtom: pointer<RuleAtom> = RuleAtom.fromRegex(Tokenizer.KW_FALSE)
+
+    if !trueAtom.equals(otherTrueAtom):
+        return 1
+
+    if trueAtom.equals(falseAtom):
+        return 2
+
+    val regexAtom: pointer<RuleAtom> =
+        RuleAtom.createRegex(Token.ANY_KIND, "[a-z]+")
+    val otherRegexAtom: pointer<RuleAtom> =
+        RuleAtom.createRegex(Token.ANY_KIND, "[a-z]+")
+    val differentRegexAtom: pointer<RuleAtom> =
+        RuleAtom.createRegex(Token.ANY_KIND, "[0-9]+")
+
+    if !regexAtom.equals(otherRegexAtom):
+        return 3
+
+    if regexAtom.equals(differentRegexAtom):
+        return 4
+
+    val input: pointer<InputRule> = new InputRule(makeNullResult)
+    val inputs: pointer<InputRules> = new InputRules(2).push(input)
+    val expression: pointer<RuleExpression> =
+        RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)
+    val rule: pointer<ParserRule> = new ParserRule(inputs, expression)
+    val parser: pointer<Parser> = Parser.createProcedural(rule)
+    val refAtom: pointer<RuleAtom> = RuleAtom.fromParserRef(parser)
+    val sameRefAtom: pointer<RuleAtom> = RuleAtom.fromParserRef(parser)
+    val otherRefAtom: pointer<RuleAtom> =
+        RuleAtom.fromParserRef(Parser.createProcedural(rule))
+
+    if !refAtom.equals(sameRefAtom):
+        return 5
+
+    if refAtom.equals(otherRefAtom):
+        return 6
+
+    val optionalAtom: pointer<RuleAtom> = RuleAtom.createOptional(rule)
+    val sameOptionalAtom: pointer<RuleAtom> = RuleAtom.createOptional(rule)
+    val otherOptionalAtom: pointer<RuleAtom> = RuleAtom.createOptional(
+        new ParserRule(
+            inputs,
+            RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE)))
+
+    if !optionalAtom.equals(sameOptionalAtom):
+        return 7
+
+    if optionalAtom.equals(otherOptionalAtom):
+        return 8
+
+    val loopAtom: pointer<RuleAtom> = RuleAtom.createLoop(parser, false)
+    val sameLoopAtom: pointer<RuleAtom> = RuleAtom.createLoop(parser, false)
+    val trailingLoopAtom: pointer<RuleAtom> = RuleAtom.createLoop(parser, true)
+
+    if !loopAtom.equals(sameLoopAtom):
+        return 9
+
+    if loopAtom.equals(trailingLoopAtom):
+        return 10
+
+    if loopAtom.equals(optionalAtom):
+        return 11
+
+    if loopAtom.equals(null):
+        return 12
+
+    val sequence: pointer<RuleSequence> = new RuleSequence()
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)))
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE)))
+    val sameSequence: pointer<RuleSequence> = new RuleSequence()
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)))
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE)))
+    val differentSequence: pointer<RuleSequence> = new RuleSequence()
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE)))
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)))
+
+    if !sequence.equals(sameSequence):
+        return 13
+
+    if sequence.equals(differentSequence):
+        return 14
+
+    val sequenceExpression: pointer<RuleExpression> =
+        RuleExpression.fromSequence(sequence)
+    val sameSequenceExpression: pointer<RuleExpression> =
+        RuleExpression.fromSequence(sameSequence)
+
+    if !sequenceExpression.equals(sameSequenceExpression):
+        return 15
+
+    val select: pointer<RuleSelect> = new RuleSelect()
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)))
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE)))
+    val sameSelect: pointer<RuleSelect> = new RuleSelect()
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)))
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE)))
+    val differentSelect: pointer<RuleSelect> = new RuleSelect()
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE)))
+        .push(new ParserRule(inputs, RuleExpression.fromRegexAtom(Tokenizer.KW_TRUE)))
+
+    if !select.equals(sameSelect):
+        return 16
+
+    if select.equals(differentSelect):
+        return 17
+
+    val selectExpression: pointer<RuleExpression> =
+        RuleExpression.fromSelect(select)
+    val sameSelectExpression: pointer<RuleExpression> =
+        RuleExpression.fromSelect(sameSelect)
+
+    if !selectExpression.equals(sameSelectExpression):
+        return 18
+
+    if selectExpression.equals(sequenceExpression):
+        return 19
+
+    if selectExpression.equals(null):
+        return 20
+
+    return 0
+}
+
+
+private fun commonPrefixLengthTest() -> int
+{
+    val empty: pointer<InputRule> = new InputRule(makeNullResult)
+    val otherEmpty: pointer<InputRule> = new InputRule(makeNullResult)
+
+    if empty.commonPrefixLength(null) != 0:
+        return 1
+
+    if empty.commonPrefixLength(otherEmpty) != 0:
+        return 2
+
+    val rule: pointer<InputRule> = new InputRule(makeNullResult)
+        .push(RuleAtom.fromRegex(Tokenizer.KW_TRUE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_FALSE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_INT))
+    val same: pointer<InputRule> = new InputRule(makeNullResult)
+        .push(RuleAtom.fromRegex(Tokenizer.KW_TRUE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_FALSE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_INT))
+    val partial: pointer<InputRule> = new InputRule(makeNullResult)
+        .push(RuleAtom.fromRegex(Tokenizer.KW_TRUE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_FALSE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_LONG))
+    val different: pointer<InputRule> = new InputRule(makeNullResult)
+        .push(RuleAtom.fromRegex(Tokenizer.KW_FALSE))
+    val prefix: pointer<InputRule> = new InputRule(makeNullResult)
+        .push(RuleAtom.fromRegex(Tokenizer.KW_TRUE))
+
+    if rule.commonPrefixLength(same) != 3:
+        return 3
+
+    if rule.commonPrefixLength(partial) != 2:
+        return 4
+
+    if rule.commonPrefixLength(different) != 0:
+        return 5
+
+    if rule.commonPrefixLength(prefix) != 1:
+        return 6
+
+    if prefix.commonPrefixLength(rule) != 1:
+        return 7
+
+    if rule.commonPrefixLength(empty) != 0:
+        return 8
+
+    return 0
+}
+
+
+private fun computeCommonPrefixTableTest() -> int
+{
+    val emptyRules: pointer<InputRules> = new InputRules(3)
+    val emptyTable: pointer<ArrayList> =
+        emptyRules.computeCommonPrefixTable()
+
+    if emptyTable == null || emptyTable.length != 0:
+        return 1
+
+    val ruleA: pointer<InputRule> = new InputRule(makeNullResult)
+        .push(RuleAtom.fromRegex(Tokenizer.KW_TRUE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_FALSE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_INT))
+    val ruleB: pointer<InputRule> = new InputRule(makeNullResult)
+        .push(RuleAtom.fromRegex(Tokenizer.KW_TRUE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_LONG))
+    val ruleC: pointer<InputRule> = new InputRule(makeNullResult)
+        .push(RuleAtom.fromRegex(Tokenizer.KW_TRUE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_FALSE))
+        .push(RuleAtom.fromRegex(Tokenizer.KW_LONG))
+    val rules: pointer<InputRules> = new InputRules(4)
+        .push(ruleA)
+        .push(ruleB)
+        .push(ruleC)
+    val table: pointer<ArrayList> = rules.computeCommonPrefixTable()
+
+    if table == null || table.length != 3:
+        return 2
+
+    val row0Slot: pointer<pointer<ArrayList>> =
+        table.get(0) as pointer<pointer<ArrayList>>
+    val row1Slot: pointer<pointer<ArrayList>> =
+        table.get(1) as pointer<pointer<ArrayList>>
+    val row2Slot: pointer<pointer<ArrayList>> =
+        table.get(2) as pointer<pointer<ArrayList>>
+    val row0: pointer<ArrayList> = row0Slot.deref
+    val row1: pointer<ArrayList> = row1Slot.deref
+    val row2: pointer<ArrayList> = row2Slot.deref
+
+    if row0 == null || row0.length != 0:
+        return 3
+
+    if row1 == null || row1.length != 1:
+        return 4
+
+    if row2 == null || row2.length != 2:
+        return 5
+
+    if (row1.get(0) as pointer<int>).deref != 1:
+        return 6
+
+    if (row2.get(0) as pointer<int>).deref != 2:
+        return 7
+
+    if (row2.get(1) as pointer<int>).deref != 1:
+        return 8
 
     return 0
 }

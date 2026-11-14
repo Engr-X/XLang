@@ -50,9 +50,7 @@ struct RegexAtomRule
     private var ruleIds: pointer<HashSet>
 
 
-    private constructor(
-        tokenKind: int, tokenRegex: pointer<char>, tokenCompiledRegex: pointer<*>
-    )
+    private constructor(tokenKind: int, tokenRegex: pointer<char>, tokenCompiledRegex: pointer<*>)
     {
         this.tokenKind = tokenKind
         this.tokenRegex = tokenRegex
@@ -90,6 +88,18 @@ struct RegexAtomRule
         else: 
             Regex.regexMatch(this.tokenCompiledRegex, token.text) > 0
     }
+
+
+    fun equals(other: pointer<RegexAtomRule>) -> bool
+    {
+        if other == null || this.tokenKind != other.tokenKind:
+            return false
+
+        if this.tokenCompiledRegex != null || other.tokenCompiledRegex != null:
+            return false
+
+        return String.streq(this.tokenRegex, other.tokenRegex)
+    }
 }
 
 
@@ -103,6 +113,15 @@ struct OptionalAtomRule
 
 
     fun getRule() -> pointer<ParserRule> = this.rule
+
+
+    fun equals(other: pointer<OptionalAtomRule>) -> bool
+    {
+        if other == null:
+            return false
+
+        return this.rule.equals(other.rule)
+    }
 }
 
 
@@ -139,6 +158,17 @@ struct LoopAtomRule
 
 
     fun getAllowTrailing() -> bool = this.allowTrailing
+
+
+    fun equals(other: pointer<LoopAtomRule>) -> bool
+    {
+        if other == null:
+            return false
+
+        return this.loopRule == other.loopRule &&
+            this.splitBy == other.splitBy &&
+            this.allowTrailing == other.allowTrailing
+    }
 }
 
 
@@ -227,6 +257,42 @@ struct RuleAtom
 
     fun getLoopRule() -> pointer<LoopAtomRule> =
         if this.kind == LOOP_KIND: this.host as pointer<LoopAtomRule> else: null
+
+
+    fun equals(other: pointer<RuleAtom>) -> bool
+    {
+        if other == null || this.kind != other.kind:
+            return false
+
+        if this == other:
+            return true
+
+        if this.kind == TOKEN_KIND:
+        {
+            val left: pointer<RegexAtomRule> = this.host as pointer<RegexAtomRule>
+            val right: pointer<RegexAtomRule> = other.host as pointer<RegexAtomRule>
+            return left.equals(right)
+        }
+
+        if this.kind == REF_TYPE:
+            return this.host == other.host
+
+        if this.kind == OPTIONAL_KIND:
+        {
+            val left: pointer<OptionalAtomRule> = this.host as pointer<OptionalAtomRule>
+            val right: pointer<OptionalAtomRule> = other.host as pointer<OptionalAtomRule>
+            return left.equals(right)
+        }
+
+        if this.kind == LOOP_KIND:
+        {
+            val left: pointer<LoopAtomRule> = this.host as pointer<LoopAtomRule>
+            val right: pointer<LoopAtomRule> = other.host as pointer<LoopAtomRule>
+            return left.equals(right)
+        }
+
+        return false
+    }
 }
 
 
@@ -255,6 +321,33 @@ struct RuleSelect
 
 
     fun length() -> int = this.internelRules.length
+
+
+    fun equals(other: pointer<RuleSelect>) -> bool
+    {
+        if other == null || this.length() != other.length():
+            return false
+
+        if this == other:
+            return true
+
+        for (var i: int = 0; i < this.length(); i++):
+        {
+            val left: pointer<ParserRule> = this.get(i)
+            val right: pointer<ParserRule> = other.get(i)
+
+            if left == right:
+                continue
+
+            if left == null || right == null:
+                return false
+
+            if !left.equals(right):
+                return false
+        }
+
+        return true
+    }
 }
 
 
@@ -283,6 +376,33 @@ struct RuleSequence
 
 
     fun length() -> int = this.ruleSeq.length
+
+
+    fun equals(other: pointer<RuleSequence>) -> bool
+    {
+        if other == null || this.length() != other.length():
+            return false
+
+        if this == other:
+            return true
+
+        for (var i: int = 0; i < this.length(); i++):
+        {
+            val left: pointer<ParserRule> = this.get(i)
+            val right: pointer<ParserRule> = other.get(i)
+
+            if left == right:
+                continue
+
+            if left == null || right == null:
+                return false
+
+            if !left.equals(right):
+                return false
+        }
+
+        return true
+    }
 }
 
 
@@ -373,4 +493,37 @@ struct RuleExpression
 
     fun getSequenceRule() -> pointer<RuleSequence> =
         if this.kind == SEQUENCE_KIND: this.host as pointer<RuleSequence> else: null
+
+
+    fun equals(other: pointer<RuleExpression>) -> bool
+    {
+        if other == null || this.kind != other.kind:
+            return false
+
+        if this == other:
+            return true
+
+        if this.kind == ATOM_KIND:
+        {
+            val left: pointer<RuleAtom> = this.host as pointer<RuleAtom>
+            val right: pointer<RuleAtom> = other.host as pointer<RuleAtom>
+            return left.equals(right)
+        }
+
+        if this.kind == SELECT_KIND:
+        {
+            val left: pointer<RuleSelect> = this.host as pointer<RuleSelect>
+            val right: pointer<RuleSelect> = other.host as pointer<RuleSelect>
+            return left.equals(right)
+        }
+
+        if this.kind == SEQUENCE_KIND:
+        {
+            val left: pointer<RuleSequence> = this.host as pointer<RuleSequence>
+            val right: pointer<RuleSequence> = other.host as pointer<RuleSequence>
+            return left.equals(right)
+        }
+
+        return false
+    }
 }

@@ -996,18 +996,11 @@ def genParserDecls(rules: list[JsonObject], tabs: int) -> str:
                 f"{indent}        {getPrattRoleParserRuleName(rule, 'continuation')}))",
                 "",
             ])
-        elif getParserType(rule) == PROCEDURAL_PARSER:
+        else:
             lines.extend([
                 f"{indent}val {parser_name}: pointer<Parser> =",
                 f"{indent}    Parser.fromProcedural(",
                 f"{indent}        new ProceduralParser({parser_rule_name}))",
-                "",
-            ])
-        else:
-            lines.extend([
-                f"{indent}val {parser_name}: pointer<Parser> =",
-                f"{indent}    Parser.fromRecursive(",
-                f"{indent}        new RecursiveParser({parser_rule_name}))",
                 "",
             ])
 
@@ -1033,11 +1026,9 @@ def genParserGraphDecls(rules: list[JsonObject], tabs: int) -> str:
     for rule in rules:
         parser_name = getParserName(getRuleClass(rule))
         parser_type = getParserType(rule)
-        factory = (
-            "fromPratt" if parser_type == PRATT_PARSER else
-            "fromProcedural" if parser_type == PROCEDURAL_PARSER else
-            "fromRecursive"
-        )
+        # Recursive rules temporarily use the procedural runtime while the
+        # optimized recursive parser graph is being developed.
+        factory = "fromPratt" if parser_type == PRATT_PARSER else "fromProcedural"
         lines.append(
             f"{indent}val {parser_name}: pointer<Parser> = Parser.{factory}(null)"
         )
@@ -1286,13 +1277,9 @@ def genParserGraphInitialization(rules: list[JsonObject], tabs: int) -> str:
                 f"{body_indent}    {getPrattRoleParserRuleName(rule, 'starter')},",
                 f"{body_indent}    {getPrattRoleParserRuleName(rule, 'continuation')}))",
             ])
-        elif getParserType(rule) == PROCEDURAL_PARSER:
-            lines.append(
-                f"{body_indent}{parser_name}.setProceduralHost(new ProceduralParser({parser_rule_name}))"
-            )
         else:
             lines.append(
-                f"{body_indent}{parser_name}.setRecursiveHost(new RecursiveParser({parser_rule_name}))"
+                f"{body_indent}{parser_name}.setProceduralHost(new ProceduralParser({parser_rule_name}))"
             )
 
         lines.append("")

@@ -2193,44 +2193,44 @@ private fun createCombinatorRegex(
     expression.getAtomRule().getTokenRule().addRuleId(ruleIndex)
     return expression
 }
-val TYPE_TEMP_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val TYPE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val TYPE_TEMP_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val TYPE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val EXPRESSION_PARSER: pointer<Parser> = Parser.fromPratt(null)
-val ATOM_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val SIZE_OF_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val EXPRESSION_TUPLE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val LIST_LITERAL_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val ELSE_STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val WHILE_STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val FOR_HEADER_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val FOR_STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val VARIABLE_DEFINE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val RETURN_STATEMENT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val BLOCK_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val IF_EXPRESSION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val IF_ELSE_EXPRESSION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val MODIFIER_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val MODIFIER_LIST_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val PREPROCESS_SETTING_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val ANNOTATION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val ANNOTATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val QUALIFIED_NAME_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val PACKAGE_DECLARATION_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val NAMESPACE_IMPORT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val IMPORTED_SYMBOL_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val SELECTIVE_IMPORTS_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val IMPORT_DECLARATION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val IMPORT_DECLARATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val FUNCTION_PARAM_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val FUNCTION_PARAMS_MAYBE_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val FIELD_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val FUNCTION_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val STRUCT_CONSTRUCTOR_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val MEMBER_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val STRUCT_PARSER: pointer<Parser> = Parser.fromRecursive(null)
-val PROGRAM_PARSER: pointer<Parser> = Parser.fromRecursive(null)
+val ATOM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val SIZE_OF_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val EXPRESSION_TUPLE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val LIST_LITERAL_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val ELSE_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val WHILE_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FOR_HEADER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FOR_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val VARIABLE_DEFINE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val RETURN_STATEMENT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val BLOCK_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IF_EXPRESSION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IF_ELSE_EXPRESSION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val MODIFIER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val MODIFIER_LIST_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val PREPROCESS_SETTING_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val ANNOTATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val ANNOTATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val QUALIFIED_NAME_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val PACKAGE_DECLARATION_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val NAMESPACE_IMPORT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORTED_SYMBOL_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val SELECTIVE_IMPORTS_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORT_DECLARATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORT_DECLARATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FUNCTION_PARAM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FUNCTION_PARAMS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FIELD_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FUNCTION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val STRUCT_CONSTRUCTOR_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val MEMBER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val STRUCT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val PROGRAM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 
 private val TYPE_TEMP_RULE: pointer<InputRules> =
     new InputRules(100, preprocessTypeTokens)
@@ -7307,9 +7307,9 @@ private fun initializeParserGraph() -> bool
                 .push(PROGRAM_CRULE_0))
     PROGRAM_PARSER_RULE.setExpression(PROGRAM_CRULE)
 
-    TYPE_TEMP_PARSER.setRecursiveHost(new RecursiveParser(TYPE_TEMP_PARSER_RULE))
+    TYPE_TEMP_PARSER.setProceduralHost(new ProceduralParser(TYPE_TEMP_PARSER_RULE))
 
-    TYPE_PARSER.setRecursiveHost(new RecursiveParser(TYPE_PARSER_RULE))
+    TYPE_PARSER.setProceduralHost(new ProceduralParser(TYPE_PARSER_RULE))
 
     EXPRESSION_STARTER_PARSER_RULE = new ParserRule(
         EXPRESSION_STARTER_RULE,
@@ -7322,75 +7322,75 @@ private fun initializeParserGraph() -> bool
         EXPRESSION_STARTER_PARSER_RULE,
         EXPRESSION_CONTINUATION_PARSER_RULE))
 
-    ATOM_PARSER.setRecursiveHost(new RecursiveParser(ATOM_PARSER_RULE))
+    ATOM_PARSER.setProceduralHost(new ProceduralParser(ATOM_PARSER_RULE))
 
-    SIZE_OF_PARSER.setRecursiveHost(new RecursiveParser(SIZE_OF_PARSER_RULE))
+    SIZE_OF_PARSER.setProceduralHost(new ProceduralParser(SIZE_OF_PARSER_RULE))
 
-    EXPRESSION_TUPLE_PARSER.setRecursiveHost(new RecursiveParser(EXPRESSION_TUPLE_PARSER_RULE))
+    EXPRESSION_TUPLE_PARSER.setProceduralHost(new ProceduralParser(EXPRESSION_TUPLE_PARSER_RULE))
 
-    LIST_LITERAL_PARSER.setRecursiveHost(new RecursiveParser(LIST_LITERAL_PARSER_RULE))
+    LIST_LITERAL_PARSER.setProceduralHost(new ProceduralParser(LIST_LITERAL_PARSER_RULE))
 
-    STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(STATEMENT_PARSER_RULE))
+    STATEMENT_PARSER.setProceduralHost(new ProceduralParser(STATEMENT_PARSER_RULE))
 
-    ELSE_STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(ELSE_STATEMENT_PARSER_RULE))
+    ELSE_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(ELSE_STATEMENT_PARSER_RULE))
 
-    WHILE_STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(WHILE_STATEMENT_PARSER_RULE))
+    WHILE_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(WHILE_STATEMENT_PARSER_RULE))
 
-    FOR_HEADER_PARSER.setRecursiveHost(new RecursiveParser(FOR_HEADER_PARSER_RULE))
+    FOR_HEADER_PARSER.setProceduralHost(new ProceduralParser(FOR_HEADER_PARSER_RULE))
 
-    FOR_STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(FOR_STATEMENT_PARSER_RULE))
+    FOR_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(FOR_STATEMENT_PARSER_RULE))
 
-    VARIABLE_DEFINE_PARSER.setRecursiveHost(new RecursiveParser(VARIABLE_DEFINE_PARSER_RULE))
+    VARIABLE_DEFINE_PARSER.setProceduralHost(new ProceduralParser(VARIABLE_DEFINE_PARSER_RULE))
 
-    RETURN_STATEMENT_PARSER.setRecursiveHost(new RecursiveParser(RETURN_STATEMENT_PARSER_RULE))
+    RETURN_STATEMENT_PARSER.setProceduralHost(new ProceduralParser(RETURN_STATEMENT_PARSER_RULE))
 
-    BLOCK_PARSER.setRecursiveHost(new RecursiveParser(BLOCK_PARSER_RULE))
+    BLOCK_PARSER.setProceduralHost(new ProceduralParser(BLOCK_PARSER_RULE))
 
-    IF_EXPRESSION_PARSER.setRecursiveHost(new RecursiveParser(IF_EXPRESSION_PARSER_RULE))
+    IF_EXPRESSION_PARSER.setProceduralHost(new ProceduralParser(IF_EXPRESSION_PARSER_RULE))
 
-    IF_ELSE_EXPRESSION_PARSER.setRecursiveHost(new RecursiveParser(IF_ELSE_EXPRESSION_PARSER_RULE))
+    IF_ELSE_EXPRESSION_PARSER.setProceduralHost(new ProceduralParser(IF_ELSE_EXPRESSION_PARSER_RULE))
 
-    MODIFIER_PARSER.setRecursiveHost(new RecursiveParser(MODIFIER_PARSER_RULE))
+    MODIFIER_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_PARSER_RULE))
 
-    MODIFIER_LIST_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(MODIFIER_LIST_MAYBE_PARSER_RULE))
+    MODIFIER_LIST_MAYBE_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_LIST_MAYBE_PARSER_RULE))
 
-    PREPROCESS_SETTING_PARSER.setRecursiveHost(new RecursiveParser(PREPROCESS_SETTING_PARSER_RULE))
+    PREPROCESS_SETTING_PARSER.setProceduralHost(new ProceduralParser(PREPROCESS_SETTING_PARSER_RULE))
 
-    ANNOTATION_PARSER.setRecursiveHost(new RecursiveParser(ANNOTATION_PARSER_RULE))
+    ANNOTATION_PARSER.setProceduralHost(new ProceduralParser(ANNOTATION_PARSER_RULE))
 
-    ANNOTATIONS_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(ANNOTATIONS_MAYBE_PARSER_RULE))
+    ANNOTATIONS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(ANNOTATIONS_MAYBE_PARSER_RULE))
 
-    QUALIFIED_NAME_PARSER.setRecursiveHost(new RecursiveParser(QUALIFIED_NAME_PARSER_RULE))
+    QUALIFIED_NAME_PARSER.setProceduralHost(new ProceduralParser(QUALIFIED_NAME_PARSER_RULE))
 
-    PACKAGE_DECLARATION_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(PACKAGE_DECLARATION_MAYBE_PARSER_RULE))
+    PACKAGE_DECLARATION_MAYBE_PARSER.setProceduralHost(new ProceduralParser(PACKAGE_DECLARATION_MAYBE_PARSER_RULE))
 
-    NAMESPACE_IMPORT_PARSER.setRecursiveHost(new RecursiveParser(NAMESPACE_IMPORT_PARSER_RULE))
+    NAMESPACE_IMPORT_PARSER.setProceduralHost(new ProceduralParser(NAMESPACE_IMPORT_PARSER_RULE))
 
-    IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE))
+    IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE))
 
-    IMPORTED_SYMBOL_PARSER.setRecursiveHost(new RecursiveParser(IMPORTED_SYMBOL_PARSER_RULE))
+    IMPORTED_SYMBOL_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_PARSER_RULE))
 
-    SELECTIVE_IMPORTS_PARSER.setRecursiveHost(new RecursiveParser(SELECTIVE_IMPORTS_PARSER_RULE))
+    SELECTIVE_IMPORTS_PARSER.setProceduralHost(new ProceduralParser(SELECTIVE_IMPORTS_PARSER_RULE))
 
-    IMPORT_DECLARATION_PARSER.setRecursiveHost(new RecursiveParser(IMPORT_DECLARATION_PARSER_RULE))
+    IMPORT_DECLARATION_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATION_PARSER_RULE))
 
-    IMPORT_DECLARATIONS_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(IMPORT_DECLARATIONS_MAYBE_PARSER_RULE))
+    IMPORT_DECLARATIONS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATIONS_MAYBE_PARSER_RULE))
 
-    FUNCTION_PARAM_PARSER.setRecursiveHost(new RecursiveParser(FUNCTION_PARAM_PARSER_RULE))
+    FUNCTION_PARAM_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAM_PARSER_RULE))
 
-    FUNCTION_PARAMS_MAYBE_PARSER.setRecursiveHost(new RecursiveParser(FUNCTION_PARAMS_MAYBE_PARSER_RULE))
+    FUNCTION_PARAMS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAMS_MAYBE_PARSER_RULE))
 
-    FIELD_PARSER.setRecursiveHost(new RecursiveParser(FIELD_PARSER_RULE))
+    FIELD_PARSER.setProceduralHost(new ProceduralParser(FIELD_PARSER_RULE))
 
-    FUNCTION_PARSER.setRecursiveHost(new RecursiveParser(FUNCTION_PARSER_RULE))
+    FUNCTION_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARSER_RULE))
 
-    STRUCT_CONSTRUCTOR_PARSER.setRecursiveHost(new RecursiveParser(STRUCT_CONSTRUCTOR_PARSER_RULE))
+    STRUCT_CONSTRUCTOR_PARSER.setProceduralHost(new ProceduralParser(STRUCT_CONSTRUCTOR_PARSER_RULE))
 
-    MEMBER_PARSER.setRecursiveHost(new RecursiveParser(MEMBER_PARSER_RULE))
+    MEMBER_PARSER.setProceduralHost(new ProceduralParser(MEMBER_PARSER_RULE))
 
-    STRUCT_PARSER.setRecursiveHost(new RecursiveParser(STRUCT_PARSER_RULE))
+    STRUCT_PARSER.setProceduralHost(new ProceduralParser(STRUCT_PARSER_RULE))
 
-    PROGRAM_PARSER.setRecursiveHost(new RecursiveParser(PROGRAM_PARSER_RULE))
+    PROGRAM_PARSER.setProceduralHost(new ProceduralParser(PROGRAM_PARSER_RULE))
 
     return true
 }

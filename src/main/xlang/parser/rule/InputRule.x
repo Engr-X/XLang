@@ -172,6 +172,30 @@ struct InputRule
         fromToken: pointer<LinkedListNode>
     ) -> pointer<TokenList> =
         this.afterFun(tokens, fromToken)
+
+
+    fun commonPrefixLength(other: pointer<InputRule>) -> int
+    {
+        if other == null:
+            return 0
+
+        val limit: int =
+            if this.length() < other.length(): this.length() else: other.length()
+
+        for (var i: int = 0; i < limit; i++):
+        {
+            val left: pointer<RuleAtom> = this.getAtom(i)
+            val right: pointer<RuleAtom> = other.getAtom(i)
+
+            if left == right:
+                continue
+
+            if left == null || !left.equals(right):
+                return i
+        }
+
+        return limit
+    }
 }
 
 
@@ -228,6 +252,29 @@ struct InputRules
 
 
     fun length() -> int = this.rules.length
+
+
+    fun computeCommonPrefixTable() -> pointer<ArrayList>
+    {
+        val result: pointer<ArrayList> = new ArrayList(sizeof(pointer<ArrayList>))
+
+        for (var i: int = 0; i < this.rules.length; i++):
+        {
+            val row: pointer<ArrayList> = new ArrayList(sizeof(int))
+            val current: pointer<InputRule> = this.getRule(i)
+
+            for (var j: int = 0; j < i; j++):
+            {
+                val previous: pointer<InputRule> = this.getRule(j)
+                val commonLength: int = previous.commonPrefixLength(current)
+                row.push(commonLength.ref)
+            }
+
+            result.push(row.ref)
+        }
+
+        return result
+    }
 
 
     fun sort():

@@ -67,4 +67,19 @@ struct ParserRule
         this.expression = expression
         return this
     }
+
+
+    fun equals(other: pointer<ParserRule>) -> bool
+    {
+        if other == null:
+            return false
+
+        if this == other || this.expression == other.expression:
+            return true
+
+        if this.expression == null || other.expression == null:
+            return false
+
+        return this.expression.equals(other.expression)
+    }
 }

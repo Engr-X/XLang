@@ -47,11 +47,25 @@ struct ProceduralParser
 
     private var atoms: pointer<ArrayList>
 
+    private var commonPrefixTable: pointer<ArrayList>
+
     
     constructor(rule: pointer<ParserRule>)
     {
         this.atoms = new ArrayList(sizeof(RuleAtom))
         this.rule = rule
+        this.commonPrefixTable =
+            rule.getInputRule().computeCommonPrefixTable()
+    }
+
+
+    private constructor(
+        rule: pointer<ParserRule>,
+        commonPrefixTable: pointer<ArrayList>)
+    {
+        this.atoms = new ArrayList(sizeof(RuleAtom))
+        this.rule = rule
+        this.commonPrefixTable = commonPrefixTable
     }
 
 
@@ -274,5 +288,5 @@ struct ProceduralParser
 
 
     fun clone() -> pointer<ProceduralParser> =
-        new ProceduralParser(this.rule)
+        new ProceduralParser(this.rule, this.commonPrefixTable)
 }
