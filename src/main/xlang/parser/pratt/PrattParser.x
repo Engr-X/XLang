@@ -108,8 +108,7 @@ struct PrattParser
     ) -> pointer<ParserResult>
     {
         val rules: pointer<InputRules> = this.starterRules.getInputRule()
-        val parser: pointer<ProceduralParser> =
-            this.proceduralSParser.clone()
+        val parser: pointer<ProceduralParser> = this.proceduralSParser
 
         for (var i: int = 0; i < rules.length(); i++):
         {
@@ -233,8 +232,7 @@ struct PrattParser
         for (var i: int = 0; i < rules.length; i++):
             cursors.push(fromToken)
 
-        val parser: pointer<ProceduralParser> =
-            this.proceduralCParser.clone()
+        val parser: pointer<ProceduralParser> = this.proceduralCParser
         var atomIndex: int = 1
 
         while rules.length > 0:
@@ -248,7 +246,8 @@ struct PrattParser
             {
                 val nextRuleNode: pointer<LinkedListNode> = ruleNode.next
                 val nextCursorNode: pointer<LinkedListNode> = cursorNode.next
-                val rule: pointer<InputRule> = ruleNode.value as pointer<InputRule>
+                val rule: pointer<InputRule> =
+                    ruleNode.value as pointer<InputRule>
 
                 if atomIndex >= rule.length():
                 {

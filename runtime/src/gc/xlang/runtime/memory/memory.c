@@ -29,16 +29,82 @@
  */
 
 
-#include "xlang/runtime/memory/memlist.h"
 #include "xlang/runtime/memory/sysmem.h"
 
+#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
 
-// global memory tracking list for the xlang runtime memory manager
-static struct memlist list;
+typedef union xlang_allocation_header xlang_allocation_header;
+
+
+/**
+ * Metadata stored immediately before every public allocation.
+ *
+ * The max_align_t member makes the union, its size, and therefore the payload
+ * following it suitable for every fundamental C type. The intrusive links let
+ * realloc and free update the global allocation collection in constant time.
+ */
+union xlang_allocation_header
+{
+    struct
+    {
+        xlang_allocation_header* previous;
+        xlang_allocation_header* next;
+        size_t size;
+        uint64_t magic;
+    } allocation;
+
+    max_align_t alignment;
+};
+
+
+#define XLANG_ALLOCATION_MAGIC UINT64_C(0x584C414E474D454D)
+#define XLANG_RELEASED_MAGIC   UINT64_C(0x584C414E47465245)
+
+
+// Head of the intrusive list containing all live runtime allocations.
+static xlang_allocation_header* allocation_head = NULL;
+static bool memory_initialized = false;
+
+
+static inline xlang_allocation_header* allocation_header(const void* const memory)
+{
+    return ((xlang_allocation_header*)(memory)) - 1;
+}
+
+
+static inline void* allocation_payload(xlang_allocation_header* const header)
+{
+    return (void*)(header + 1);
+}
+
+
+static inline void allocation_link(xlang_allocation_header* const header)
+{
+    header->allocation.previous = NULL;
+    header->allocation.next = allocation_head;
+
+    if (allocation_head != NULL)
+        allocation_head->allocation.previous = header;
+
+    allocation_head = header;
+}
+
+
+static inline void allocation_unlink(xlang_allocation_header* const header)
+{
+    if (header->allocation.previous != NULL)
+        header->allocation.previous->allocation.next = header->allocation.next;
+    else
+        allocation_head = header->allocation.next;
+
+    if (header->allocation.next != NULL)
+        header->allocation.next->allocation.previous = header->allocation.previous;
+}
 
 /**
  * Initializes the xlang runtime memory manager.
@@ -58,7 +124,12 @@ static struct memlist list;
  */
 bool xlang_minit(void) 
 {
-    return memlist_init(&list);
+    if (memory_initialized)
+        return false;
+
+    allocation_head = NULL;
+    memory_initialized = true;
+    return true;
 }
 
 
@@ -82,21 +153,23 @@ bool xlang_minit(void)
  */
 void* xlang_malloc(const x_i64 size) 
 {
-    if (size <= 0)
+    if (!memory_initialized || size <= 0 ||
+        (uint64_t)size > (uint64_t)(SIZE_MAX - sizeof(xlang_allocation_header)))
         return NULL;
 
-    const void* const result = xlang_sys_alloc(size);
+    const size_t allocation_size =
+        sizeof(xlang_allocation_header) + (size_t)size;
+    xlang_allocation_header* const header =
+        (xlang_allocation_header*)(xlang_sys_alloc((x_i64)allocation_size));
 
-    if (result == NULL)
+    if (header == NULL)
         return NULL;
 
-    if (!memlist_add(&list, result))
-    {
-        xlang_sys_free(result);
-        return NULL;
-    }
+    header->allocation.size = (size_t)size;
+    header->allocation.magic = XLANG_ALLOCATION_MAGIC;
+    allocation_link(header);
 
-    return (void*)(result);
+    return allocation_payload(header);
 }
 
 
@@ -123,22 +196,37 @@ void* xlang_realloc(const void* const ptr, const x_i64 size)
     if (ptr == NULL)
         return xlang_malloc(size);
 
-    if (size <= 0)
+    if (!memory_initialized || size <= 0 ||
+        (uint64_t)size > (uint64_t)(SIZE_MAX - sizeof(xlang_allocation_header)))
         return NULL;
 
-    const size_t index = memlist_find(&list, ptr);
+    xlang_allocation_header* const old_header = allocation_header(ptr);
 
-    if (index == (size_t)(-1))
+    if (old_header->allocation.magic != XLANG_ALLOCATION_MAGIC)
         return NULL;
 
-    const void* const result = xlang_sys_realloc((void*)ptr, size);
+    const size_t allocation_size =
+        sizeof(xlang_allocation_header) + (size_t)size;
+    xlang_allocation_header* const resized_header =
+        (xlang_allocation_header*)(xlang_sys_realloc(
+            old_header,
+            (x_i64)allocation_size));
 
-    if (result == NULL)
+    if (resized_header == NULL)
         return NULL;
 
-    list.list[index] = (void*)(result);
+    if (resized_header->allocation.previous != NULL)
+        resized_header->allocation.previous->allocation.next = resized_header;
+    else
+        allocation_head = resized_header;
 
-    return (void*)(result);
+    if (resized_header->allocation.next != NULL)
+        resized_header->allocation.next->allocation.previous = resized_header;
+
+    resized_header->allocation.size = (size_t)size;
+    resized_header->allocation.magic = XLANG_ALLOCATION_MAGIC;
+
+    return allocation_payload(resized_header);
 }
 
 
@@ -162,16 +250,17 @@ void* xlang_realloc(const void* const ptr, const x_i64 size)
  */
 bool xlang_mfree(const void* ptr)  
 {
-    if (ptr == NULL)
+    if (!memory_initialized || ptr == NULL)
         return false;
 
-    const size_t index = memlist_find(&list, ptr);
+    xlang_allocation_header* const header = allocation_header(ptr);
 
-    if (index == (size_t)(-1))
+    if (header->allocation.magic != XLANG_ALLOCATION_MAGIC)
         return false;
 
-    memlist_remove_at(&list, index);
-    xlang_sys_free((void*)ptr);
+    allocation_unlink(header);
+    header->allocation.magic = XLANG_RELEASED_MAGIC;
+    xlang_sys_free(header);
 
     return true;
 }
@@ -191,11 +280,15 @@ bool xlang_mfree(const void* ptr)
  */
 void xlang_mexit(void)
 {
-    for (size_t i = 0; i < list.length; i++)
+    xlang_allocation_header* current = allocation_head;
+    allocation_head = NULL;
+    memory_initialized = false;
+
+    while (current != NULL)
     {
-        if (list.list[i] != NULL)
-            xlang_sys_free(list.list[i]);
+        xlang_allocation_header* const next = current->allocation.next;
+        current->allocation.magic = XLANG_RELEASED_MAGIC;
+        xlang_sys_free(current);
+        current = next;
     }
-        
-    memlist_delete(&list);
 }

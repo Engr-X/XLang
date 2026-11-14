@@ -99,6 +99,21 @@ extern void* xlang_malloc(const x_i64 size);
 
 
 /**
+ * Resizes a tracked runtime allocation.
+ *
+ * The pointer must be null or a live pointer returned by xlang_malloc or a
+ * previous successful xlang_realloc call. On failure, the original allocation
+ * remains valid.
+ *
+ * @param ptr               the tracked block to resize, or null to allocate
+ * @param size              the requested payload size in bytes
+ *
+ * @return                  the resized payload pointer, or null on failure
+ */
+extern void* xlang_realloc(const void* const ptr, const x_i64 size);
+
+
+/**
  * Releases a tracked runtime memory block.
  *
  * This function releases a memory block previously returned by `xlang_malloc`
