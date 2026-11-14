@@ -52,7 +52,9 @@ struct PrattParser
 
     private var continuationRules: pointer<ParserRule>
 
-    private var proceduralSParser: pointer<Parser>
+    private var proceduralSParser: pointer<ProceduralParser>
+
+    private var proceduralCParser: pointer<ProceduralParser>
 
 
     constructor(
@@ -63,12 +65,13 @@ struct PrattParser
         this.id = id
         this.starterRules = starterRules
         this.continuationRules = continuationRules
-        this.proceduralSParser = Parser.createProcedural(starterRules)
-        
+
         val directSRules: pointer<InputRules> = starterRules.getInputRule()
         val directCRules: pointer<InputRules> = continuationRules.getInputRule()
         directSRules.sort()
         directCRules.sort()
+        this.proceduralSParser = new ProceduralParser(starterRules)
+        this.proceduralCParser = new ProceduralParser(continuationRules)
     }
 
 
@@ -81,6 +84,7 @@ struct PrattParser
         this.starterRules = other.starterRules
         this.continuationRules = other.continuationRules
         this.proceduralSParser = other.proceduralSParser
+        this.proceduralCParser = other.proceduralCParser
     }
 
 
@@ -105,7 +109,7 @@ struct PrattParser
     {
         val rules: pointer<InputRules> = this.starterRules.getInputRule()
         val parser: pointer<ProceduralParser> =
-            new ProceduralParser(this.starterRules)
+            this.proceduralSParser.clone()
 
         for (var i: int = 0; i < rules.length(); i++):
         {
@@ -133,7 +137,12 @@ struct PrattParser
                 continue
 
             val head: pointer<ParserResult> =
-                parser.parse(headRule, tokens, fromToken)
+                parser.parse(
+                    null as pointer<ArrayList>,
+                    -1,
+                    headRule,
+                    tokens,
+                    fromToken)
 
             if head == null || head.hasError():
                 continue
@@ -225,7 +234,7 @@ struct PrattParser
             cursors.push(fromToken)
 
         val parser: pointer<ProceduralParser> =
-            new ProceduralParser(this.continuationRules)
+            this.proceduralCParser.clone()
         var atomIndex: int = 1
 
         while rules.length > 0:
@@ -411,9 +420,14 @@ struct PrattParser
             return null
 
         val parser: pointer<ProceduralParser> =
-            new ProceduralParser(this.continuationRules)
+            this.proceduralCParser.clone()
         val continuation: pointer<ParserResult> =
-            parser.parse(continuationRule, tokens, fromToken)
+            parser.parse(
+                null as pointer<ArrayList>,
+                -1,
+                continuationRule,
+                tokens,
+                fromToken)
 
         if continuation == null || continuation.hasError():
             return continuation

@@ -41,7 +41,7 @@ private fun printTime(label: pointer<char>, value: int, unit: pointer<char>)
 fun main()
 {
     val path: pointer<char> =
-        "D:/Coding/projects/XLang/xlang/src/main/xlang/util/ArrayList.x"
+        "D:/Coding/projects/XLang/xlang/src/main/xlang/util/LinkedList.x"
     val file: pointer<File> = new File(path)
     val source: pointer<char> = file.getContent()
 
@@ -78,8 +78,8 @@ fun main()
     val perHundredTokens: int =
         if tokenCount <= 0: 0 else: parseElapsed * 100 / tokenCount
 
-    IO.println("source: src/main/xlang/util/ArrayList.x")
-    printNumber("source lines: ", 1085)
+    IO.println("source: src/main/xlang/util/LinkedList.x")
+    printNumber("source lines: ", 482)
     printNumber("normalized token count: ", tokenCount)
     printTime("parse total: ", parseElapsed, "ms")
     printTime("parse total approximately: ", parseElapsed / 1000, "s")
