@@ -79,7 +79,9 @@ fun genTest() -> pointer<TestGroup>
 private fun makeTokenResult(results: pointer<ArrayList>) -> pointer<*>
 {
     val slot: pointer<pointer<*>> = results.get(0) as pointer<pointer<*>>
-    return slot.deref
+    val result: pointer<ParserResult> =
+        slot.deref as pointer<ParserResult>
+    return result.getValue()
 }
 
 

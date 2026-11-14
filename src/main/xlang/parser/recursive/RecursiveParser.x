@@ -220,7 +220,8 @@ struct RecursiveParser
      *
      * Every expression begins at the previous result's end token. The returned
      * result retains the combined consumed-token count and stores the first
-     * token node that remains unconsumed after the sequence.
+     * token node that remains unconsumed after the sequence. Every successful
+     * child is retained as a ParserResult pointer, including token results.
      *
      * @param rule              the ordered expressions to parse
      * @param tokens            the token list that owns the parsed nodes
@@ -262,13 +263,7 @@ struct RecursiveParser
                 return sequenceResult
             }
 
-            if result.isKind(ParserResult.TOKEN_KIND):
-            {
-                val value: pointer<*> = result.getValue()
-                results.push(value.ref)
-            }
-            else:
-                results.push(result.ref)
+            results.push(result.ref)
 
             parsedTokens.pushAll(result.getTokens())
             consumed += result.getConsumed()

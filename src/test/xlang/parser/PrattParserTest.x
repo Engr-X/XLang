@@ -193,7 +193,9 @@ private fun tokenAt(container: pointer<ParserResult>, index: int) -> pointer<Tok
 {
     val list: pointer<ArrayList> = valueList(container)
     val slot: pointer<pointer<*>> = list.get(index) as pointer<pointer<*>>
-    return slot.deref as pointer<Token>
+    val result: pointer<ParserResult> =
+        slot.deref as pointer<ParserResult>
+    return result.getValue() as pointer<Token>
 }
 
 

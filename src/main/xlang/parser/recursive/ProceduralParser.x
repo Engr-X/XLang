@@ -139,7 +139,8 @@ struct ProceduralParser
      *
      * Every atom begins at the previous atom result's end token. The returned
      * result retains the total consumed-token count and stores the first token
-     * node that remains unconsumed after the sequence.
+     * node that remains unconsumed after the sequence. Every successful atom is
+     * retained as a ParserResult pointer, including token atoms.
      *
      * @param rule              the ordered input rule to parse
      * @param tokens            the token list that owns the parsed nodes
@@ -181,13 +182,7 @@ struct ProceduralParser
                 return sequenceResult
             }
 
-            if result.isKind(ParserResult.TOKEN_KIND):
-            {
-                val value: pointer<*> = result.getValue()
-                results.push(value.ref)
-            }
-            else:
-                results.push(result.ref)
+            results.push(result.ref)
 
             parsedTokens.pushAll(result.getTokens())
             consumed += result.getConsumed()

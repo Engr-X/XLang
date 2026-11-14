@@ -318,7 +318,7 @@ private inline fun makeTypeFromQName(results: pointer<ArrayList>) -> pointer<*> 
 private inline fun makeTypeFromKeyword(results: pointer<ArrayList>) -> pointer<*>
 {
     val token: pointer<Token> =
-        getContainerValue(results, 0, false) as pointer<Token>
+        getContainerValue(results, 0) as pointer<Token>
     var normalType: pointer<NormalType> =
         if token.kind == Tokenizer.KW_BOOL: NormalType.boolType()
         elif token.kind == Tokenizer.KW_BYTE: NormalType.byteType()
@@ -340,11 +340,11 @@ private fun makeGenericType(results: pointer<ArrayList>) -> pointer<*>
     val qualifiedName: pointer<QualifiedName> =
         getContainerValue(results, 0) as pointer<QualifiedName>
     val lessToken: pointer<Token> =
-        getContainerValue(results, 1, false) as pointer<Token>
+        getContainerValue(results, 1) as pointer<Token>
     val arguments: pointer<ArrayList> =
         getContainerValue(results, 2) as pointer<ArrayList>
     val greaterToken: pointer<Token> =
-        getContainerValue(results, 3, false) as pointer<Token>
+        getContainerValue(results, 3) as pointer<Token>
     val normalType: pointer<NormalType> = makeRawNormalType(qualifiedName)
 
     normalType.addToken(lessToken)
@@ -368,13 +368,13 @@ private fun makeGenericType(results: pointer<ArrayList>) -> pointer<*>
 private fun makePointerType(results: pointer<ArrayList>) -> pointer<*>
 {
     val pointerToken: pointer<Token> =
-        getContainerValue(results, 0, false) as pointer<Token>
+        getContainerValue(results, 0) as pointer<Token>
     val lessToken: pointer<Token> =
-        getContainerValue(results, 1, false) as pointer<Token>
+        getContainerValue(results, 1) as pointer<Token>
     val argument: pointer<Type> =
         getContainerValue(results, 2) as pointer<Type>
     val greaterToken: pointer<Token> =
-        getContainerValue(results, 3, false) as pointer<Token>
+        getContainerValue(results, 3) as pointer<Token>
     val normalType: pointer<NormalType> =
         NormalType.unresolved(pointerToken.text)
 
@@ -388,15 +388,17 @@ private fun makePointerType(results: pointer<ArrayList>) -> pointer<*>
 private fun makeVoidPointerType(results: pointer<ArrayList>) -> pointer<*>
 {
     val pointerToken: pointer<Token> =
-        getContainerValue(results, 0, false) as pointer<Token>
+        getContainerValue(results, 0) as pointer<Token>
     val lessToken: pointer<Token> =
-        getContainerValue(results, 1, false) as pointer<Token>
+        getContainerValue(results, 1) as pointer<Token>
     val starToken: pointer<Token> =
-        getContainerValue(results, 2, false) as pointer<Token>
+        getContainerValue(results, 2) as pointer<Token>
     val greaterToken: pointer<Token> =
-        getContainerValue(results, 3, false) as pointer<Token>
+        getContainerValue(results, 3) as pointer<Token>
+    val voidToken: pointer<Token> =
+        new Token(Tokenizer.KW_VOID, starToken.pos, "void")
     val argument: pointer<Type> = Type.fromNormal(
-        NormalType.unresolved("void").addToken(starToken))
+        NormalType.voidType().addToken(voidToken))
     val normalType: pointer<NormalType> =
         NormalType.unresolved(pointerToken.text)
 
@@ -410,13 +412,13 @@ private fun makeVoidPointerType(results: pointer<ArrayList>) -> pointer<*>
 private fun makeFunctionType(results: pointer<ArrayList>) -> pointer<*>
 {
     val leftParen: pointer<Token> =
-        getContainerValue(results, 0, false) as pointer<Token>
+        getContainerValue(results, 0) as pointer<Token>
     val parsedParameters: pointer<ArrayList> =
         getContainerValue(results, 1) as pointer<ArrayList>
     val rightParen: pointer<Token> =
-        getContainerValue(results, 2, false) as pointer<Token>
+        getContainerValue(results, 2) as pointer<Token>
     val arrow: pointer<Token> =
-        getContainerValue(results, 3, false) as pointer<Token>
+        getContainerValue(results, 3) as pointer<Token>
     val returnType: pointer<Type> =
         getContainerValue(results, 4) as pointer<Type>
     val parameters: pointer<ArrayList> = new ArrayList(sizeof(Type))
@@ -443,13 +445,13 @@ private fun makeFunctionType(results: pointer<ArrayList>) -> pointer<*>
 private fun makeBlobType(results: pointer<ArrayList>) -> pointer<*>
 {
     val blobToken: pointer<Token> =
-        getContainerValue(results, 0, false) as pointer<Token>
+        getContainerValue(results, 0) as pointer<Token>
     val leftBracket: pointer<Token> =
-        getContainerValue(results, 1, false) as pointer<Token>
+        getContainerValue(results, 1) as pointer<Token>
     val blobSize: pointer<Expression> =
         getContainerValue(results, 2) as pointer<Expression>
     val rightBracket: pointer<Token> =
-        getContainerValue(results, 3, false) as pointer<Token>
+        getContainerValue(results, 3) as pointer<Token>
     val blobType: pointer<BlobType> = new BlobType(blobSize, 0)
 
     blobType.addExtraToken(blobToken)
@@ -472,25 +474,22 @@ private inline fun makeTypeFromParenthesizedTemp(
     return getContainerValue(results, 1) as pointer<Type>
 }
 
-private inline fun getContainerValue(results: pointer<ArrayList>, index: int, unwrapContainer: bool) -> pointer<*>
+private inline fun getContainerResult(
+    results: pointer<ArrayList>,
+    index: int
+) -> pointer<ParserResult>
 {
     val slot: pointer<pointer<*>> = results.get(index) as pointer<pointer<*>>
-    val value: pointer<*> = slot.deref
-
-    if !unwrapContainer:
-        return value
-
-    val container: pointer<ParserResult> = value as pointer<ParserResult>
-    return container.getValue()
+    return slot.deref as pointer<ParserResult>
 }
 
 private inline fun getContainerValue(results: pointer<ArrayList>, index: int) -> pointer<*> =
-    getContainerValue(results, index, true)
+    getContainerResult(results, index).getValue()
 
 private inline fun getContainerTokens(results: pointer<ArrayList>, index: int) -> pointer<ArrayList>
 {
     val container: pointer<ParserResult> =
-        getContainerValue(results, index, false) as pointer<ParserResult>
+        getContainerResult(results, index)
     return container.getTokens()
 }
 
@@ -498,7 +497,7 @@ private fun makeExprFromPrefixWith(
     results: pointer<ArrayList>,
     build: (pointer<Operation>, pointer<Expression>) -> pointer<Expression>) -> pointer<*>
 {
-    val opToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val opToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val op: pointer<Operation> = toOperation(opToken, Operation.PREFIX_TYPE)
 
     if op == null:
@@ -517,7 +516,7 @@ private fun makeExprFromInfixWith(
     results: pointer<ArrayList>,
     build: (pointer<Operation>, pointer<Expression>, pointer<Expression>) -> pointer<Expression>) -> pointer<*>
 {
-    val opToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val opToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val op: pointer<Operation> = toOperation(opToken, Operation.INFIX_TYPE)
 
     if op == null:
@@ -535,7 +534,7 @@ private fun makeExprFromInfixWith(
 
 private fun makeExprFromAssignWith(results: pointer<ArrayList>, subOp: pointer<Operation>) -> pointer<*>
 {
-    val opToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val opToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val op: pointer<Operation> = toOperation(opToken, Operation.INFIX_TYPE)
 
     if op == null:
@@ -555,7 +554,7 @@ private fun makeExprFromPostfixWith(
     results: pointer<ArrayList>,
     build: (pointer<Operation>, pointer<Expression>) -> pointer<Expression>) -> pointer<*>
 {
-    val opToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val opToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val op: pointer<Operation> = toOperation(opToken, Operation.POSTFIX_TYPE)
 
     if op == null:
@@ -572,8 +571,8 @@ private fun makeExprFromPostfixWith(
 
 private fun makeExprFromNewFunc(results: pointer<ArrayList>) -> pointer<*>
 {
-    val newToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val nameToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val newToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val tuple: pointer<ExpressionTuple> = getContainerValue(results, 2) as pointer<ExpressionTuple>
 
     val function: pointer<NewFunction> = new NewFunction(nameToken.text).setArguments(tuple)
@@ -584,8 +583,8 @@ private fun makeExprFromNewFunc(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeExprFromNewIdent(results: pointer<ArrayList>) -> pointer<*>
 {
-    val newToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val nameToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val newToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
 
     val ident: pointer<NewIdentifier> = new NewIdentifier(nameToken.text)
     ident.addExtraToken(newToken).addExtraToken(nameToken)
@@ -595,7 +594,7 @@ private fun makeExprFromNewIdent(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeExprFromFuncCall(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val tuple: pointer<ExpressionTuple> = getContainerValue(results, 1) as pointer<ExpressionTuple>
 
     val call: pointer<MethodCall> = new MethodCall(null, nameToken.text).setArguments(tuple)
@@ -636,8 +635,8 @@ private fun makeExprFromIfElseExpr(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeExprFromParen(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParen: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val rightParen: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val rightParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val expression: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
     val result: pointer<Expression> = expression.clone()
 
@@ -659,8 +658,8 @@ private fun makeExprFromIndexAccess(results: pointer<ArrayList>) -> pointer<*>
 private fun makeExprFromMethodCall(results: pointer<ArrayList>) -> pointer<*>
 {
     val host: pointer<Expression> = getContainerValue(results, 0) as pointer<Expression>
-    val dotToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
-    val nameToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val dotToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val tuple: pointer<ExpressionTuple> = getContainerValue(results, 3) as pointer<ExpressionTuple>
 
     val call: pointer<MethodCall> = new MethodCall(host, nameToken.text).setArguments(tuple)
@@ -672,8 +671,8 @@ private fun makeExprFromMethodCall(results: pointer<ArrayList>) -> pointer<*>
 private fun makeExprFromFieldAccess(results: pointer<ArrayList>) -> pointer<*>
 {
     val host: pointer<Expression> = getContainerValue(results, 0) as pointer<Expression>
-    val dotToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
-    val fieldToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val dotToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
+    val fieldToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val expression: pointer<Expression> = Expression.fromFieldAccess(host, fieldToken.text)
 
     return expression.addExtraToken(dotToken).addExtraToken(fieldToken)
@@ -686,7 +685,7 @@ private fun makeExprFromPostfix(results: pointer<ArrayList>) -> pointer<*> =
 private fun makeExprFromTypeCast(results: pointer<ArrayList>) -> pointer<*>
 {
     val expression: pointer<Expression> = getContainerValue(results, 0) as pointer<Expression>
-    val asToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val asToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val targetType: pointer<Type> = getContainerValue(results, 2) as pointer<Type>
 
     if targetType != null && targetType.isPrimary():
@@ -800,36 +799,38 @@ private fun makeExprFromAssign(results: pointer<ArrayList>) -> pointer<*> =
 
 private fun makeAtom(results: pointer<ArrayList>) -> pointer<*>
 {
-    val token: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val token: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val tokens: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
+    tokens.push(token.ref)
 
     if token.kind == Tokenizer.KW_NULL:
-        return new Atom(Atom.NULL_IMM_KIND, results)
+        return new Atom(Atom.NULL_IMM_KIND, tokens)
     elif token.kind == Tokenizer.KW_TRUE || token.kind == Tokenizer.KW_FALSE:
-        return new Atom(Atom.BOOL_IMM_KIND, results)
+        return new Atom(Atom.BOOL_IMM_KIND, tokens)
     elif token.kind == Tokenizer.TK_CHAR:
-        return new Atom(Atom.CHAR_IMM_KIND, results)
+        return new Atom(Atom.CHAR_IMM_KIND, tokens)
     elif token.kind == Tokenizer.TK_STRING:
-        return new Atom(Atom.STRING_IMM_KIND, results)
+        return new Atom(Atom.STRING_IMM_KIND, tokens)
     elif token.kind == Tokenizer.TK_INTEGER:
-        return new Atom(Atom.INTEGER_IMM_KIND, results)
+        return new Atom(Atom.INTEGER_IMM_KIND, tokens)
     elif token.kind == Tokenizer.TK_LONG:
-        return new Atom(Atom.LONG_IMM_KIND, results)
+        return new Atom(Atom.LONG_IMM_KIND, tokens)
     elif token.kind == Tokenizer.TK_FLOAT:
-        return new Atom(Atom.FLOAT_IMM_KIND, results)
+        return new Atom(Atom.FLOAT_IMM_KIND, tokens)
     elif token.kind == Tokenizer.TK_DOUBLE || token.kind == Tokenizer.TK_LONG_DOUBLE:
-        return new Atom(Atom.DOUBLE_IMM_KIND, results)
+        return new Atom(Atom.DOUBLE_IMM_KIND, tokens)
     elif token.kind == Tokenizer.TK_IDENTIFIER:
-        return new Atom(Atom.IDENTIFIER_KIND, results)
+        return new Atom(Atom.IDENTIFIER_KIND, tokens)
     else:
         return null
 }
 
 private fun makeSizeOf(results: pointer<ArrayList>) -> pointer<*>
 {
-    val sizeOfToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val leftParen: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val sizeOfToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val targetType: pointer<Type> = getContainerValue(results, 2) as pointer<Type>
-    val rightParen: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val rightParen: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
 
     return new SizeOf(targetType)
         .addExtraToken(sizeOfToken)
@@ -858,9 +859,9 @@ private fun unwrapExpressionList(results: pointer<ArrayList>, index: int) -> poi
 
 private fun makeExpressionTuple(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParen: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val expressions: pointer<ArrayList> = unwrapExpressionList(results, 1)
-    val rightParen: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val rightParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
 
     return new ExpressionTuple(expressions)
         .addExtraToken(leftParen)
@@ -870,9 +871,9 @@ private fun makeExpressionTuple(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeListLiteral(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftBracket: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val leftBracket: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val expressions: pointer<ArrayList> = unwrapExpressionList(results, 1)
-    val rightBracket: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val rightBracket: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
 
     return new ListLiteral(expressions)
         .addExtraToken(leftBracket)
@@ -945,7 +946,7 @@ private fun unwrapVariableDefines(results: pointer<ArrayList>, index: int) -> po
 
 private inline fun makeStmtFrom_VariableDefines(results: pointer<ArrayList>) -> pointer<*>
 {
-    val varToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 1)
 
     var statement: pointer<Statement> = if varToken.kind == Tokenizer.KW_VAL:
@@ -976,26 +977,26 @@ private inline fun makeStmtFrom_ForStmt(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeStmtFrom_BreakStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val breakToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val breakToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     return Statement.fromBreakStatement(new BreakStatement().addExtraToken(breakToken))
 }
 
 private inline fun makeStmtFrom_ContinueStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val continueToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val continueToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     return Statement.fromContinueStatement(new ContinueStatement().addExtraToken(continueToken))
 }
 
 private inline fun makeStmtFrom_PassStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val passToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val passToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     return Statement.fromPassStatement(new PassStatement().addExtraToken(passToken))
 }
 
 private inline fun makeElseStmtFromStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elseToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val elseToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 2) as pointer<Statement>
 
     return new ElseStatement(statement)
@@ -1004,8 +1005,8 @@ private inline fun makeElseStmtFromStmt(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeElseStmtFromBlock(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elseToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val elseToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 2) as pointer<Block>
     val result: pointer<ElseStatement> = new ElseStatement(block.getStatements())
        .addExtraToken(elseToken).addExtraToken(colonToken)
@@ -1052,109 +1053,109 @@ private inline fun buildForHeader(
 
 private inline fun makeForHeaderICS(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val varToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val leftParenToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 2)
     val initStmt: pointer<Statement> = Statement.fromVariableDefines(variableDefines.markAsMut()).addExtraToken(varToken)
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 4) as pointer<Expression>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
     val stepStmt: pointer<Statement> = unwrapExprListStatement(results, 6)
-    val rightParenToken: pointer<Token> = getContainerValue(results, 7, false) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 7) as pointer<Token>
 
     return buildForHeader(initStmt, condition, stepStmt, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
 
 private inline fun makeForHeaderIC(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val varToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val leftParenToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 2)
     val initStmt: pointer<Statement> = Statement.fromVariableDefines(variableDefines.markAsMut()).addExtraToken(varToken)
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 4) as pointer<Expression>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
-    val rightParenToken: pointer<Token> = getContainerValue(results, 6, false) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 6) as pointer<Token>
 
     return buildForHeader(initStmt, condition, null, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
 
 private inline fun makeForHeaderIS(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val varToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val leftParenToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 2)
     val initStmt: pointer<Statement> = Statement.fromVariableDefines(variableDefines.markAsMut()).addExtraToken(varToken)
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
     val stepStmt: pointer<Statement> = unwrapExprListStatement(results, 5)
-    val rightParenToken: pointer<Token> = getContainerValue(results, 6, false) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 6) as pointer<Token>
 
     return buildForHeader(initStmt, null, stepStmt, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
 
 private inline fun makeForHeaderCS(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val leftParenToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 2) as pointer<Expression>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val stepStmt: pointer<Statement> = unwrapExprListStatement(results, 4)
-    val rightParenToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
 
     return buildForHeader(null, condition, stepStmt, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
 
 private inline fun makeForHeaderI(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val varToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val leftParenToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val variableDefines: pointer<VariableDefines> = unwrapVariableDefines(results, 2)
     val initStmt: pointer<Statement> = Statement.fromVariableDefines(variableDefines.markAsMut()).addExtraToken(varToken)
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
-    val rightParenToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
 
     return buildForHeader(initStmt, null, null, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
 
 private inline fun makeForHeaderC(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val leftParenToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 2) as pointer<Expression>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val rightParenToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
 
     return buildForHeader(null, condition, null, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
 
 private inline fun makeForHeaderS(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val leftParenToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val stepStmt: pointer<Statement> = unwrapExprListStatement(results, 3)
-    val rightParenToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
 
     return buildForHeader(null, null, stepStmt, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
 
 private inline fun makeEmptyForHeader(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftParenToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
-    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val rightParenToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val leftParenToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val firstSemicolonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
+    val secondSemicolonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
+    val rightParenToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
 
     return buildForHeader(null, null, null, leftParenToken, firstSemicolonToken, secondSemicolonToken, rightParenToken)
 }
 
 private inline fun makeForStmtFromStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val forToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val forToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val header: pointer<ForHeader> = getContainerValue(results, 1) as pointer<ForHeader>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
     val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
     statements.push(statement)
@@ -1167,9 +1168,9 @@ private inline fun makeForStmtFromStmt(results: pointer<ArrayList>) -> pointer<*
 
 private inline fun makeForStmtFromBlock(results: pointer<ArrayList>) -> pointer<*>
 {
-    val forToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val forToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val header: pointer<ForHeader> = getContainerValue(results, 1) as pointer<ForHeader>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 3) as pointer<Block>
     val extraTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
     extraTokens.push(forToken)
@@ -1182,9 +1183,9 @@ private inline fun makeForStmtFromBlock(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeForStmtFromStmtElse(results: pointer<ArrayList>) -> pointer<*>
 {
-    val forToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val forToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val header: pointer<ForHeader> = getContainerValue(results, 1) as pointer<ForHeader>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
     val elseStatement: pointer<ElseStatement> = getContainerValue(results, 4) as pointer<ElseStatement>
     val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
@@ -1200,9 +1201,9 @@ private inline fun makeForStmtFromStmtElse(results: pointer<ArrayList>) -> point
 
 private inline fun makeForStmtFromBlockElse(results: pointer<ArrayList>) -> pointer<*>
 {
-    val forToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val forToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val header: pointer<ForHeader> = getContainerValue(results, 1) as pointer<ForHeader>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 3) as pointer<Block>
     val elseStatement: pointer<ElseStatement> = getContainerValue(results, 5) as pointer<ElseStatement>
     val extraTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
@@ -1217,7 +1218,7 @@ private inline fun makeForStmtFromBlockElse(results: pointer<ArrayList>) -> poin
 
 private inline fun makeForStmtFromEmpty(results: pointer<ArrayList>) -> pointer<*>
 {
-    val forToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val forToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val header: pointer<ForHeader> = getContainerValue(results, 1) as pointer<ForHeader>
     val block: pointer<Block> = new Block()
 
@@ -1226,9 +1227,9 @@ private inline fun makeForStmtFromEmpty(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeWhileStmtFromStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val whileToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val whileToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
     val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
     statements.push(statement)
@@ -1241,9 +1242,9 @@ private inline fun makeWhileStmtFromStmt(results: pointer<ArrayList>) -> pointer
 
 private inline fun makeWhileStmtFromBlock(results: pointer<ArrayList>) -> pointer<*>
 {
-    val whileToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val whileToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 3) as pointer<Block>
     val extraTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
     extraTokens.push(whileToken)
@@ -1256,8 +1257,8 @@ private inline fun makeWhileStmtFromBlock(results: pointer<ArrayList>) -> pointe
 
 private inline fun makeLoopStmtFromStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val loopToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val loopToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 2) as pointer<Statement>
     val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
     statements.push(statement)
@@ -1270,8 +1271,8 @@ private inline fun makeLoopStmtFromStmt(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeLoopStmtFromBlock(results: pointer<ArrayList>) -> pointer<*>
 {
-    val loopToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val loopToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 2) as pointer<Block>
     val extraTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
     extraTokens.push(loopToken)
@@ -1284,8 +1285,8 @@ private inline fun makeLoopStmtFromBlock(results: pointer<ArrayList>) -> pointer
 
 private inline fun makeLoopStmtFromStmtElse(results: pointer<ArrayList>) -> pointer<*>
 {
-    val loopToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val loopToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 2) as pointer<Statement>
     val elseStatement: pointer<ElseStatement> = getContainerValue(results, 3) as pointer<ElseStatement>
     val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
@@ -1301,8 +1302,8 @@ private inline fun makeLoopStmtFromStmtElse(results: pointer<ArrayList>) -> poin
 
 private inline fun makeLoopStmtFromBlockElse(results: pointer<ArrayList>) -> pointer<*>
 {
-    val loopToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val loopToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 2) as pointer<Block>
     val elseStatement: pointer<ElseStatement> = getContainerValue(results, 4) as pointer<ElseStatement>
     val extraTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
@@ -1317,9 +1318,9 @@ private inline fun makeLoopStmtFromBlockElse(results: pointer<ArrayList>) -> poi
 
 private inline fun makeWhileStmtFromStmtElse(results: pointer<ArrayList>) -> pointer<*>
 {
-    val whileToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val whileToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
     val elseStatement: pointer<ElseStatement> = getContainerValue(results, 4) as pointer<ElseStatement>
     val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
@@ -1335,9 +1336,9 @@ private inline fun makeWhileStmtFromStmtElse(results: pointer<ArrayList>) -> poi
 
 private inline fun makeWhileStmtFromBlockElse(results: pointer<ArrayList>) -> pointer<*>
 {
-    val whileToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val whileToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 3) as pointer<Block>
     val elseStatement: pointer<ElseStatement> = getContainerValue(results, 5) as pointer<ElseStatement>
     val extraTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
@@ -1352,8 +1353,8 @@ private inline fun makeWhileStmtFromBlockElse(results: pointer<ArrayList>) -> po
 
 private inline fun makeVariableDefine(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val equalToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val equalToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val expression: pointer<Expression> = getContainerValue(results, 2) as pointer<Expression>
 
     return new VariableDefine(nameToken.text, expression).addExtraToken(nameToken).addExtraToken(equalToken)
@@ -1361,10 +1362,10 @@ private inline fun makeVariableDefine(results: pointer<ArrayList>) -> pointer<*>
 
 private inline fun makeVariableDefineWithType(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val declaredType: pointer<Type> = getContainerValue(results, 2) as pointer<Type>
-    val equalToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val equalToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val expression: pointer<Expression> = getContainerValue(results, 4) as pointer<Expression>
 
     return new VariableDefine(declaredType, nameToken.text, expression)
@@ -1375,15 +1376,15 @@ private inline fun makeVariableDefineWithType(results: pointer<ArrayList>) -> po
 
 private inline fun makeVarDefWithoutInitValue(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
 
     return new VariableDefine(nameToken.text, null).addExtraToken(nameToken)
 }
 
 private inline fun makeVarDefWithTypeWithoutInitValue(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val declaredType: pointer<Type> = getContainerValue(results, 2) as pointer<Type>
 
     return new VariableDefine(declaredType, nameToken.text, null)
@@ -1393,7 +1394,7 @@ private inline fun makeVarDefWithTypeWithoutInitValue(results: pointer<ArrayList
 
 private inline fun makeReturnStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val returnToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val returnToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     var result: pointer<ReturnStatement> = if results.length <= 2:
         new ReturnStatement()
     else:
@@ -1407,18 +1408,18 @@ private inline fun makeReturnStmt(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeEmptyBlockExpr(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftBrace: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val rightBrace: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val leftBrace: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val rightBrace: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
 
     return new Block().addExtraToken(leftBrace).addExtraToken(rightBrace)
 }
 
 private fun makeBlockExpr(results: pointer<ArrayList>) -> pointer<*>
 {
-    val leftBrace: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val leftBrace: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val parsedStatements: pointer<ArrayList> = getContainerValue(results, 1) as pointer<ArrayList>
     val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
-    val rightBrace: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val rightBrace: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
 
     for (var i: int = 0; i < parsedStatements.length; i++):
     {
@@ -1435,9 +1436,9 @@ private fun makeBlockExpr(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfExprFromStmts(results: pointer<ArrayList>) -> pointer<*>
 {
-    val ifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val ifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 3) as pointer<Block>
 
     return new IfExpression(condition, block.getStatements())
@@ -1447,9 +1448,9 @@ private fun makeIfExprFromStmts(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfExprFromStmt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val ifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val ifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
     val statements: pointer<ArrayList> = new ArrayList(sizeof(Statement))
     statements.push(statement)
@@ -1460,9 +1461,9 @@ private fun makeIfExprFromStmt(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprFinalB(results: pointer<ArrayList>) -> pointer<*>
 {
-    val ifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val ifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 3) as pointer<Block>
     val instance1: pointer<IfElseExpression> = getContainerValue(results, 5) as pointer<IfElseExpression>
 
@@ -1474,9 +1475,9 @@ private fun makeIfElseExprFinalB(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprFinalS(results: pointer<ArrayList>) -> pointer<*>
 {
-    val ifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val ifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
     val instance1: pointer<IfElseExpression> = getContainerValue(results, 4) as pointer<IfElseExpression>
 
@@ -1487,9 +1488,9 @@ private fun makeIfElseExprFinalS(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprFinalE(results: pointer<ArrayList>) -> pointer<*>
 {
-    val ifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val ifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val expression: pointer<Expression> = getContainerValue(results, 3) as pointer<Expression>
     val instance1: pointer<IfElseExpression> = getContainerValue(results, 4) as pointer<IfElseExpression>
     val statement: pointer<Statement> = Statement.fromExprStatement(new ExprStatement(expression))
@@ -1501,9 +1502,9 @@ private fun makeIfElseExprFinalE(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprFromElifB(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val elifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 3) as pointer<Block>
     val instance1: pointer<IfElseExpression> = new IfElseExpression()
        .setCondition(condition)
@@ -1519,9 +1520,9 @@ private fun makeIfElseExprFromElifB(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprItB(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val elifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 3) as pointer<Block>
     val instance1: pointer<IfElseExpression> = getContainerValue(results, 5) as pointer<IfElseExpression>
 
@@ -1537,9 +1538,9 @@ private fun makeIfElseExprItB(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprFromElifS(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val elifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
     val instance1: pointer<IfElseExpression> = new IfElseExpression()
        .setCondition(condition)
@@ -1553,9 +1554,9 @@ private fun makeIfElseExprFromElifS(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprFromElifE(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val elifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val expression: pointer<Expression> = getContainerValue(results, 3) as pointer<Expression>
     val statement: pointer<Statement> = Statement.fromExprStatement(new ExprStatement(expression))
     val instance1: pointer<IfElseExpression> = new IfElseExpression()
@@ -1570,9 +1571,9 @@ private fun makeIfElseExprFromElifE(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprItE(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val elifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val expression: pointer<Expression> = getContainerValue(results, 3) as pointer<Expression>
     val instance1: pointer<IfElseExpression> = getContainerValue(results, 4) as pointer<IfElseExpression>
     val statement: pointer<Statement> = Statement.fromExprStatement(new ExprStatement(expression))
@@ -1588,9 +1589,9 @@ private fun makeIfElseExprItE(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprItS(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elifToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val elifToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val condition: pointer<Expression> = getContainerValue(results, 1) as pointer<Expression>
-    val colonToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 3) as pointer<Statement>
     val instance1: pointer<IfElseExpression> = getContainerValue(results, 4) as pointer<IfElseExpression>
 
@@ -1605,8 +1606,8 @@ private fun makeIfElseExprItS(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprFromElseB(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elseToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val elseToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 2) as pointer<Block>
 
     return new IfElseExpression(block.getStatements())
@@ -1616,8 +1617,8 @@ private fun makeIfElseExprFromElseB(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeIfElseExprFromElseS(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elseToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val elseToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val statement: pointer<Statement> = getContainerValue(results, 2) as pointer<Statement>
 
     return new IfElseExpression(statement)
@@ -1626,8 +1627,8 @@ private fun makeIfElseExprFromElseS(results: pointer<ArrayList>) -> pointer<*>
 
 private fun makeElseStmtFromExpr(results: pointer<ArrayList>) -> pointer<*>
 {
-    val elseToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val elseToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val expression: pointer<Expression> = getContainerValue(results, 2) as pointer<Expression>
     val statement: pointer<Statement> = Statement.fromExprStatement(new ExprStatement(expression))
 
@@ -1657,7 +1658,7 @@ private fun prependLineTerminator(
 
 private inline fun makeModifier(results: pointer<ArrayList>) -> pointer<*>
 {
-    val token: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val token: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     return new Modifier(token.text).addExtraToken(token)
 }
 
@@ -1676,11 +1677,11 @@ private inline fun makeEmptyModifierListMaybe(results: pointer<ArrayList>) -> po
 
 private inline fun makePreprocessSetting(results: pointer<ArrayList>) -> pointer<*>
 {
-    val hashToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val hashToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
-    val leftParen: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val value: pointer<ArrayList> = getContainerValue(results, 3) as pointer<ArrayList>
-    val rightParen: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
 
     return new PreprocessSetting(qualifiedName, value)
         .addExtraToken(hashToken)
@@ -1690,7 +1691,7 @@ private inline fun makePreprocessSetting(results: pointer<ArrayList>) -> pointer
 
 private inline fun makeAnnotation(results: pointer<ArrayList>) -> pointer<*>
 {
-    val atToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val atToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
 
     return new Annotation(qualifiedName).addExtraToken(atToken)
@@ -1698,11 +1699,11 @@ private inline fun makeAnnotation(results: pointer<ArrayList>) -> pointer<*>
 
 private inline fun makeAnnotationWithValues(results: pointer<ArrayList>) -> pointer<*>
 {
-    val atToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val atToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
-    val leftParen: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val value: pointer<ArrayList> = getContainerValue(results, 3) as pointer<ArrayList>
-    val rightParen: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
 
     return new Annotation(qualifiedName, value)
         .addExtraToken(atToken)
@@ -1725,8 +1726,8 @@ private inline fun makeEmptyAnnotationsMaybe(results: pointer<ArrayList>) -> poi
 
 private inline fun makeQualifiedNameIt(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val dotToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val dotToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 2) as pointer<QualifiedName>
 
     return qualifiedName.pushFront(nameToken.text)
@@ -1736,14 +1737,14 @@ private inline fun makeQualifiedNameIt(results: pointer<ArrayList>) -> pointer<*
 
 private inline fun makeQualifiedName(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
 
     return new QualifiedName(nameToken.text).addExtraToken(nameToken)
 }
 
 private inline fun makePackageDeclarationMaybe(results: pointer<ArrayList>) -> pointer<*>
 {
-    val packageToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val packageToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
 
     val packageDeclaration: pointer<PackageDeclaration> = qualifiedName.toPackageDecl().addExtraToken(packageToken)
@@ -1754,7 +1755,7 @@ private inline fun makeEmptyPackageDeclarationMaybe(results: pointer<ArrayList>)
 
 private inline fun makeNamespaceImport(results: pointer<ArrayList>) -> pointer<*>
 {
-    val importToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val importToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
 
     return NamespaceImport.fromSingle(qualifiedName).addExtraToken(importToken)
@@ -1762,10 +1763,10 @@ private inline fun makeNamespaceImport(results: pointer<ArrayList>) -> pointer<*
 
 private inline fun makeAllNamespaceImport(results: pointer<ArrayList>) -> pointer<*>
 {
-    val importToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val importToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
-    val dotToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val starToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val dotToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
+    val starToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
 
     return NamespaceImport.fromAll(qualifiedName)
         .addExtraToken(importToken)
@@ -1781,7 +1782,7 @@ private inline fun makeImportFromSelective(results: pointer<ArrayList>) -> point
 
 private inline fun makeImportedFunction(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val parsedTypes: pointer<ArrayList> = getContainerValue(results, 2) as pointer<ArrayList>
     val alias: pointer<ImportedSymbolAliasMaybe> =
         getContainerValue(results, 4) as pointer<ImportedSymbolAliasMaybe>
@@ -1795,7 +1796,7 @@ private inline fun makeImportedFunction(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeImportedVariable(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val alias: pointer<ImportedSymbolAliasMaybe> =
         getContainerValue(results, 1) as pointer<ImportedSymbolAliasMaybe>
 
@@ -1804,7 +1805,7 @@ private inline fun makeImportedVariable(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeImportedFunctionAliasMaybe(results: pointer<ArrayList>) -> pointer<*>
 {
-    val aliasToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val aliasToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     return new ImportedSymbolAliasMaybe(aliasToken.text)
 }
 
@@ -1856,8 +1857,8 @@ private inline fun makeEmptyImportDeclarationsMaybe(results: pointer<ArrayList>)
 
 private inline fun makeFunctionParam(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val paramType: pointer<Type> = getContainerValue(results, 2) as pointer<Type>
 
     return new FunctionParam(nameToken.text, paramType)
@@ -1867,7 +1868,7 @@ private inline fun makeFunctionParam(results: pointer<ArrayList>) -> pointer<*>
 
 private inline fun makeMutFunctionParam(results: pointer<ArrayList>) -> pointer<*>
 {
-    val mutToken: pointer<Token> = getContainerValue(results, 0, false) as pointer<Token>
+    val mutToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val paramResults: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
 
     paramResults.push(results.get(1))
@@ -1906,9 +1907,9 @@ private inline fun buildField(results: pointer<ArrayList>) -> pointer<Field>
 {
     val annotations: pointer<AnnotationsMaybe> = getContainerValue(results, 0) as pointer<AnnotationsMaybe>
     val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 1) as pointer<ModifierListMaybe>
-    val varToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val nameToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val varToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
     val fieldType: pointer<Type> = getContainerValue(results, 5) as pointer<Type>
 
     var result: pointer<Field> = if varToken.kind == Tokenizer.KW_VAL:
@@ -1930,7 +1931,7 @@ private inline fun makeField(results: pointer<ArrayList>) -> pointer<*> =
 
 private inline fun makeFieldWithInitialValue(results: pointer<ArrayList>) -> pointer<*>
 {
-    val equalToken: pointer<Token> = getContainerValue(results, 6, false) as pointer<Token>
+    val equalToken: pointer<Token> = getContainerValue(results, 6) as pointer<Token>
     val initialValue: pointer<Expression> = getContainerValue(results, 7) as pointer<Expression>
 
     return buildField(results)
@@ -1942,7 +1943,7 @@ private inline fun buildFunction(results: pointer<ArrayList>, returnType: pointe
 {
     val annotations: pointer<AnnotationsMaybe> = getContainerValue(results, 0) as pointer<AnnotationsMaybe>
     val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 1) as pointer<ModifierListMaybe>
-    val functionNameToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val functionNameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 5) as pointer<FunctionParamsMaybe>
 
     return new Function(functionNameToken.text, params.toFunctionParams(), bodyExpr)
@@ -1953,10 +1954,10 @@ private inline fun buildFunction(results: pointer<ArrayList>, returnType: pointe
 
 private inline fun addFunctionPrefixTokens(function: pointer<Function>, results: pointer<ArrayList>) -> pointer<Function>
 {
-    val funToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val functionNameToken: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
-    val leftParen: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
-    val rightParen: pointer<Token> = getContainerValue(results, 6, false) as pointer<Token>
+    val funToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
+    val functionNameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
+    val rightParen: pointer<Token> = getContainerValue(results, 6) as pointer<Token>
 
     return function
         .addExtraToken(funToken)
@@ -1967,9 +1968,9 @@ private inline fun addFunctionPrefixTokens(function: pointer<Function>, results:
 
 private inline fun makeFunction(results: pointer<ArrayList>) -> pointer<*>
 {
-    val arrowToken: pointer<Token> = getContainerValue(results, 7, false) as pointer<Token>
+    val arrowToken: pointer<Token> = getContainerValue(results, 7) as pointer<Token>
     val returnType: pointer<Type> = getContainerValue(results, 8) as pointer<Type>
-    val separatorToken: pointer<Token> = getContainerValue(results, 9, false) as pointer<Token>
+    val separatorToken: pointer<Token> = getContainerValue(results, 9) as pointer<Token>
     val bodyExpr: pointer<Expression> = getContainerValue(results, 10) as pointer<Expression>
 
     return addFunctionPrefixTokens(buildFunction(results, returnType, bodyExpr), results)
@@ -1979,7 +1980,7 @@ private inline fun makeFunction(results: pointer<ArrayList>) -> pointer<*>
 
 private inline fun makeFunctionFromBlock(results: pointer<ArrayList>) -> pointer<*>
 {
-    val arrowToken: pointer<Token> = getContainerValue(results, 7, false) as pointer<Token>
+    val arrowToken: pointer<Token> = getContainerValue(results, 7) as pointer<Token>
     val returnType: pointer<Type> = getContainerValue(results, 8) as pointer<Type>
     val block: pointer<Block> = getContainerValue(results, 9) as pointer<Block>
     val bodyExpr: pointer<Expression> = Expression.fromBlockExpr(block)
@@ -1990,7 +1991,7 @@ private inline fun makeFunctionFromBlock(results: pointer<ArrayList>) -> pointer
 
 private inline fun makeFunctionFromEmptyBlock(results: pointer<ArrayList>) -> pointer<*>
 {
-    val arrowToken: pointer<Token> = getContainerValue(results, 7, false) as pointer<Token>
+    val arrowToken: pointer<Token> = getContainerValue(results, 7) as pointer<Token>
     val returnType: pointer<Type> = getContainerValue(results, 8) as pointer<Type>
 
     return addFunctionPrefixTokens(buildFunction(results, returnType, null), results)
@@ -1999,7 +2000,7 @@ private inline fun makeFunctionFromEmptyBlock(results: pointer<ArrayList>) -> po
 
 private inline fun makeVoidFunction(results: pointer<ArrayList>) -> pointer<*>
 {
-    val colonToken: pointer<Token> = getContainerValue(results, 7, false) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 7) as pointer<Token>
     val bodyExpr: pointer<Expression> = getContainerValue(results, 8) as pointer<Expression>
 
     return addFunctionPrefixTokens(buildFunction(results, Type.voidType(), bodyExpr), results)
@@ -2020,11 +2021,11 @@ private inline fun makeVoidFunctionFromEmptyBlock(results: pointer<ArrayList>) -
 private inline fun makeStructConstructor(results: pointer<ArrayList>) -> pointer<*>
 {
     val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>
-    val constructorToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
-    val leftParen: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val constructorToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 3) as pointer<FunctionParamsMaybe>
-    val rightParen: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
     val bodyExpr: pointer<Expression> = getContainerValue(results, 6) as pointer<Expression>
 
     return new StructConstructor(params.toFunctionParams(), bodyExpr)
@@ -2038,10 +2039,10 @@ private inline fun makeStructConstructor(results: pointer<ArrayList>) -> pointer
 private inline fun makeStructConstructorFromBlock(results: pointer<ArrayList>) -> pointer<*>
 {
     val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>
-    val constructorToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
-    val leftParen: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
+    val constructorToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 3) as pointer<FunctionParamsMaybe>
-    val rightParen: pointer<Token> = getContainerValue(results, 4, false) as pointer<Token>
+    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 5) as pointer<Block>
     val bodyExpr: pointer<Expression> = Expression.fromBlockExpr(block)
 
@@ -2079,12 +2080,12 @@ private inline fun makeMemberFromStruct(results: pointer<ArrayList>) -> pointer<
 private inline fun makeStruct(results: pointer<ArrayList>) -> pointer<*>
 {
     val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>
-    val structToken: pointer<Token> = getContainerValue(results, 1, false) as pointer<Token>
-    val nameToken: pointer<Token> = getContainerValue(results, 2, false) as pointer<Token>
-    val leftBrace: pointer<Token> = getContainerValue(results, 3, false) as pointer<Token>
+    val structToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
+    val nameToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
+    val leftBrace: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val parsedMembers: pointer<ArrayList> = getContainerValue(results, 4) as pointer<ArrayList>
     val members: pointer<ArrayList> = new ArrayList(sizeof(Member))
-    val rightBrace: pointer<Token> = getContainerValue(results, 5, false) as pointer<Token>
+    val rightBrace: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
 
     for (var i: int = 0; i < parsedMembers.length; i++):
         members.push(getContainerValue(parsedMembers, i) as pointer<Member>)

@@ -51,16 +51,16 @@ fun genTest() -> pointer<TestGroup>
     val parenthesizedTypeTC: pointer<TestCase> = new TestCase("parenthesizedType", parenthesizedTypeTest)
     val parenthesizedFunctionTC: pointer<TestCase> = new TestCase("parenthesizedFunction", parenthesizedFunctionTest)
     val blobExpressionTC: pointer<TestCase> = new TestCase("blobExpression", blobExpressionTest)
-    val voidPrimaryTypeTC: pointer<TestCase> = new TestCase("voidUnresolvedType", voidPrimaryTypeTest)
-    val boolPrimaryTypeTC: pointer<TestCase> = new TestCase("boolUnresolvedType", boolPrimaryTypeTest)
-    val charPrimaryTypeTC: pointer<TestCase> = new TestCase("charUnresolvedType", charPrimaryTypeTest)
-    val bytePrimaryTypeTC: pointer<TestCase> = new TestCase("byteUnresolvedType", bytePrimaryTypeTest)
-    val shortPrimaryTypeTC: pointer<TestCase> = new TestCase("shortUnresolvedType", shortPrimaryTypeTest)
-    val intPrimaryTypeTC: pointer<TestCase> = new TestCase("intUnresolvedType", intPrimaryTypeTest)
-    val longPrimaryTypeTC: pointer<TestCase> = new TestCase("longUnresolvedType", longPrimaryTypeTest)
-    val floatPrimaryTypeTC: pointer<TestCase> = new TestCase("floatUnresolvedType", floatPrimaryTypeTest)
-    val doublePrimaryTypeTC: pointer<TestCase> = new TestCase("doubleUnresolvedType", doublePrimaryTypeTest)
-    val pointerPrimaryTypeTC: pointer<TestCase> = new TestCase("pointerUnresolvedType", pointerPrimaryTypeTest)
+    val voidPrimaryTypeTC: pointer<TestCase> = new TestCase("voidPrimaryType", voidPrimaryTypeTest)
+    val boolPrimaryTypeTC: pointer<TestCase> = new TestCase("boolPrimaryType", boolPrimaryTypeTest)
+    val charPrimaryTypeTC: pointer<TestCase> = new TestCase("charPrimaryType", charPrimaryTypeTest)
+    val bytePrimaryTypeTC: pointer<TestCase> = new TestCase("bytePrimaryType", bytePrimaryTypeTest)
+    val shortPrimaryTypeTC: pointer<TestCase> = new TestCase("shortPrimaryType", shortPrimaryTypeTest)
+    val intPrimaryTypeTC: pointer<TestCase> = new TestCase("intPrimaryType", intPrimaryTypeTest)
+    val longPrimaryTypeTC: pointer<TestCase> = new TestCase("longPrimaryType", longPrimaryTypeTest)
+    val floatPrimaryTypeTC: pointer<TestCase> = new TestCase("floatPrimaryType", floatPrimaryTypeTest)
+    val doublePrimaryTypeTC: pointer<TestCase> = new TestCase("doublePrimaryType", doublePrimaryTypeTest)
+    val barePointerTC: pointer<TestCase> = new TestCase("barePointer", barePointerTest)
     val unresolvedIdentifierTypeTC: pointer<TestCase> = new TestCase("unresolvedIdentifierType", unresolvedIdentifierTypeTest)
     val qualifiedNameTypeTC: pointer<TestCase> = new TestCase("qualifiedNameType", qualifiedNameTypeTest)
     val qualifiedGenericTypeTC: pointer<TestCase> = new TestCase("qualifiedGenericType", qualifiedGenericTypeTest)
@@ -87,7 +87,7 @@ fun genTest() -> pointer<TestGroup>
     val longPrimaryTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, longPrimaryTypeTC, null)
     val floatPrimaryTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, floatPrimaryTypeTC, null)
     val doublePrimaryTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, doublePrimaryTypeTC, null)
-    val pointerPrimaryTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, pointerPrimaryTypeTC, null)
+    val barePointerUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, barePointerTC, null)
     val unresolvedIdentifierTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, unresolvedIdentifierTypeTC, null)
     val qualifiedNameTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, qualifiedNameTypeTC, null)
     val qualifiedGenericTypeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, qualifiedGenericTypeTC, null)
@@ -114,7 +114,7 @@ fun genTest() -> pointer<TestGroup>
     result.addTestUnion(longPrimaryTypeUnion)
     result.addTestUnion(floatPrimaryTypeUnion)
     result.addTestUnion(doublePrimaryTypeUnion)
-    result.addTestUnion(pointerPrimaryTypeUnion)
+    result.addTestUnion(barePointerUnion)
     result.addTestUnion(unresolvedIdentifierTypeUnion)
     result.addTestUnion(qualifiedNameTypeUnion)
     result.addTestUnion(qualifiedGenericTypeUnion)
@@ -150,7 +150,7 @@ private fun parseTypeValue(input: pointer<char>, expectedConsumed: int) -> point
 }
 
 
-private fun checkUnresolvedType(input: pointer<char>) -> int
+private fun checkPrimaryType(input: pointer<char>, memSize: int) -> int
 {
     val parsedType: pointer<Type> = parseTypeValue(input, 1)
 
@@ -165,13 +165,13 @@ private fun checkUnresolvedType(input: pointer<char>) -> int
     if normalType == null:
         return 3
 
-    if normalType.isResolved():
+    if !normalType.isResolved():
         return 4
 
-    if normalType.getTypeName() != null:
+    if !String.streq(normalType.getTypeName(), input):
         return 5
 
-    if normalType.getMemSize() != 0:
+    if normalType.getMemSize() != memSize:
         return 6
 
     if normalType.length != 0:
@@ -181,34 +181,49 @@ private fun checkUnresolvedType(input: pointer<char>) -> int
 }
 
 
-private fun voidPrimaryTypeTest() -> int = checkUnresolvedType("void")
+private fun voidPrimaryTypeTest() -> int = checkPrimaryType("void", 0)
 
 
-private fun boolPrimaryTypeTest() -> int = checkUnresolvedType("bool")
+private fun boolPrimaryTypeTest() -> int = checkPrimaryType("bool", 1)
 
 
-private fun charPrimaryTypeTest() -> int = checkUnresolvedType("char")
+private fun charPrimaryTypeTest() -> int = checkPrimaryType("char", 8)
 
 
-private fun bytePrimaryTypeTest() -> int = checkUnresolvedType("byte")
+private fun bytePrimaryTypeTest() -> int = checkPrimaryType("byte", 1)
 
 
-private fun shortPrimaryTypeTest() -> int = checkUnresolvedType("short")
+private fun shortPrimaryTypeTest() -> int = checkPrimaryType("short", 2)
 
 
-private fun intPrimaryTypeTest() -> int = checkUnresolvedType("int")
+private fun intPrimaryTypeTest() -> int = checkPrimaryType("int", 4)
 
 
-private fun longPrimaryTypeTest() -> int = checkUnresolvedType("long")
+private fun longPrimaryTypeTest() -> int = checkPrimaryType("long", 8)
 
 
-private fun floatPrimaryTypeTest() -> int = checkUnresolvedType("float")
+private fun floatPrimaryTypeTest() -> int = checkPrimaryType("float", 4)
 
 
-private fun doublePrimaryTypeTest() -> int = checkUnresolvedType("double")
+private fun doublePrimaryTypeTest() -> int = checkPrimaryType("double", 8)
 
 
-private fun pointerPrimaryTypeTest() -> int = checkUnresolvedType("pointer")
+private fun barePointerTest() -> int
+{
+    val tokens: pointer<TokenList> =
+        Tokenizer.pureTokenize("pointer", new Diagnostics())
+    val parser: pointer<xlang.parser.Parser> =
+        xlang.compiler.parser.Parser.TYPE_PARSER
+    val result: pointer<ParserResult> = parser.parse(tokens, 0)
+
+    if result == null:
+        return 1
+
+    if !result.hasError():
+        return 2
+
+    return 0
+}
 
 
 private fun unresolvedIdentifierTypeTest() -> int
@@ -318,7 +333,8 @@ private fun qualifiedGenericTypeTest() -> int
     val intType: pointer<NormalType> = intArgument.getHost() as pointer<NormalType>
     val doubleType: pointer<NormalType> = doubleArgument.getHost() as pointer<NormalType>
 
-    if intType == null || intType.isResolved() || doubleType == null || doubleType.isResolved():
+    if intType == null || !intType.isResolved() ||
+        doubleType == null || !doubleType.isResolved():
         return 10
 
     return 0
@@ -328,7 +344,7 @@ private fun qualifiedGenericTypeTest() -> int
 private fun deepQualifiedGenericTypeTest() -> int
 {
     val parsedType: pointer<Type> = parseTypeValue(
-        "xlang.util.HashMap<pointer<xlang.Thread, pointer<Pair<int, double>>>>",
+        "xlang.util.HashMap<pointer<xlang.Thread>, pointer<Pair<int, double>>>",
         23)
 
     if parsedType == null || parsedType.getKind() != Type.NORMAL_KIND:
@@ -336,7 +352,7 @@ private fun deepQualifiedGenericTypeTest() -> int
 
     val hashMapType: pointer<NormalType> = parsedType.getHost() as pointer<NormalType>
 
-    if hashMapType == null || hashMapType.isResolved() || hashMapType.length != 1:
+    if hashMapType == null || hashMapType.isResolved() || hashMapType.length != 2:
         return 2
 
     val outerPointerArgument: pointer<Type> = hashMapType.getTypeArgument(0)
@@ -346,11 +362,11 @@ private fun deepQualifiedGenericTypeTest() -> int
 
     val outerPointer: pointer<NormalType> = outerPointerArgument.getHost() as pointer<NormalType>
 
-    if outerPointer == null || outerPointer.isResolved() || outerPointer.length != 2:
+    if outerPointer == null || outerPointer.isResolved() || outerPointer.length != 1:
         return 4
 
     val threadArgument: pointer<Type> = outerPointer.getTypeArgument(0)
-    val innerPointerArgument: pointer<Type> = outerPointer.getTypeArgument(1)
+    val innerPointerArgument: pointer<Type> = hashMapType.getTypeArgument(1)
 
     if threadArgument == null || threadArgument.getKind() != Type.NORMAL_KIND ||
         innerPointerArgument == null || innerPointerArgument.getKind() != Type.NORMAL_KIND:
@@ -585,22 +601,22 @@ private fun parenthesizedFunctionTest() -> int
 {
     val typeTokens: pointer<ArrayList> = parseTypeTokens("((int), double) -> (() -> void)", 14)
 
-    if typeTokens == null || typeTokens.length != 9:
+    if typeTokens == null || typeTokens.length != 10:
         return 1
 
     if !tokenTextAt(typeTokens, 0, "(") || !tokenTextAt(typeTokens, 1, "int"):
         return 2
 
-    if !tokenTextAt(typeTokens, 2, "double"):
+    if !tokenTextAt(typeTokens, 2, ",") || !tokenTextAt(typeTokens, 3, "double"):
         return 3
 
-    if !tokenTextAt(typeTokens, 3, ")") || !tokenTextAt(typeTokens, 4, "->"):
+    if !tokenTextAt(typeTokens, 4, ")") || !tokenTextAt(typeTokens, 5, "->"):
         return 4
 
-    if !tokenTextAt(typeTokens, 5, "(") || !tokenTextAt(typeTokens, 6, ")"):
+    if !tokenTextAt(typeTokens, 6, "(") || !tokenTextAt(typeTokens, 7, ")"):
         return 5
 
-    if !tokenTextAt(typeTokens, 7, "->") || !tokenTextAt(typeTokens, 8, "void"):
+    if !tokenTextAt(typeTokens, 8, "->") || !tokenTextAt(typeTokens, 9, "void"):
         return 6
 
     return 0
@@ -628,19 +644,19 @@ private fun functionParametersTest() -> int
 {
     val typeTokens: pointer<ArrayList> = parseTypeTokens("(int, bool) -> void", 7)
 
-    if typeTokens == null || typeTokens.length != 6:
+    if typeTokens == null || typeTokens.length != 7:
         return 1
 
     if !tokenTextAt(typeTokens, 0, "(") || !tokenTextAt(typeTokens, 1, "int"):
         return 2
 
-    if !tokenTextAt(typeTokens, 2, "bool"):
+    if !tokenTextAt(typeTokens, 2, ",") || !tokenTextAt(typeTokens, 3, "bool"):
         return 3
 
-    if !tokenTextAt(typeTokens, 3, ")") || !tokenTextAt(typeTokens, 4, "->"):
+    if !tokenTextAt(typeTokens, 4, ")") || !tokenTextAt(typeTokens, 5, "->"):
         return 4
 
-    if !tokenTextAt(typeTokens, 5, "void"):
+    if !tokenTextAt(typeTokens, 6, "void"):
         return 5
 
     return 0
@@ -651,7 +667,7 @@ private fun nestedFunctionTest() -> int
 {
     val typeTokens: pointer<ArrayList> = parseTypeTokens("((int) -> bool, pointer<*>) -> () -> void", 17)
 
-    if typeTokens == null || typeTokens.length != 16:
+    if typeTokens == null || typeTokens.length != 17:
         return 1
 
     if !tokenTextAt(typeTokens, 0, "(") || !tokenTextAt(typeTokens, 1, "("):
@@ -663,22 +679,22 @@ private fun nestedFunctionTest() -> int
     if !tokenTextAt(typeTokens, 4, "->") || !tokenTextAt(typeTokens, 5, "bool"):
         return 4
 
-    if !tokenTextAt(typeTokens, 6, "pointer"):
+    if !tokenTextAt(typeTokens, 6, ",") || !tokenTextAt(typeTokens, 7, "pointer"):
         return 5
 
-    if !tokenTextAt(typeTokens, 7, "<") || !tokenTextAt(typeTokens, 8, "void"):
+    if !tokenTextAt(typeTokens, 8, "<") || !tokenTextAt(typeTokens, 9, "void"):
         return 6
 
-    if !tokenTextAt(typeTokens, 9, ">") || !tokenTextAt(typeTokens, 10, ")"):
+    if !tokenTextAt(typeTokens, 10, ">") || !tokenTextAt(typeTokens, 11, ")"):
         return 7
 
-    if !tokenTextAt(typeTokens, 11, "->") || !tokenTextAt(typeTokens, 12, "("):
+    if !tokenTextAt(typeTokens, 12, "->") || !tokenTextAt(typeTokens, 13, "("):
         return 8
 
-    if !tokenTextAt(typeTokens, 13, ")") || !tokenTextAt(typeTokens, 14, "->"):
+    if !tokenTextAt(typeTokens, 14, ")") || !tokenTextAt(typeTokens, 15, "->"):
         return 9
 
-    if !tokenTextAt(typeTokens, 15, "void"):
+    if !tokenTextAt(typeTokens, 16, "void"):
         return 10
 
     return 0
@@ -689,7 +705,7 @@ private fun mixedFunctionTest() -> int
 {
     val typeTokens: pointer<ArrayList> = parseTypeTokens("(blob[64], () -> pointer<*>) -> pointer<blob[8]>", 22)
 
-    if typeTokens == null || typeTokens.length != 21:
+    if typeTokens == null || typeTokens.length != 22:
         return 1
 
     if !tokenTextAt(typeTokens, 0, "(") || !tokenTextAt(typeTokens, 1, "blob"):
@@ -698,31 +714,31 @@ private fun mixedFunctionTest() -> int
     if !tokenTextAt(typeTokens, 2, "[") || !tokenTextAt(typeTokens, 3, "64"):
         return 3
 
-    if !tokenTextAt(typeTokens, 4, "]"):
+    if !tokenTextAt(typeTokens, 4, "]") || !tokenTextAt(typeTokens, 5, ","):
         return 4
 
-    if !tokenTextAt(typeTokens, 5, "(") || !tokenTextAt(typeTokens, 6, ")"):
+    if !tokenTextAt(typeTokens, 6, "(") || !tokenTextAt(typeTokens, 7, ")"):
         return 5
 
-    if !tokenTextAt(typeTokens, 7, "->") || !tokenTextAt(typeTokens, 8, "pointer"):
+    if !tokenTextAt(typeTokens, 8, "->") || !tokenTextAt(typeTokens, 9, "pointer"):
         return 6
 
-    if !tokenTextAt(typeTokens, 9, "<") || !tokenTextAt(typeTokens, 10, "void"):
+    if !tokenTextAt(typeTokens, 10, "<") || !tokenTextAt(typeTokens, 11, "void"):
         return 7
 
-    if !tokenTextAt(typeTokens, 11, ">") || !tokenTextAt(typeTokens, 12, ")"):
+    if !tokenTextAt(typeTokens, 12, ">") || !tokenTextAt(typeTokens, 13, ")"):
         return 8
 
-    if !tokenTextAt(typeTokens, 13, "->") || !tokenTextAt(typeTokens, 14, "pointer"):
+    if !tokenTextAt(typeTokens, 14, "->") || !tokenTextAt(typeTokens, 15, "pointer"):
         return 9
 
-    if !tokenTextAt(typeTokens, 15, "<") || !tokenTextAt(typeTokens, 16, "blob"):
+    if !tokenTextAt(typeTokens, 16, "<") || !tokenTextAt(typeTokens, 17, "blob"):
         return 10
 
-    if !tokenTextAt(typeTokens, 17, "[") || !tokenTextAt(typeTokens, 18, "8"):
+    if !tokenTextAt(typeTokens, 18, "[") || !tokenTextAt(typeTokens, 19, "8"):
         return 11
 
-    if !tokenTextAt(typeTokens, 19, "]") || !tokenTextAt(typeTokens, 20, ">"):
+    if !tokenTextAt(typeTokens, 20, "]") || !tokenTextAt(typeTokens, 21, ">"):
         return 12
 
     return 0

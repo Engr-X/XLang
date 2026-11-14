@@ -113,7 +113,7 @@ struct ParserResult
      *
      * @param consumed          the number of tokens consumed during parsing
      * @param endToken          the first token node that remains unconsumed
-     * @param array             the array of parsed values to store
+     * @param array             the array of child ParserResult pointers to store
      *
      * @return                  a newly allocated parser result containing array
      *
