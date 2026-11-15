@@ -28,6 +28,7 @@ import xlang.Diagnostics
 import xlang.lexer.Token
 import xlang.util.LinkedListNode
 import xlang.util.ArrayList
+import xlang.util.Memory
 
 
 /**
@@ -193,7 +194,7 @@ struct ParserResult
         this.endToken = endToken
         this.value = value
         this.tokens = null
-        this.diagnostics = new Diagnostics()
+        this.diagnostics = null
     }
 
 
@@ -216,14 +217,14 @@ struct ParserResult
      * @return                  true if at least one error has been reported;
      *                          false otherwise.
      */
-    fun hasError() -> bool = this.diagnostics.hasError()
+    fun hasError() -> bool = this.diagnostics != null && this.diagnostics.hasError()
 
 
     /**
      * Retrieves the diagnostic collection associated with this instance.
      *
-     * Returns a direct reference to the internal Diagnostics collection
-     * without creating a copy.
+     * Lazily creates the internal Diagnostics collection when necessary, then
+     * returns it directly without creating a copy.
      *
      * @return                  the diagnostic collection containing errors,
      *                          warnings, and other diagnostic messages.
@@ -234,7 +235,13 @@ struct ParserResult
      * @warning                 The returned collection is not cloned. Callers must not
      *                          release or invalidate it while this instance uses it.
      */
-    fun getDiagnostics() -> pointer<Diagnostics> = this.diagnostics
+    fun getDiagnostics() -> pointer<Diagnostics>
+    {
+        if this.diagnostics == null:
+            this.diagnostics = new Diagnostics()
+
+        return this.diagnostics
+    }
 
 
     /**
@@ -290,9 +297,13 @@ struct ParserResult
      * @warning                 The returned collection is not cloned. Callers must not
      *                          release or invalidate it while this instance uses it.
      */
-    fun getTokens() -> pointer<ArrayList> =
-        if this.tokens == null: new ArrayList(sizeof(Token))
-        else: this.tokens
+    fun getTokens() -> pointer<ArrayList>
+    {
+        if this.tokens == null:
+            this.tokens = new ArrayList(sizeof(Token))
+
+        return this.tokens
+    }
 
 
     /**
@@ -386,6 +397,12 @@ struct ParserResult
      */
     fun pushDiagnostic(diagnostic: pointer<Diagnostic>) -> pointer<ParserResult>
     {
+        if diagnostic == null:
+            return this
+
+        if this.diagnostics == null:
+            this.diagnostics = new Diagnostics()
+
         this.diagnostics.push(diagnostic)
         return this
     }
@@ -412,7 +429,31 @@ struct ParserResult
      */
     fun pushDiagnostics(diagnostics: pointer<Diagnostics>) -> pointer<ParserResult>
     {
+        if diagnostics == null:
+            return this
+
+        if this.diagnostics == null:
+            this.diagnostics = new Diagnostics()
+
         this.diagnostics.pushAll(diagnostics)
         return this
+    }
+
+
+    /**
+     * Releases token storage owned by this parser result and then releases the
+     * parser-result object itself.
+     *
+     * The diagnostics collection, stored value, and any child ParserResult
+     * objects referenced by it are not released. Parser results can share
+     * prefix children, and value is documented as a borrowed pointer, so
+     * recursively releasing it here would risk double-freeing shared state.
+     */
+    fun free()
+    {
+        if this.tokens != null:
+            this.tokens.free()
+
+        Memory.freeMemory(this)
     }
 }
