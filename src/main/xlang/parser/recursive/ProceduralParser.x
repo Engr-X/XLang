@@ -161,6 +161,7 @@ struct ProceduralParser
         var consumed: int = 0
         var currentToken: pointer<LinkedListNode> = fromToken
         val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
+        var parsedTokens: pointer<ArrayList> = null
         val atomParser: pointer<Parser> = Parser.fromProcedural(this)
         var atomIndex: int = 0
 
@@ -176,6 +177,15 @@ struct ProceduralParser
         {
             val slot: pointer<pointer<*>> = results.get(i) as pointer<pointer<*>>
             val prefixResult: pointer<ParserResult> = slot.deref as pointer<ParserResult>
+            val prefixAtom: pointer<RuleAtom> = rule.getAtom(i)
+
+            if prefixAtom != null && prefixAtom.isToken():
+            {
+                if parsedTokens == null:
+                    parsedTokens = prefixResult.getTokens().clone()
+                else:
+                    parsedTokens.pushAll(prefixResult.getTokens())
+            }
 
             consumed += prefixResult.getConsumed()
             currentToken = prefixResult.getEndToken()
@@ -197,17 +207,27 @@ struct ProceduralParser
                         consumed + result.getConsumed(),
                         result.getEndToken(),
                         results)
+                sequenceResult.pushTokens(parsedTokens)
                 sequenceResult.pushDiagnostics(result.getDiagnostics())
                 return sequenceResult
             }
 
             results.push(result.ref)
 
+            if atom != null && atom.isToken():
+            {
+                if parsedTokens == null:
+                    parsedTokens = result.getTokens().clone()
+                else:
+                    parsedTokens.pushAll(result.getTokens())
+            }
+
             consumed += result.getConsumed()
             currentToken = result.getEndToken()
         }
 
         return ParserResult.fromList(consumed, currentToken, results)
+            .pushTokens(parsedTokens)
     }
 
 
@@ -254,6 +274,7 @@ struct ProceduralParser
                     input,
                     result.getConsumed(),
                     result.getEndToken())
+                parseResult.pushTokens(result.getTokens())
                 rule.after(
                     parseTokens,
                     result.getEndToken())

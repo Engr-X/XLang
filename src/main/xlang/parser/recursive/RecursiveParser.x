@@ -181,6 +181,8 @@ struct RecursiveParser
         var consumed: int = 0
         var currentToken: pointer<LinkedListNode> = fromToken
         val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
+        var parsedTokens: pointer<ArrayList> = null
+
         for (var i: int = 0; i < rule.length(); i++):
         {
             val childRule: pointer<ParserRule> = rule.get(i)
@@ -197,17 +199,34 @@ struct RecursiveParser
                         consumed + result.getConsumed(),
                         result.getEndToken(),
                         results)
+                sequenceResult.pushTokens(parsedTokens)
                 sequenceResult.pushDiagnostics(result.getDiagnostics())
                 return sequenceResult
             }
 
             results.push(result.ref)
 
+            val childExpression: pointer<RuleExpression> = childRule.getExpression()
+
+            if childExpression != null && childExpression.isAtom():
+            {
+                val childAtom: pointer<RuleAtom> = childExpression.getAtomRule()
+
+                if childAtom != null && childAtom.isToken():
+                {
+                    if parsedTokens == null:
+                        parsedTokens = result.getTokens().clone()
+                    else:
+                        parsedTokens.pushAll(result.getTokens())
+                }
+            }
+
             consumed += result.getConsumed()
             currentToken = result.getEndToken()
         }
 
         return ParserResult.fromList(consumed, currentToken, results)
+            .pushTokens(parsedTokens)
     }
 
 
@@ -287,6 +306,8 @@ struct RecursiveParser
             input,
             result.getConsumed(),
             result.getEndToken())
+        parseResult.pushTokens(result.getTokens())
+
         if ruleIndex >= 0:
             rule.getInputRule().after(
                 ruleIndex,

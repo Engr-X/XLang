@@ -100,6 +100,7 @@ struct ParserResult
         val stableToken: pointer<Token> = token
         val result: pointer<ParserResult> =
             new ParserResult(TOKEN_KIND, 1, endToken, stableToken)
+        result.tokens = new ArrayList(sizeof(Token), 2, 1.0)
         result.pushToken(stableToken)
         return result
     }
