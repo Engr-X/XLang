@@ -20,17 +20,80 @@
  *
  */
 
-#file.outerClass("Loop")
-package xlang.parser.recursive
+#file.outerClass("Parsing")
+package xlang.parser
 
+import xlang.Diagnostic
+import xlang.SourceLocation
 import xlang.lexer.TokenList
 import xlang.lexer.Token
 import xlang.parser.Parser
 import xlang.parser.ParserResult
 import xlang.parser.rule.LoopAtomRule
-import xlang.parser.rule.ParserRule
+import xlang.parser.rule.RegexAtomRule
 import xlang.util.ArrayList
 import xlang.util.LinkedListNode
+import xlang.util.string.StringBuilder
+
+
+fun parseRegAtom(
+    rule: pointer<RegexAtomRule>,
+    tokens: pointer<TokenList>,
+    fromToken: pointer<LinkedListNode>
+) -> pointer<ParserResult>
+{
+    val token: pointer<Token> =
+        if fromToken == null:
+            null
+        else:
+            fromToken.value as pointer<Token>
+
+    if rule.canMatchToken(token):
+        return ParserResult.fromToken(token, fromToken.next)
+
+    val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
+    val message: pointer<StringBuilder> =
+        new StringBuilder(Diagnostic.UNEXPECTED_TOKEN_MSG)
+
+    if token == null:
+    {
+        message.append(Token.EOF_STRING)
+        result.getDiagnostics().push(Diagnostic.makeError(
+            Diagnostic.UNEXPECTED_TOKEN,
+            new ArrayList(sizeof(SourceLocation)),
+            message.getText()))
+        return result
+    }
+
+    message.append(token.text)
+    result.getDiagnostics().push(Diagnostic.makeError(
+        Diagnostic.UNEXPECTED_TOKEN,
+        new SourceLocation(
+            null,
+            token.pos.offset,
+            token.pos.line,
+            token.pos.column,
+            token.pos.length),
+        message.getText()))
+    return result
+}
+
+
+fun parseLoopAtom(
+    rule: pointer<LoopAtomRule>,
+    tokens: pointer<TokenList>,
+    fromToken: pointer<LinkedListNode>
+) -> pointer<ParserResult>
+{
+    val loopParser: pointer<Parser> = rule.getLoopParser()
+    val splitParser: pointer<Parser> = rule.getSplitByParser()
+    val allowTrailing: bool = rule.getAllowTrailing()
+
+    return parseLoop(
+        loopParser,
+        splitParser,
+        allowTrailing, tokens, fromToken)
+}
 
 
 /**

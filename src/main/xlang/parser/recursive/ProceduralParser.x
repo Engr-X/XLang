@@ -27,6 +27,7 @@ import xlang.Diagnostics
 import xlang.SourceLocation
 import xlang.lexer.Token
 import xlang.lexer.TokenList
+import xlang.parser.Parsing
 import xlang.parser.ParserResult
 import xlang.parser.ParserUtil
 import xlang.parser.rule.InputRule
@@ -97,7 +98,7 @@ struct ProceduralParser
         if rule != null:
         {
             if rule.isToken():
-                return ParserUtil.parseRegAtom(rule.getTokenRule(), tokens, fromToken)
+                return Parsing.parseRegAtom(rule.getTokenRule(), tokens, fromToken)
 
             if rule.isRef():
                 return rule.getRefParser().parse(tokens, fromToken)
@@ -106,7 +107,7 @@ struct ProceduralParser
                 return this.parseOpticalAtom(rule.getOpticalRule(), tokens, fromToken)
 
             if rule.isLoop():
-                return ParserUtil.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
+                return Parsing.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
         }
 
         val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
