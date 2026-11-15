@@ -23,6 +23,7 @@
 package xlang.compiler.parser.program
 
 import xlang.compiler.type.Type
+import xlang.lexer.Token
 import xlang.util.ArrayList
 
 
@@ -141,6 +142,8 @@ struct ImportedSymbol
      */
     private var aliasName: pointer<char>
 
+    private var extraTokens: pointer<ArrayList>
+
 
     /**
      * Creates an imported-symbol descriptor with the specified kind, name,
@@ -186,6 +189,7 @@ struct ImportedSymbol
                 parameterTypes
 
         this.aliasName = aliasName
+        this.extraTokens = new ArrayList(sizeof(Token))
     }
 
 
@@ -238,6 +242,20 @@ struct ImportedSymbol
      *                          {@code null} if no alias is specified
      */
     fun getAliasName() -> pointer<char> = this.aliasName
+
+
+    fun addExtraTokens(tokens: pointer<ArrayList>) -> pointer<ImportedSymbol>
+    {
+        if tokens != null:
+            this.extraTokens.pushAll(tokens)
+
+        return this
+    }
+
+
+    fun getExtraTokens() -> pointer<ArrayList> = this.extraTokens
+
+
 }
 
 
@@ -260,6 +278,8 @@ struct ImportedSymbolAliasMaybe
      */
     private var aliasName: pointer<char>
 
+    private var extraTokens: pointer<ArrayList>
+
 
     /**
      * Creates an empty imported-function alias wrapper.
@@ -267,8 +287,11 @@ struct ImportedSymbolAliasMaybe
      * <p>The internal alias pointer is initialized to {@code null}, explicitly
      * representing the absence of an alias.
      */
-    constructor():
+    constructor()
+    {
         this.aliasName = null
+        this.extraTokens = new ArrayList(sizeof(Token))
+    }
 
 
     /**
@@ -283,8 +306,11 @@ struct ImportedSymbolAliasMaybe
      * @param aliasName         a pointer to the null-terminated alias name, or
      *                          {@code null} if no alias is present
      */
-    constructor(aliasName: pointer<char>):
+    constructor(aliasName: pointer<char>)
+    {
         this.aliasName = aliasName
+        this.extraTokens = new ArrayList(sizeof(Token))
+    }
 
 
     /**
@@ -299,6 +325,18 @@ struct ImportedSymbolAliasMaybe
      *                          {@code null} if no alias is present
      */
     fun getAliasName() -> pointer<char> = this.aliasName
+
+
+    fun addExtraTokens(tokens: pointer<ArrayList>) -> pointer<ImportedSymbolAliasMaybe>
+    {
+        if tokens != null:
+            this.extraTokens.pushAll(tokens)
+
+        return this
+    }
+
+
+    fun getExtraTokens() -> pointer<ArrayList> = this.extraTokens
 }
 
 
@@ -391,6 +429,8 @@ struct SelectiveImports
      */
     private var importedFunctions: pointer<ArrayList>
 
+    private var extraTokens: pointer<ArrayList>
+
 
     /**
      * Creates a selective-import declaration with the specified qualified name,
@@ -424,7 +464,21 @@ struct SelectiveImports
                 new ArrayList(sizeof(ImportedSymbol))
             else:
                 importedFunctions
+        this.extraTokens = new ArrayList(sizeof(Token))
     }
+
+
+    fun addExtraTokens(tokens: pointer<ArrayList>) -> pointer<SelectiveImports>
+    {
+        if tokens != null:
+            this.extraTokens.pushAll(tokens)
+
+        return this
+    }
+
+
+    fun getExtraTokens() -> pointer<ArrayList> = this.extraTokens
+
 
     /**
      * Returns whether this declaration imports every symbol from its target.

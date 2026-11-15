@@ -165,8 +165,6 @@ struct PrattParser
                     results,
                     consumed,
                     right.getEndToken())
-            result.pushTokens(head.getTokens())
-            result.pushTokens(right.getTokens())
             rule.after(tokens, right.getEndToken())
             return result
         }
@@ -501,12 +499,6 @@ struct PrattParser
                 continuation.getEndToken()
         val result: pointer<ParserResult> =
             rule.getResult(this.id, results, consumed, endToken)
-        result.pushTokens(left.getTokens())
-        result.pushTokens(continuation.getTokens())
-
-        if hasRight:
-            result.pushTokens(right.getTokens())
-
         rule.after(tokens, endToken)
         return result
     }

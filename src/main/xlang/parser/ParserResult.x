@@ -284,6 +284,16 @@ struct ParserResult
 
 
     /**
+     * Checks whether this result stores any additional consumed tokens.
+     *
+     * This check does not allocate a token list when none exists.
+     *
+     * @return                  true when the token list exists and is non-empty
+     */
+    fun haveExtraToken() -> bool = this.tokens != null && this.tokens.length > 0
+
+
+    /**
      * Retrieves the tokens consumed while producing this parser result.
      *
      * Returns a direct reference to the internal token collection

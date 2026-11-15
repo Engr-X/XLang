@@ -1677,16 +1677,15 @@ private inline fun makeEmptyModifierListMaybe(results: pointer<ArrayList>) -> po
 
 private inline fun makePreprocessSetting(results: pointer<ArrayList>) -> pointer<*>
 {
-    val hashToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
-    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val value: pointer<ArrayList> = getContainerValue(results, 3) as pointer<ArrayList>
-    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
 
-    return new PreprocessSetting(qualifiedName, value)
-        .addExtraToken(hashToken)
-        .addExtraToken(leftParen)
-        .addExtraToken(rightParen)
+    val result: pointer<PreprocessSetting> = new PreprocessSetting(qualifiedName, value)
+    result.addExtraTokens(getContainerTokens(results, 0))
+    result.addExtraTokens(getContainerTokens(results, 2))
+    result.addExtraTokens(getContainerTokens(results, 3))
+    result.addExtraTokens(getContainerTokens(results, 4))
+    return result
 }
 
 private inline fun makeAnnotation(results: pointer<ArrayList>) -> pointer<*>
@@ -1699,16 +1698,15 @@ private inline fun makeAnnotation(results: pointer<ArrayList>) -> pointer<*>
 
 private inline fun makeAnnotationWithValues(results: pointer<ArrayList>) -> pointer<*>
 {
-    val atToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
-    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val value: pointer<ArrayList> = getContainerValue(results, 3) as pointer<ArrayList>
-    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
 
-    return new Annotation(qualifiedName, value)
-        .addExtraToken(atToken)
-        .addExtraToken(leftParen)
-        .addExtraToken(rightParen)
+    val result: pointer<Annotation> = new Annotation(qualifiedName, value)
+    result.addExtraTokens(getContainerTokens(results, 0))
+    result.addExtraTokens(getContainerTokens(results, 2))
+    result.addExtraTokens(getContainerTokens(results, 3))
+    result.addExtraTokens(getContainerTokens(results, 4))
+    return result
 }
 
 private inline fun makeAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<*>
@@ -1791,7 +1789,14 @@ private inline fun makeImportedFunction(results: pointer<ArrayList>) -> pointer<
     for (var i = 0; i < parsedTypes.length; i++):
         parameterTypes.push(getContainerValue(parsedTypes, i) as pointer<Type>)
 
-    return ImportedSymbol.fromFunction(nameToken.text, parameterTypes, alias.getAliasName())
+    val result: pointer<ImportedSymbol> =
+        ImportedSymbol.fromFunction(nameToken.text, parameterTypes, alias.getAliasName())
+    result.addExtraTokens(getContainerTokens(results, 0))
+    result.addExtraTokens(getContainerTokens(results, 1))
+    result.addExtraTokens(getContainerTokens(results, 2))
+    result.addExtraTokens(getContainerTokens(results, 3))
+    result.addExtraTokens(alias.getExtraTokens())
+    return result
 }
 
 private inline fun makeImportedVariable(results: pointer<ArrayList>) -> pointer<*>
@@ -1801,12 +1806,16 @@ private inline fun makeImportedVariable(results: pointer<ArrayList>) -> pointer<
         getContainerValue(results, 1) as pointer<ImportedSymbolAliasMaybe>
 
     return ImportedSymbol.fromVariable(nameToken.text, alias.getAliasName())
+        .addExtraTokens(getContainerTokens(results, 0))
+        .addExtraTokens(alias.getExtraTokens())
 }
 
 private inline fun makeImportedFunctionAliasMaybe(results: pointer<ArrayList>) -> pointer<*>
 {
     val aliasToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     return new ImportedSymbolAliasMaybe(aliasToken.text)
+        .addExtraTokens(getContainerTokens(results, 0))
+        .addExtraTokens(getContainerTokens(results, 1))
 }
 
 private inline fun makeEmptyImportedFunctionAliasMaybe(results: pointer<ArrayList>) -> pointer<*> =
@@ -1817,6 +1826,9 @@ private inline fun makeAllSelectiveImport(results: pointer<ArrayList>) -> pointe
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
 
     return SelectiveImports.fromAll(qualifiedName)
+        .addExtraTokens(getContainerTokens(results, 0))
+        .addExtraTokens(getContainerTokens(results, 2))
+        .addExtraTokens(getContainerTokens(results, 3))
 }
 
 private inline fun makeSelectiveImport(results: pointer<ArrayList>) -> pointer<*>
@@ -1827,18 +1839,26 @@ private inline fun makeSelectiveImport(results: pointer<ArrayList>) -> pointer<*
 
     importedFunctions.push(importedFunction)
     return SelectiveImports.fromCertain(qualifiedName, importedFunctions)
+        .addExtraTokens(getContainerTokens(results, 0))
+        .addExtraTokens(getContainerTokens(results, 2))
 }
 
 private inline fun makeSelectiveImports(results: pointer<ArrayList>) -> pointer<*>
 {
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
     val parsedFunctions: pointer<ArrayList> = getContainerValue(results, 4) as pointer<ArrayList>
+    val rightBraceIndex: int = if results.length == 8: 6 else: 5
     val importedFunctions: pointer<ArrayList> = new ArrayList(sizeof(ImportedSymbol))
 
     for (var i = 0; i < parsedFunctions.length; i++):
         importedFunctions.push(getContainerValue(parsedFunctions, i) as pointer<ImportedSymbol>)
 
     return SelectiveImports.fromCertain(qualifiedName, importedFunctions)
+        .addExtraTokens(getContainerTokens(results, 0))
+        .addExtraTokens(getContainerTokens(results, 2))
+        .addExtraTokens(getContainerTokens(results, 3))
+        .addExtraTokens(getContainerTokens(results, 4))
+        .addExtraTokens(getContainerTokens(results, rightBraceIndex))
 }
 
 private inline fun makeImportDeclarationsMaybe(results: pointer<ArrayList>) -> pointer<*>

@@ -25,7 +25,6 @@ package xlang.parser.recursive
 import xlang.Diagnostic
 import xlang.Diagnostics
 import xlang.SourceLocation
-import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.parser.Parser
 import xlang.parser.Parsing
@@ -229,12 +228,11 @@ struct RecursiveParser
         var consumed: int = 0
         var currentToken: pointer<LinkedListNode> = fromToken
         val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
-        val parsedTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
-
         for (var i: int = 0; i < rule.length(); i++):
         {
+            val childRule: pointer<ParserRule> = rule.get(i)
             val result: pointer<ParserResult> =
-                this.parse(rule.get(i), tokens, currentToken, false)
+                this.parse(childRule, tokens, currentToken, false)
 
             if result == null:
                 return result
@@ -246,21 +244,17 @@ struct RecursiveParser
                         consumed + result.getConsumed(),
                         result.getEndToken(),
                         results)
-                sequenceResult.pushTokens(parsedTokens)
-                sequenceResult.pushTokens(result.getTokens())
                 sequenceResult.pushDiagnostics(result.getDiagnostics())
                 return sequenceResult
             }
 
             results.push(result.ref)
 
-            parsedTokens.pushAll(result.getTokens())
             consumed += result.getConsumed()
             currentToken = result.getEndToken()
         }
 
         return ParserResult.fromList(consumed, currentToken, results)
-            .pushTokens(parsedTokens)
     }
 
 
@@ -329,8 +323,6 @@ struct RecursiveParser
             input,
             result.getConsumed(),
             result.getEndToken())
-        parseResult.pushTokens(result.getTokens())
-
         if ruleIndex >= 0:
             rule.getInputRule().after(
                 ruleIndex,

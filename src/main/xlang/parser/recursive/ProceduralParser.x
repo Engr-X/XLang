@@ -25,7 +25,6 @@ package xlang.parser.recursive
 import xlang.Diagnostic
 import xlang.Diagnostics
 import xlang.SourceLocation
-import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.parser.Parser
 import xlang.parser.Parsing
@@ -140,8 +139,10 @@ struct ProceduralParser
                 break
 
             val commonSlot: pointer<int> = row.get(i) as pointer<int>
+            val previousSlot: pointer<pointer<ParserResult>> =
+                resultAccumulate.get(i) as pointer<pointer<ParserResult>>
             val previous: pointer<ParserResult> =
-                resultAccumulate.get(i) as pointer<ParserResult>
+                if previousSlot == null: null else: previousSlot.deref
 
             if commonSlot == null || previous == null ||
                 !previous.isKind(ParserResult.ARRAY_LIST_KIND):
@@ -167,7 +168,9 @@ struct ProceduralParser
         if bestIndex < 0:
             return
 
-        val best: pointer<ParserResult> = resultAccumulate.get(bestIndex) as pointer<ParserResult>
+        val bestSlot: pointer<pointer<ParserResult>> =
+            resultAccumulate.get(bestIndex) as pointer<pointer<ParserResult>>
+        val best: pointer<ParserResult> = bestSlot.deref
         val bestResults: pointer<ArrayList> = best.getValue() as pointer<ArrayList>
 
         if bestResults != null && bestLength > 0:
@@ -191,7 +194,7 @@ struct ProceduralParser
      *                          returns null
      */
     fun parse(
-        resultAccumulate: pointer<ArrayList>, // ArrayList of ParserResult,
+        resultAccumulate: pointer<ArrayList>, // ArrayList of pointer<ParserResult>,
         currentIndex: int,
 
         rule: pointer<InputRule>,
@@ -212,16 +215,11 @@ struct ProceduralParser
             atomIndex = results.length
         }
 
-        val parsedTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
-
         for (var i: int = 0; i < results.length; i++):
         {
-            val slot: pointer<pointer<*>> =
-                results.get(i) as pointer<pointer<*>>
-            val prefixResult: pointer<ParserResult> =
-                slot.deref as pointer<ParserResult>
+            val slot: pointer<pointer<*>> = results.get(i) as pointer<pointer<*>>
+            val prefixResult: pointer<ParserResult> = slot.deref as pointer<ParserResult>
 
-            parsedTokens.pushAll(prefixResult.getTokens())
             consumed += prefixResult.getConsumed()
             currentToken = prefixResult.getEndToken()
         }
@@ -242,21 +240,17 @@ struct ProceduralParser
                         consumed + result.getConsumed(),
                         result.getEndToken(),
                         results)
-                sequenceResult.pushTokens(parsedTokens)
-                sequenceResult.pushTokens(result.getTokens())
                 sequenceResult.pushDiagnostics(result.getDiagnostics())
                 return sequenceResult
             }
 
             results.push(result.ref)
 
-            parsedTokens.pushAll(result.getTokens())
             consumed += result.getConsumed()
             currentToken = result.getEndToken()
         }
 
         return ParserResult.fromList(consumed, currentToken, results)
-            .pushTokens(parsedTokens)
     }
 
 
@@ -281,7 +275,8 @@ struct ProceduralParser
     ) -> pointer<ParserResult>
     {
         val parseTokens: pointer<TokenList> = rules.before(tokens, fromToken)
-        val results: pointer<ArrayList> = new ArrayList(sizeof(ParserResult))
+        val results: pointer<ArrayList> =
+            new ArrayList(sizeof(pointer<ParserResult>))
 
         // select here
         for (var i: int = 0; i < rules.length(); i++):
@@ -302,30 +297,40 @@ struct ProceduralParser
                     input,
                     result.getConsumed(),
                     result.getEndToken())
-                parseResult.pushTokens(result.getTokens())
                 rule.after(
                     parseTokens,
                     result.getEndToken())
+
+                this.freeAttempts(results, null)
                 return parseResult
             }
 
-            results.push(result)
+            results.push(result.ref)
         }
 
         // all of rule are fail
         if results.length <= 0:
+        {
+            results.free()
             return ParserUtil.internalErrorParseResult(fromToken)
+        }
 
-        var longest: pointer<ParserResult> = results.get(0) as pointer<ParserResult>
+        val firstSlot: pointer<pointer<ParserResult>> =
+            results.get(0) as pointer<pointer<ParserResult>>
+        var longest: pointer<ParserResult> = firstSlot.deref
 
         for (var i: int = 1; i < results.length; i++):
         {
-            val result: pointer<ParserResult> =
-                results.get(i) as pointer<ParserResult>
+            val slot: pointer<pointer<ParserResult>> =
+                results.get(i) as pointer<pointer<ParserResult>>
+            val result: pointer<ParserResult> = slot.deref
 
             if result.getConsumed() > longest.getConsumed():
                 longest = result
         }
+
+
+        this.freeAttempts(results, longest)
 
         return longest
     }
@@ -350,4 +355,37 @@ struct ProceduralParser
 
     fun clone() -> pointer<ProceduralParser> =
         new ProceduralParser(this.rule, this.atoms, this.commonPrefixTable)
+
+
+    private fun freeAttempts(
+        attempts: pointer<ArrayList>,
+        preserved: pointer<ParserResult>
+    )
+    {
+        if attempts == null:
+            return
+
+        for (var i: int = 0; i < attempts.length; i++):
+        {
+            val slot: pointer<pointer<ParserResult>> =
+                attempts.get(i) as pointer<pointer<ParserResult>>
+            val result: pointer<ParserResult> = slot.deref
+
+            if result == null || result == preserved:
+                continue
+
+            if result.isKind(ParserResult.ARRAY_LIST_KIND):
+            {
+                val value: pointer<ArrayList> =
+                    result.getValue() as pointer<ArrayList>
+
+                if value != null:
+                    value.free()
+            }
+
+            result.free()
+        }
+
+        attempts.free()
+    }
 }
