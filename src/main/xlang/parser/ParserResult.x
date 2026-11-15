@@ -192,7 +192,7 @@ struct ParserResult
         this.consumed = consumed
         this.endToken = endToken
         this.value = value
-        this.tokens = new ArrayList(sizeof(Token))
+        this.tokens = null
         this.diagnostics = new Diagnostics()
     }
 
@@ -290,7 +290,9 @@ struct ParserResult
      * @warning                 The returned collection is not cloned. Callers must not
      *                          release or invalidate it while this instance uses it.
      */
-    fun getTokens() -> pointer<ArrayList> = this.tokens
+    fun getTokens() -> pointer<ArrayList> =
+        if this.tokens == null: new ArrayList(sizeof(Token))
+        else: this.tokens
 
 
     /**
@@ -313,8 +315,13 @@ struct ParserResult
     fun pushToken(token: pointer<Token>) -> pointer<ParserResult>
     {
         if token != null:
-            this.tokens.push(token)
+        {
+            if this.tokens == null:
+                this.tokens = new ArrayList(sizeof(Token))
 
+            this.tokens.push(token)
+        }
+           
         return this
     }
 
@@ -340,7 +347,12 @@ struct ParserResult
     fun pushTokens(tokens: pointer<ArrayList>) -> pointer<ParserResult>
     {
         if tokens != null:
-            this.tokens.pushAll(tokens)
+        {
+            if this.tokens == null:
+                this.tokens = tokens.clone()
+            else:
+                this.tokens.pushAll(tokens)
+        }
 
         return this
     }

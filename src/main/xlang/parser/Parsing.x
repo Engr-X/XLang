@@ -53,8 +53,7 @@ fun parseRegAtom(
         return ParserResult.fromToken(token, fromToken.next)
 
     val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
-    val message: pointer<StringBuilder> =
-        new StringBuilder(Diagnostic.UNEXPECTED_TOKEN_MSG)
+    val message: pointer<StringBuilder> = new StringBuilder(Diagnostic.UNEXPECTED_TOKEN_MSG)
 
     if token == null:
     {

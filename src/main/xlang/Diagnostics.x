@@ -57,14 +57,14 @@ struct Diagnostics
     /**
      * Constructs an empty diagnostic collection.
      *
-     * Initializes three separate lists for errors,
-     * warnings, and other diagnostics.
+     * Category lists are allocated lazily when their first diagnostic is
+     * added, so an empty collection does not allocate backing arrays.
      */
     constructor()
     {
-        this.errors = new ArrayList(sizeof(Diagnostic))
-        this.warnings = new ArrayList(sizeof(Diagnostic))
-        this.others = new ArrayList(sizeof(Diagnostic))
+        this.errors = null
+        this.warnings = null
+        this.others = null
     }
 
 
@@ -84,11 +84,26 @@ struct Diagnostics
             return this
 
         if diagnostic.isError() || diagnostic.isInternalError():
+        {
+            if this.errors == null:
+                this.errors = new ArrayList(sizeof(Diagnostic))
+
             this.errors.push(diagnostic)
+        }
         elif diagnostic.isWarning():
+        {
+            if this.warnings == null:
+                this.warnings = new ArrayList(sizeof(Diagnostic))
+
             this.warnings.push(diagnostic)
+        }
         else:
+        {
+            if this.others == null:
+                this.others = new ArrayList(sizeof(Diagnostic))
+
             this.others.push(diagnostic)
+        }
 
         return this
     }
@@ -135,9 +150,29 @@ struct Diagnostics
         if diagnostics == null:
             return this
 
-        this.errors.pushAll(diagnostics.errors)
-        this.warnings.pushAll(diagnostics.warnings)
-        this.others.pushAll(diagnostics.others)
+        if diagnostics.errors != null:
+        {
+            if this.errors == null:
+                this.errors = new ArrayList(sizeof(Diagnostic))
+
+            this.errors.pushAll(diagnostics.errors)
+        }
+
+        if diagnostics.warnings != null:
+        {
+            if this.warnings == null:
+                this.warnings = new ArrayList(sizeof(Diagnostic))
+
+            this.warnings.pushAll(diagnostics.warnings)
+        }
+
+        if diagnostics.others != null:
+        {
+            if this.others == null:
+                this.others = new ArrayList(sizeof(Diagnostic))
+
+            this.others.pushAll(diagnostics.others)
+        }
 
         return this
     }
@@ -162,6 +197,9 @@ struct Diagnostics
      */
     private fun setFilePath(diagnostics: pointer<ArrayList>, path: pointer<char>)
     {
+        if diagnostics == null:
+            return
+
         for (var i = 0; i < diagnostics.length; i++):
         {
             val diagnostic: pointer<Diagnostic> = diagnostics.get(i) as pointer<Diagnostic>
@@ -230,9 +268,14 @@ struct Diagnostics
      */
     fun print()
     {
-        this.printAll(this.errors)
-        this.printAll(this.warnings)
-        this.printAll(this.others)
+        if this.errors != null:
+            this.printAll(this.errors)
+
+        if this.warnings != null:
+            this.printAll(this.warnings)
+
+        if this.others != null:
+            this.printAll(this.others)
     }
 
 
