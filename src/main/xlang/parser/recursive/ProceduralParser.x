@@ -27,6 +27,7 @@ import xlang.Diagnostics
 import xlang.SourceLocation
 import xlang.lexer.Token
 import xlang.lexer.TokenList
+import xlang.parser.Parser
 import xlang.parser.Parsing
 import xlang.parser.ParserResult
 import xlang.parser.ParserUtil
@@ -74,21 +75,6 @@ struct ProceduralParser
     fun getId() -> int = this.rule.getId()
 
 
-    private fun parseOpticalAtom(
-        rule: pointer<OptionalAtomRule>,
-        tokens: pointer<TokenList>,
-        fromToken: pointer<LinkedListNode>
-    ) -> pointer<ParserResult>
-    {
-        val parser: pointer<ProceduralParser> = this.clone()
-        val result: pointer<ParserResult> = parser.parse(rule.getRule(), tokens, fromToken)
-        return if result == null || result.hasError():
-            ParserResult.fromEmpty(fromToken)
-        else:
-            result
-    }
-
-
     fun parseAtom(
         rule: pointer<RuleAtom>,
         tokens: pointer<TokenList>,
@@ -104,7 +90,14 @@ struct ProceduralParser
                 return rule.getRefParser().parse(tokens, fromToken)
 
             if rule.isOptical():
-                return this.parseOpticalAtom(rule.getOpticalRule(), tokens, fromToken)
+            {
+                val opticalRule: pointer<OptionalAtomRule> = rule.getOpticalRule()
+                return Parsing.parseOpticalAtom(
+                    Parser.fromProcedural(this.clone()),
+                    opticalRule,
+                    tokens,
+                    fromToken)
+            }
 
             if rule.isLoop():
                 return Parsing.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)

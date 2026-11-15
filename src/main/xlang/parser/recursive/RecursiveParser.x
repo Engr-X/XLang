@@ -27,6 +27,7 @@ import xlang.Diagnostics
 import xlang.SourceLocation
 import xlang.lexer.Token
 import xlang.lexer.TokenList
+import xlang.parser.Parser
 import xlang.parser.Parsing
 import xlang.parser.ParserResult
 import xlang.parser.ParserUtil
@@ -106,26 +107,6 @@ struct RecursiveParser
     }
 
 
-    private fun parseOpticalAtom(
-        rule: pointer<OptionalAtomRule>,
-        tokens: pointer<TokenList>,
-        fromToken: pointer<LinkedListNode>
-    ) -> pointer<ParserResult>
-    {
-        val atomsBackup: pointer<ArrayList> = this.atoms.clone()
-        val result: pointer<ParserResult> =
-            this.parse(rule.getRule(), tokens, fromToken, false)
-
-        if result == null || result.hasError():
-        {
-            this.atoms = atomsBackup
-            return ParserResult.fromEmpty(fromToken)
-        }
-
-        return result
-    }
-
-
     private fun parseAtom(
         rule: pointer<RuleAtom>,
         tokens: pointer<TokenList>,
@@ -144,7 +125,14 @@ struct RecursiveParser
                 return rule.getRefParser().parse(tokens, fromToken)
 
             if rule.isOptical():
-                return this.parseOpticalAtom(rule.getOpticalRule(), tokens, fromToken)
+            {
+                val opticalRule: pointer<OptionalAtomRule> = rule.getOpticalRule()
+                return Parsing.parseOpticalAtom(
+                    Parser.fromRecursive(this.clone()),
+                    opticalRule,
+                    tokens,
+                    fromToken)
+            }
 
             if rule.isLoop():
                 return Parsing.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
@@ -351,6 +339,14 @@ struct RecursiveParser
 
         return parseResult
     }
+
+
+    fun parse(
+        rule: pointer<ParserRule>,
+        tokens: pointer<TokenList>,
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<ParserResult> =
+        this.parse(rule, tokens, fromToken, false)
 
 
     fun parse(
