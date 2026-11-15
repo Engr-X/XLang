@@ -28,6 +28,7 @@ import xlang.Operation
 import xlang.SourceLocation
 import xlang.lexer.TokenList
 import xlang.parser.Parser
+import xlang.parser.Parsing
 import xlang.parser.ParserResult
 import xlang.parser.rule.InputRule
 import xlang.parser.rule.InputRules
@@ -240,7 +241,8 @@ struct PrattParser
             attempts.push(new ArrayList(sizeof(pointer<ParserResult>)))
         }
 
-        val parser: pointer<ProceduralParser> = this.proceduralCParser
+        val parser: pointer<Parser> =
+            Parser.fromProcedural(this.proceduralCParser)
         var atomIndex: int = 1
 
         while rules.length > 0:
@@ -269,7 +271,8 @@ struct PrattParser
                 else:
                 {
                     val atom: pointer<RuleAtom> = rule.getAtom(atomIndex)
-                    val result: pointer<ParserResult> = parser.parseAtom(
+                    val result: pointer<ParserResult> = Parsing.parseAtom(
+                        parser,
                         atom,
                         tokens,
                         cursorNode.value as pointer<LinkedListNode>)

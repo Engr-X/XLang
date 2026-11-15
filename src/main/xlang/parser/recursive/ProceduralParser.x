@@ -22,9 +22,6 @@
 
 package xlang.parser.recursive
 
-import xlang.Diagnostic
-import xlang.Diagnostics
-import xlang.SourceLocation
 import xlang.lexer.TokenList
 import xlang.parser.Parser
 import xlang.parser.Parsing
@@ -32,14 +29,10 @@ import xlang.parser.ParserResult
 import xlang.parser.ParserUtil
 import xlang.parser.rule.InputRule
 import xlang.parser.rule.InputRules
-import xlang.parser.rule.RegexAtomRule
-import xlang.parser.rule.OptionalAtomRule
-import xlang.parser.rule.LoopAtomRule
 import xlang.parser.rule.ParserRule
 import xlang.parser.rule.RuleAtom
 import xlang.util.ArrayList
 import xlang.util.LinkedListNode
-import xlang.util.string.StringBuilder
 
 
 struct ProceduralParser
@@ -72,43 +65,6 @@ struct ProceduralParser
     }
 
     fun getId() -> int = this.rule.getId()
-
-
-    fun parseAtom(
-        rule: pointer<RuleAtom>,
-        tokens: pointer<TokenList>,
-        fromToken: pointer<LinkedListNode>
-    ) -> pointer<ParserResult>
-    {
-        if rule != null:
-        {
-            if rule.isToken():
-                return Parsing.parseRegAtom(rule.getTokenRule(), tokens, fromToken)
-
-            if rule.isRef():
-                return rule.getRefParser().parse(tokens, fromToken)
-
-            if rule.isOptical():
-            {
-                val opticalRule: pointer<OptionalAtomRule> = rule.getOpticalRule()
-                return Parsing.parseOpticalAtom(
-                    Parser.fromProcedural(this.clone()),
-                    opticalRule,
-                    tokens,
-                    fromToken)
-            }
-
-            if rule.isLoop():
-                return Parsing.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
-        }
-
-        val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
-        result.pushDiagnostic(Diagnostic.makeError(
-            Diagnostic.INVALID_PATTERN_ATOM,
-            new ArrayList(sizeof(SourceLocation)),
-            Diagnostic.INVALID_PATTERN_ATOM_MSG))
-        return result
-    }
 
 
     private fun reusePrefix(
@@ -205,6 +161,7 @@ struct ProceduralParser
         var consumed: int = 0
         var currentToken: pointer<LinkedListNode> = fromToken
         val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
+        val atomParser: pointer<Parser> = Parser.fromProcedural(this)
         var atomIndex: int = 0
 
         if resultAccumulate != null && currentIndex < 0:
@@ -228,7 +185,7 @@ struct ProceduralParser
         {
             val atom: pointer<RuleAtom> = rule.getAtom(i)
             val result: pointer<ParserResult> =
-                this.parseAtom(atom, tokens, currentToken)
+                Parsing.parseAtom(atomParser, atom, tokens, currentToken)
             
             if result == null:
                 return result
