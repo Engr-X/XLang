@@ -208,7 +208,16 @@ struct ProceduralParser
         var consumed: int = 0
         var currentToken: pointer<LinkedListNode> = fromToken
         val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
-        this.reusePrefix(resultAccumulate, currentIndex, results)
+        var atomIndex: int = 0
+
+        if resultAccumulate != null && currentIndex < 0:
+            results.pushAll(resultAccumulate)
+        else:
+        {
+            this.reusePrefix(resultAccumulate, currentIndex, results)
+            atomIndex = results.length
+        }
+
         val parsedTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
 
         for (var i: int = 0; i < results.length; i++):
@@ -223,7 +232,7 @@ struct ProceduralParser
             currentToken = prefixResult.getEndToken()
         }
 
-        for (var i = results.length; i < rule.length(); i++):
+        for (var i = atomIndex; i < rule.length(); i++):
         {
             val atom: pointer<RuleAtom> = rule.getAtom(i)
             val result: pointer<ParserResult> =
