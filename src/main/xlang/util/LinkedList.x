@@ -23,6 +23,8 @@
 
 package xlang.util
 
+import xlang.util.Memory
+
 
 struct LinkedListNode
 {
@@ -98,6 +100,14 @@ struct LinkedList
     private var tail: pointer<LinkedListNode>
 
     /*
+     * Whether this list owns its node allocations.
+     *
+     * Lists returned by extract() are non-owning views over nodes belonging to
+     * another list.
+     */
+    private var ownsNodes: bool
+
+    /*
      * Comparator used by search and removal helpers.
      *
      * The first argument is the stored element slot inside this list. The
@@ -122,6 +132,7 @@ struct LinkedList
         this.head = null
         this.tail = null
         this.length = 0
+        this.ownsNodes = true
     }
 
 
@@ -134,6 +145,7 @@ struct LinkedList
         this.head = head
         this.tail = tail
         this.length = length
+        this.ownsNodes = false
 
         if head == null || length <= 0:
         {
@@ -174,6 +186,7 @@ struct LinkedList
         this.head = null
         this.tail = null
         this.length = 0
+        this.ownsNodes = true
         this.cmpFun = cmpFun
         this.eqFun = eqFun
     }
@@ -639,4 +652,34 @@ struct LinkedList
 
     fun clone() -> pointer<LinkedList> =
         this.subList(0, this.length)
+
+
+    /**
+     * Releases this list and every node owned by it.
+     *
+     * Stored values are not released because LinkedList stores borrowed value
+     * pointers. A view returned by extract() releases only the view object and
+     * leaves the source list's nodes intact.
+     *
+     * After this call, this pointer is invalid and must not be read, written,
+     * or passed to free() again.
+     */
+    fun free()
+    {
+        var current: pointer<LinkedListNode> = this.head
+        var remaining: int = this.length
+
+        if this.ownsNodes:
+        {
+            while current != null && remaining > 0:
+            {
+                val next: pointer<LinkedListNode> = current.next
+                Memory.freeMemory(current)
+                current = next
+                remaining--
+            }
+        }
+
+        Memory.freeMemory(this)
+    }
 }

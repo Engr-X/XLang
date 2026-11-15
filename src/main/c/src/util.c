@@ -24,6 +24,9 @@
 
 #include "util.h"
 #include "xlang/xtypedef.h"
+#include "xlang/runtime/memory/memory.h"
+
+#include <string.h>
 
 
 int xchar_strlen(const x_char* const value)
@@ -51,4 +54,34 @@ void narrow_xchar_string(const x_char* const value, char* const dest)
         dest[i] = (char)(value[i]);
 
     dest[length] = XLANG_NULL_CHAR;
+}
+
+
+void* xlang_util_alloc_memory(const x_i32 size)
+{
+    return xlang_malloc(size);
+}
+
+
+void* xlang_util_realloc_memory(void* const memory, const x_i32 size)
+{
+    return xlang_realloc(memory, size);
+}
+
+
+void xlang_util_free_memory(void* const memory)
+{
+    xlang_mfree(memory);
+}
+
+
+void xlang_util_copy_memory(
+    void* const dest,
+    const void* const src,
+    const x_i32 size)
+{
+    if (dest == NULL || src == NULL || size <= 0)
+        return;
+
+    memmove(dest, src, (size_t)size);
 }

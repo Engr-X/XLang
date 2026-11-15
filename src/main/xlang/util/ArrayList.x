@@ -23,7 +23,7 @@
 
 package xlang.util
 
-import xlang.System
+import xlang.util.Memory
 
 
 /**
@@ -115,6 +115,14 @@ struct ArrayList
     private var data: pointer<byte>
 
     /*
+     * Whether this list owns the allocation referenced by data.
+     *
+     * Lists returned by extract() are views into another list and therefore
+     * must not release the shared backing allocation.
+     */
+    private var ownsData: bool
+
+    /*
      * Per-list resize threshold.
      *
      * This allows callers to trade memory overhead for insertion frequency when
@@ -160,6 +168,7 @@ struct ArrayList
         this.length = length
         this.tsize = tsize
         this.data = data
+        this.ownsData = false
         this.loadFactor = loadFactor
         this.capacity = capacity
         this.cmpFun = cmpFun
@@ -186,7 +195,8 @@ struct ArrayList
         this.tsize = tsize
         this.capacity = LIST_INITIAL_CAPACITY
         this.loadFactor = LIST_LOAD_FACTOR
-        this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.data = Memory.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.ownsData = true
         this.cmpFun = ArrayList.noComparator
         this.eqFun = ArrayList.noEquality
     }
@@ -219,7 +229,8 @@ struct ArrayList
         this.tsize = tsize
         this.capacity = initialCapacity
         this.loadFactor = loadFactor
-        this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.data = Memory.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.ownsData = true
         this.cmpFun = ArrayList.noComparator
         this.eqFun = ArrayList.noEquality
     }
@@ -255,7 +266,8 @@ struct ArrayList
         this.tsize = tsize
         this.capacity = initialCapacity
         this.loadFactor = loadFactor
-        this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.data = Memory.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.ownsData = true
         this.cmpFun = cmpFun
         this.eqFun = ArrayList.noEquality
     }
@@ -310,7 +322,7 @@ struct ArrayList
      * current length + inserted element count + one spare slot.
      *
      * If the current capacity is too small, it is doubled until it can hold the
-     * required number of element slots. System.reallocMemory may move the
+     * required number of element slots. Memory.reallocMemory may move the
      * buffer, so any pointer previously returned by get() must be considered
      * invalid after this function runs.
      *
@@ -325,7 +337,19 @@ struct ArrayList
         while this.capacity < requiredCapacity:
             this.capacity *= 2
 
-        this.data = System.reallocMemory(this.data, this.capacity * this.tsize) as pointer<byte>
+        if this.ownsData:
+            this.data = Memory.reallocMemory(this.data, this.capacity * this.tsize) as pointer<byte>
+        else:
+        {
+            val detachedData: pointer<byte> =
+                Memory.allocMemory(this.capacity * this.tsize) as pointer<byte>
+
+            if this.length > 0:
+                Memory.copyMemory(detachedData, this.data, this.length * this.tsize)
+
+            this.data = detachedData
+            this.ownsData = true
+        }
     }
 
 
@@ -343,7 +367,7 @@ struct ArrayList
      * @param item              pointer to the source bytes to clone
      */
     private inline fun copyToSlot(index: int, item: pointer<*>):
-        System.memcopy(this.data + index * this.tsize, item, this.tsize)
+        Memory.copyMemory(this.data + index * this.tsize, item, this.tsize)
 
 
     /**
@@ -357,8 +381,8 @@ struct ArrayList
      */
     private fun copySlot(index: int) -> pointer<*>
     {
-        val result: pointer<byte> = System.allocMemory(this.tsize) as pointer<byte>
-        System.memcopy(result, this.data + index * this.tsize, this.tsize)
+        val result: pointer<byte> = Memory.allocMemory(this.tsize) as pointer<byte>
+        Memory.copyMemory(result, this.data + index * this.tsize, this.tsize)
 
         return result
     }
@@ -369,7 +393,7 @@ struct ArrayList
      *
      * Slot indexes are converted to byte offsets using tsize. length is counted
      * in element slots, not bytes. The source and destination ranges may
-     * overlap; this relies on System.memcopy being the runtime primitive used
+     * overlap; this relies on Memory.copyMemory being the runtime primitive used
      * throughout ArrayList for overlapping internal shifts.
      *
      * @param destIndex         first destination slot
@@ -377,7 +401,7 @@ struct ArrayList
      * @param length            number of slots to move
      */
     private inline fun moveSlots(destIndex: int, fromIndex: int, length: int):
-        System.memcopy(
+        Memory.copyMemory(
             this.data + destIndex * this.tsize,
             this.data + fromIndex * this.tsize,
             length * this.tsize)
@@ -641,7 +665,7 @@ struct ArrayList
             this.resize(length)
 
         this.moveSlots(index + length, index, this.length - index)
-        System.memcopy(this.data + index * this.tsize, items, length * this.tsize)
+        Memory.copyMemory(this.data + index * this.tsize, items, length * this.tsize)
         this.length += length
     }
 
@@ -857,12 +881,12 @@ struct ArrayList
 
             if this.cmpFun(leftItem, rightItem) <= 0:
             {
-                System.memcopy(destItem, leftItem, elementSize)
+                Memory.copyMemory(destItem, leftItem, elementSize)
                 leftIndex++
             }
             else:
             {
-                System.memcopy(destItem, rightItem, elementSize)
+                Memory.copyMemory(destItem, rightItem, elementSize)
                 rightIndex++
             }
 
@@ -871,7 +895,7 @@ struct ArrayList
 
         while leftIndex < middle:
         {
-            System.memcopy(
+            Memory.copyMemory(
                 buffer + destIndex * elementSize,
                 this.data + leftIndex * elementSize,
                 elementSize)
@@ -881,7 +905,7 @@ struct ArrayList
 
         while rightIndex < right:
         {
-            System.memcopy(
+            Memory.copyMemory(
                 buffer + destIndex * elementSize,
                 this.data + rightIndex * elementSize,
                 elementSize)
@@ -889,7 +913,7 @@ struct ArrayList
             destIndex++
         }
 
-        System.memcopy(
+        Memory.copyMemory(
             this.data + left * elementSize,
             buffer + left * elementSize,
             (right - left) * elementSize)
@@ -1025,7 +1049,7 @@ struct ArrayList
 
         if size > 0:
         {
-            System.memcopy(
+            Memory.copyMemory(
                 sublist.data,
                 this.data + fromIndex * this.tsize,
                 size * this.tsize)
@@ -1082,4 +1106,24 @@ struct ArrayList
      * @return                  copied list containing the same element bytes
      */
     fun clone() -> pointer<ArrayList> = this.sublist(0, this.length)
+
+
+    /**
+     * Releases this list and the backing allocation owned by it.
+     *
+     * Element payloads are not recursively released. When an element stores a
+     * pointer, ownership of the pointed-to object remains with the caller.
+     * ArrayList views returned by extract() release only the view object; their
+     * shared backing allocation remains owned by the source list.
+     *
+     * After this call, this pointer is invalid and must not be read, written,
+     * or passed to free() again.
+     */
+    fun free()
+    {
+        if this.ownsData && this.data != null:
+            Memory.freeMemory(this.data)
+
+        Memory.freeMemory(this)
+    }
 }
