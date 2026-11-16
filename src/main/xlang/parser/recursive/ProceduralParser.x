@@ -279,7 +279,7 @@ struct ProceduralParser
                     parseTokens,
                     result.getEndToken())
 
-                this.freeAttempts(results, null)
+                this.freeResults(results, 0, results.length)
                 return parseResult
             }
 
@@ -296,6 +296,7 @@ struct ProceduralParser
         val firstSlot: pointer<pointer<ParserResult>> =
             results.get(0) as pointer<pointer<ParserResult>>
         var longest: pointer<ParserResult> = firstSlot.deref
+        var longestIndex: int = 0
 
         for (var i: int = 1; i < results.length; i++):
         {
@@ -304,11 +305,14 @@ struct ProceduralParser
             val result: pointer<ParserResult> = slot.deref
 
             if result.getConsumed() > longest.getConsumed():
+            {
                 longest = result
+                longestIndex = i
+            }
         }
 
-
-        this.freeAttempts(results, longest)
+        results.removeAt(longestIndex)
+        this.freeResults(results, 0, results.length)
 
         return longest
     }
@@ -335,35 +339,62 @@ struct ProceduralParser
         new ProceduralParser(this.rule, this.atoms, this.commonPrefixTable)
 
 
-    private fun freeAttempts(
-        attempts: pointer<ArrayList>,
-        preserved: pointer<ParserResult>
-    )
+    private fun freeResults(results: pointer<ArrayList>, fromIndex: int, toIndex: int)
     {
-        if attempts == null:
+        if results == null:
             return
 
-        for (var i: int = 0; i < attempts.length; i++):
+        val fromI: int =if fromIndex < 0:
+                0
+            elif fromIndex > results.length:
+                results.length
+            else:
+                fromIndex
+        val toI: int = if toIndex < fromI:
+                fromI
+            elif toIndex > results.length:
+                results.length
+            else:
+                toIndex
+
+        for (var i: int = fromI; i < toI; i++):
         {
             val slot: pointer<pointer<ParserResult>> =
-                attempts.get(i) as pointer<pointer<ParserResult>>
-            val result: pointer<ParserResult> = slot.deref
+                results.get(i) as pointer<pointer<ParserResult>>
 
-            if result == null || result == preserved:
-                continue
-
-            if result.isKind(ParserResult.ARRAY_LIST_KIND):
-            {
-                val value: pointer<ArrayList> =
-                    result.getValue() as pointer<ArrayList>
-
-                if value != null:
-                    value.free()
-            }
-
-            result.free()
+            if slot != null:
+                this.freeResult(slot.deref)
         }
 
-        attempts.free()
+        results.free()
+    }
+
+
+    private fun freeResult(result: pointer<ParserResult>)
+    {
+        if result == null:
+            return
+
+        if result.isKind(ParserResult.ARRAY_LIST_KIND):
+        {
+            val children: pointer<ArrayList> =
+                result.getValue() as pointer<ArrayList>
+
+            if children != null:
+            {
+                for (var i: int = 0; i < children.length; i++):
+                {
+                    val slot: pointer<pointer<ParserResult>> =
+                        children.get(i) as pointer<pointer<ParserResult>>
+
+                    if slot != null:
+                        this.freeResult(slot.deref)
+                }
+
+                children.free()
+            }
+        }
+
+        result.free()
     }
 }
