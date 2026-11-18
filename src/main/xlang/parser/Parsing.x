@@ -32,7 +32,6 @@ import xlang.parser.ParserResult
 import xlang.parser.rule.LoopAtomRule
 import xlang.parser.rule.OptionalAtomRule
 import xlang.parser.rule.RegexAtomRule
-import xlang.parser.rule.RuleAtom
 import xlang.util.ArrayList
 import xlang.util.LinkedListNode
 import xlang.util.string.StringBuilder
@@ -54,7 +53,8 @@ fun parseRegAtom(
         return ParserResult.fromToken(token, fromToken.next)
 
     val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
-    val message: pointer<StringBuilder> = new StringBuilder(Diagnostic.UNEXPECTED_TOKEN_MSG)
+    val message: pointer<StringBuilder> =
+        new StringBuilder(Diagnostic.UNEXPECTED_TOKEN_MSG)
 
     if token == null:
     {
@@ -114,42 +114,6 @@ fun parseOpticalAtom(
     else:
         result
 }
-
-
-fun parseAtom(
-    parser: pointer<Parser>,
-    rule: pointer<RuleAtom>,
-    tokens: pointer<TokenList>,
-    fromToken: pointer<LinkedListNode>
-) -> pointer<ParserResult>
-{
-    if rule != null:
-    {
-        if rule.isToken():
-            return parseRegAtom(rule.getTokenRule(), tokens, fromToken)
-
-        if rule.isRef():
-            return rule.getRefParser().parse(tokens, fromToken)
-
-        if rule.isOptical():
-            return parseOpticalAtom(
-                if parser == null: null else: parser.clone(),
-                rule.getOpticalRule(),
-                tokens,
-                fromToken)
-
-        if rule.isLoop():
-            return parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
-    }
-
-    val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
-    result.pushDiagnostic(Diagnostic.makeError(
-        Diagnostic.INVALID_PATTERN_ATOM,
-        new ArrayList(sizeof(SourceLocation)),
-        Diagnostic.INVALID_PATTERN_ATOM_MSG))
-    return result
-}
-
 
 
 /**
@@ -367,7 +331,7 @@ fun parseWithSplit(
  *                             elements, total consumed count, and first
  *                             unconsumed token node
  */
-private fun parseLoop(
+fun parseLoop(
     loopParser: pointer<Parser>,
     splitParser: pointer<Parser>,
     allowTrailing: bool,

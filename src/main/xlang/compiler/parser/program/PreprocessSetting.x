@@ -174,15 +174,6 @@ struct PreprocessSetting
     }
 
 
-    fun addExtraTokens(tokens: pointer<ArrayList>) -> pointer<PreprocessSetting>
-    {
-        if tokens != null:
-            this.extraTokens.pushAll(tokens)
-
-        return this
-    }
-
-
     /**
      * Returns a copy of the additional syntax-token collection.
      *

@@ -26,7 +26,6 @@
 package xlang
 
 import xlang.util.ArrayList
-import xlang.util.Memory
 
 
 /**
@@ -58,27 +57,22 @@ struct Diagnostics
     /**
      * Constructs an empty diagnostic collection.
      *
-     * Category lists are allocated lazily when their first diagnostic is
-     * added, so an empty collection does not allocate backing arrays.
+     * Initializes three separate lists for errors,
+     * warnings, and other diagnostics.
      */
     constructor()
     {
-        this.errors = null
-        this.warnings = null
-        this.others = null
+        this.errors = new ArrayList(sizeof(Diagnostic))
+        this.warnings = new ArrayList(sizeof(Diagnostic))
+        this.others = new ArrayList(sizeof(Diagnostic))
     }
 
 
     /**
      * Adds a diagnostic to the appropriate category.
      *
-     * The diagnostic value is copied into the category list. Ownership of the
-     * supplied heap object is transferred to this method: after the copy, only
-     * the original Diagnostic allocation is released. Its locations and
-     * message remain owned by the embedded copy.
-     *
-     * Null diagnostics are ignored. The caller must not use diagnostic after
-     * this method returns.
+     * The diagnostic is classified using its severity.
+     * Null diagnostics are ignored.
      *
      * @param diagnostic        The diagnostic to add.
      *
@@ -90,28 +84,11 @@ struct Diagnostics
             return this
 
         if diagnostic.isError() || diagnostic.isInternalError():
-        {
-            if this.errors == null:
-                this.errors = new ArrayList(sizeof(Diagnostic), 1, 1.0)
-
             this.errors.push(diagnostic)
-        }
         elif diagnostic.isWarning():
-        {
-            if this.warnings == null:
-                this.warnings = new ArrayList(sizeof(Diagnostic), 1, 1.0)
-
             this.warnings.push(diagnostic)
-        }
         else:
-        {
-            if this.others == null:
-                this.others = new ArrayList(sizeof(Diagnostic), 1, 1.0)
-
             this.others.push(diagnostic)
-        }
-
-        Memory.freeMemory(diagnostic)
 
         return this
     }
@@ -135,35 +112,7 @@ struct Diagnostics
             return this
 
         for (var i: int = 0; i < diagnostics.length; i++):
-        {
-            val diagnostic: pointer<Diagnostic> =
-                diagnostics.get(i) as pointer<Diagnostic>
-
-            if diagnostic == null:
-                continue
-
-            if diagnostic.isError() || diagnostic.isInternalError():
-            {
-                if this.errors == null:
-                    this.errors = new ArrayList(sizeof(Diagnostic), 1, 1.0)
-
-                this.errors.push(diagnostic)
-            }
-            elif diagnostic.isWarning():
-            {
-                if this.warnings == null:
-                    this.warnings = new ArrayList(sizeof(Diagnostic), 1, 1.0)
-
-                this.warnings.push(diagnostic)
-            }
-            else:
-            {
-                if this.others == null:
-                    this.others = new ArrayList(sizeof(Diagnostic), 1, 1.0)
-
-                this.others.push(diagnostic)
-            }
-        }
+            this.push(diagnostics.get(i) as pointer<Diagnostic>)
 
         return this
     }
@@ -186,29 +135,9 @@ struct Diagnostics
         if diagnostics == null:
             return this
 
-        if diagnostics.errors != null:
-        {
-            if this.errors == null:
-                this.errors = new ArrayList(sizeof(Diagnostic))
-
-            this.errors.pushAll(diagnostics.errors)
-        }
-
-        if diagnostics.warnings != null:
-        {
-            if this.warnings == null:
-                this.warnings = new ArrayList(sizeof(Diagnostic))
-
-            this.warnings.pushAll(diagnostics.warnings)
-        }
-
-        if diagnostics.others != null:
-        {
-            if this.others == null:
-                this.others = new ArrayList(sizeof(Diagnostic))
-
-            this.others.pushAll(diagnostics.others)
-        }
+        this.errors.pushAll(diagnostics.errors)
+        this.warnings.pushAll(diagnostics.warnings)
+        this.others.pushAll(diagnostics.others)
 
         return this
     }
@@ -233,9 +162,6 @@ struct Diagnostics
      */
     private fun setFilePath(diagnostics: pointer<ArrayList>, path: pointer<char>)
     {
-        if diagnostics == null:
-            return
-
         for (var i = 0; i < diagnostics.length; i++):
         {
             val diagnostic: pointer<Diagnostic> = diagnostics.get(i) as pointer<Diagnostic>
@@ -304,14 +230,9 @@ struct Diagnostics
      */
     fun print()
     {
-        if this.errors != null:
-            this.printAll(this.errors)
-
-        if this.warnings != null:
-            this.printAll(this.warnings)
-
-        if this.others != null:
-            this.printAll(this.others)
+        this.printAll(this.errors)
+        this.printAll(this.warnings)
+        this.printAll(this.others)
     }
 
 
@@ -331,73 +252,4 @@ struct Diagnostics
      *         false otherwise.
      */
     fun hasWarning() -> bool = this.warnings != null && this.warnings.length > 0
-
-
-    /**
-     * Releases every diagnostic value stored in one category list.
-     *
-     * Diagnostic values are copied directly into the ArrayList backing array,
-     * so their addresses are not independent heap allocations. This helper
-     * releases each value's owned locations list and duplicated message, then
-     * releases the category list itself.
-     */
-    private fun freeAll(diagnostics: pointer<ArrayList>)
-    {
-        if diagnostics == null:
-            return
-
-        for (var i: int = 0; i < diagnostics.length; i++):
-        {
-            val diagnostic: pointer<Diagnostic> =
-                diagnostics.get(i) as pointer<Diagnostic>
-
-            if diagnostic == null:
-                continue
-
-            if diagnostic.locations != null:
-            {
-                diagnostic.locations.free()
-                diagnostic.locations = null
-            }
-
-            if diagnostic.message != null:
-            {
-                Memory.freeMemory(diagnostic.message)
-                diagnostic.message = null
-            }
-        }
-
-        diagnostics.free()
-    }
-
-
-    /**
-     * Releases all storage owned by this diagnostic collection.
-     *
-     * Errors, warnings, and other diagnostics are released category by
-     * category. For every embedded Diagnostic value, its locations list and
-     * duplicated message are released before the category list. The
-     * Diagnostics object is released last.
-     *
-     * SourceLocation.filePath pointers are not released because setFilePath()
-     * can replace them with borrowed pointers. After this call, this pointer
-     * and all category-list pointers obtained from it are invalid.
-     *
-     * Diagnostic values are currently shallow-copied by pushAll(). The caller
-     * must therefore ensure that this collection uniquely owns the nested
-     * locations and messages before calling free().
-     */
-    fun free()
-    {
-        if this.errors != null:
-            this.freeAll(this.errors)
-
-        if this.warnings != null:
-            this.freeAll(this.warnings)
-
-        if this.others != null:
-            this.freeAll(this.others)
-            
-        Memory.freeMemory(this)
-    }
 }

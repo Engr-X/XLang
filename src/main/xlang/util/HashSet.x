@@ -257,11 +257,7 @@ struct HashSet
                 if bucket != null:
                     bucket.push(item)
             }
-
-            oldBucket.free()
         }
-
-        oldBuckets.free()
     }
 
 
@@ -307,24 +303,5 @@ struct HashSet
         }
 
         return result
-    }
-
-
-    fun free()
-    {
-        if this.buckets != null:
-        {
-            for (var i: int = 0; i < this.bucketCount; i++):
-            {
-                val bucket: pointer<ArrayList> = this.getBucket(i)
-
-                if bucket != null:
-                    bucket.free()
-            }
-
-            this.buckets.free()
-        }
-
-        Memory.freeMemory(this)
     }
 }

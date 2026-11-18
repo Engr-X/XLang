@@ -12,7 +12,6 @@ import xlang.util.IO
 import xlang.util.LinkedList
 import xlang.util.LinkedListNode
 import xlang.util.TypeConvert
-import xlang.util.string.String
 
 
 @Native("xlang_now_ms")
@@ -36,32 +35,6 @@ private fun printMilliseconds(label: pointer<char>, value: int)
     TypeConvert.intToString(text, value, 10)
     IO.print(label)
     IO.print(text)
-    IO.println(" ms")
-}
-
-
-private fun printPreciseMilliseconds(label: pointer<char>, value: int)
-{
-    val wholeSpace: blob[64 * sizeof(char)]
-    val fractionSpace: blob[64 * sizeof(char)]
-    val wholeText: pointer<char> = wholeSpace as pointer<char>
-    val fractionText: pointer<char> = fractionSpace as pointer<char>
-    val whole: int = value / 1000
-    val fraction: int = value % 1000
-
-    TypeConvert.intToString(wholeText, whole, 10)
-    TypeConvert.intToString(fractionText, fraction, 10)
-    IO.print(label)
-    IO.print(wholeText)
-    IO.print(".")
-
-    if fraction < 100:
-        IO.print("0")
-
-    if fraction < 10:
-        IO.print("0")
-
-    IO.print(fractionText)
     IO.println(" ms")
 }
 
@@ -101,7 +74,6 @@ fun main()
     }
 
     val rawTokenCount: int = rawTokens.length()
-    val sourceLength: int = String.strlen(source)
 
     val normalizeRepetitions: int = 3
     var normalizeElapsed: int = 0
@@ -131,17 +103,6 @@ fun main()
             return
         }
     }
-
-    val fullTokenizePerThousandChars: int =
-        if sourceLength <= 0:
-            0
-        else:
-            (((pureTokenizeElapsed as long) * (normalizeRepetitions as long) +
-                (normalizeElapsed as long) * (tokenizeRepetitions as long)) *
-                1000000L /
-                ((tokenizeRepetitions as long) *
-                    (normalizeRepetitions as long) *
-                    (sourceLength as long))) as int
 
     val tokenArray: pointer<ArrayList> = tokens.toArray()
     val linked: pointer<LinkedList> = new LinkedList()
@@ -192,9 +153,6 @@ fun main()
     printMilliseconds(
         "normalize average: ",
         normalizeElapsed / normalizeRepetitions)
-    printPreciseMilliseconds(
-        "full tokenize average per 1000 chars: ",
-        fullTokenizePerThousandChars)
     printMilliseconds("linked-list build: ", linkedBuildElapsed)
     printMilliseconds("array indexed scan 100 runs: ", arrayScanElapsed)
     printMilliseconds("linked node scan 100 runs: ", linkedScanElapsed)

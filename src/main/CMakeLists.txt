@@ -144,7 +144,6 @@ set(XLANG_C_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/c/src")
 set(XLANG_C_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/c/include")
 set(XLANG_TINY_REGEX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/3rd-party/tiny-regex/include")
 set(XLANG_RUNTIME_CORE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/runtime/include/core")
-set(XLANG_RUNTIME_GC_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/runtime/include/gc")
 set(XLANG_C_OBJ_ROOT "${CMAKE_BINARY_DIR}/objs/src/main/c")
 
 file(GLOB_RECURSE XLANG_C_SOURCES
@@ -210,7 +209,6 @@ if (XLANG_C_SOURCES)
                 -I "${XLANG_C_INCLUDE_DIR}"
                 -I "${XLANG_TINY_REGEX_INCLUDE_DIR}"
                 -I "${XLANG_RUNTIME_CORE_INCLUDE_DIR}"
-                -I "${XLANG_RUNTIME_GC_INCLUDE_DIR}"
                 -c "${c_src_abs}"
                 -o "${c_obj_abs}"
 

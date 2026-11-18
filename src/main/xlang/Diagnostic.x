@@ -26,7 +26,6 @@
 package xlang
 
 import xlang.util.ArrayList
-import xlang.util.Memory
 import xlang.util.string.String
 
 
@@ -482,15 +481,13 @@ struct Diagnostic
      *
      * The severity level and diagnostic code are stored directly without
      * validation. A new source location list is created, and the provided
-     * SourceLocation value is copied into it. This constructor takes ownership
-     * of the supplied heap object and releases its original allocation after
-     * the copy.
+     * location pointer is added to it without copying the SourceLocation.
      *
      * The message is duplicated with String.strdup, so later modifications to
      * the original message do not affect this Diagnostic.
      *
-     * The caller must provide a valid null-terminated message. The location
-     * pointer must not be used after this constructor returns.
+     * The caller must provide a valid null-terminated message and keep the
+     * SourceLocation valid for as long as this Diagnostic uses it.
      *
      * @param level             the diagnostic severity level.
      * @param code              the machine-readable diagnostic code.
@@ -503,15 +500,15 @@ struct Diagnostic
      * @warning                 Passing a null or invalid message pointer may cause undefined
      *                          behavior in String.strdup.
      *
-     * @warning                 The constructor consumes the supplied SourceLocation pointer.
+     * @warning                 The source location is not copied. The caller must ensure that
+     *                          the original SourceLocation remains valid.
      */
     constructor(level: int, code: int, location: pointer<SourceLocation>, message: pointer<char>)
     {
         this.level = level
         this.code = code
-        this.locations = new ArrayList(sizeof(SourceLocation), 1, 1.0)
+        this.locations = new ArrayList(sizeof(SourceLocation))
         this.locations.push(location)
-        Memory.freeMemory(location)
         this.message = String.strdup(message)
     }
 
@@ -601,36 +598,5 @@ struct Diagnostic
     fun print()
     {
 
-    }
-
-
-    /**
-     * Releases the storage owned directly by this diagnostic.
-     *
-     * The locations list and its backing array are released, followed by the
-     * duplicated message and the Diagnostic object itself. SourceLocation
-     * values are stored inside the locations backing array, so releasing the
-     * list also releases their value storage.
-     *
-     * SourceLocation.filePath pointers are not released individually. Although
-     * the SourceLocation constructor can duplicate a path, setFilePath() may
-     * later replace it with a borrowed pointer owned by a TokenizedFile or
-     * another caller. Releasing those pointers here would therefore risk
-     * freeing borrowed storage.
-     *
-     * After this call, this Diagnostic pointer and every direct reference to
-     * its locations list or message are invalid. The caller must ensure that
-     * the diagnostic is released exactly once and is not still shared by
-     * another Diagnostics collection.
-     */
-    fun free()
-    {
-        if this.locations != null:
-            this.locations.free()
-
-        if this.message != null:
-            Memory.freeMemory(this.message)
-
-        Memory.freeMemory(this)
     }
 }

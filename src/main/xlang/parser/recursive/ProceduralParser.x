@@ -22,6 +22,10 @@
 
 package xlang.parser.recursive
 
+import xlang.Diagnostic
+import xlang.Diagnostics
+import xlang.SourceLocation
+import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.parser.Parser
 import xlang.parser.Parsing
@@ -29,10 +33,14 @@ import xlang.parser.ParserResult
 import xlang.parser.ParserUtil
 import xlang.parser.rule.InputRule
 import xlang.parser.rule.InputRules
+import xlang.parser.rule.RegexAtomRule
+import xlang.parser.rule.OptionalAtomRule
+import xlang.parser.rule.LoopAtomRule
 import xlang.parser.rule.ParserRule
 import xlang.parser.rule.RuleAtom
 import xlang.util.ArrayList
 import xlang.util.LinkedListNode
+import xlang.util.string.StringBuilder
 
 
 struct ProceduralParser
@@ -67,6 +75,43 @@ struct ProceduralParser
     fun getId() -> int = this.rule.getId()
 
 
+    fun parseAtom(
+        rule: pointer<RuleAtom>,
+        tokens: pointer<TokenList>,
+        fromToken: pointer<LinkedListNode>
+    ) -> pointer<ParserResult>
+    {
+        if rule != null:
+        {
+            if rule.isToken():
+                return Parsing.parseRegAtom(rule.getTokenRule(), tokens, fromToken)
+
+            if rule.isRef():
+                return rule.getRefParser().parse(tokens, fromToken)
+
+            if rule.isOptical():
+            {
+                val opticalRule: pointer<OptionalAtomRule> = rule.getOpticalRule()
+                return Parsing.parseOpticalAtom(
+                    Parser.fromProcedural(this.clone()),
+                    opticalRule,
+                    tokens,
+                    fromToken)
+            }
+
+            if rule.isLoop():
+                return Parsing.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
+        }
+
+        val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
+        result.pushDiagnostic(Diagnostic.makeError(
+            Diagnostic.INVALID_PATTERN_ATOM,
+            new ArrayList(sizeof(SourceLocation)),
+            Diagnostic.INVALID_PATTERN_ATOM_MSG))
+        return result
+    }
+
+
     private fun reusePrefix(
         resultAccumulate: pointer<ArrayList>,
         ruleIndex: int,
@@ -95,10 +140,8 @@ struct ProceduralParser
                 break
 
             val commonSlot: pointer<int> = row.get(i) as pointer<int>
-            val previousSlot: pointer<pointer<ParserResult>> =
-                resultAccumulate.get(i) as pointer<pointer<ParserResult>>
             val previous: pointer<ParserResult> =
-                if previousSlot == null: null else: previousSlot.deref
+                resultAccumulate.get(i) as pointer<ParserResult>
 
             if commonSlot == null || previous == null ||
                 !previous.isKind(ParserResult.ARRAY_LIST_KIND):
@@ -124,9 +167,7 @@ struct ProceduralParser
         if bestIndex < 0:
             return
 
-        val bestSlot: pointer<pointer<ParserResult>> =
-            resultAccumulate.get(bestIndex) as pointer<pointer<ParserResult>>
-        val best: pointer<ParserResult> = bestSlot.deref
+        val best: pointer<ParserResult> = resultAccumulate.get(bestIndex) as pointer<ParserResult>
         val bestResults: pointer<ArrayList> = best.getValue() as pointer<ArrayList>
 
         if bestResults != null && bestLength > 0:
@@ -150,7 +191,7 @@ struct ProceduralParser
      *                          returns null
      */
     fun parse(
-        resultAccumulate: pointer<ArrayList>, // ArrayList of pointer<ParserResult>,
+        resultAccumulate: pointer<ArrayList>, // ArrayList of ParserResult,
         currentIndex: int,
 
         rule: pointer<InputRule>,
@@ -161,8 +202,6 @@ struct ProceduralParser
         var consumed: int = 0
         var currentToken: pointer<LinkedListNode> = fromToken
         val results: pointer<ArrayList> = new ArrayList(sizeof(pointer<*>))
-        var parsedTokens: pointer<ArrayList> = null
-        val atomParser: pointer<Parser> = Parser.fromProcedural(this)
         var atomIndex: int = 0
 
         if resultAccumulate != null && currentIndex < 0:
@@ -173,20 +212,16 @@ struct ProceduralParser
             atomIndex = results.length
         }
 
+        val parsedTokens: pointer<ArrayList> = new ArrayList(sizeof(Token))
+
         for (var i: int = 0; i < results.length; i++):
         {
-            val slot: pointer<pointer<*>> = results.get(i) as pointer<pointer<*>>
-            val prefixResult: pointer<ParserResult> = slot.deref as pointer<ParserResult>
-            val prefixAtom: pointer<RuleAtom> = rule.getAtom(i)
+            val slot: pointer<pointer<*>> =
+                results.get(i) as pointer<pointer<*>>
+            val prefixResult: pointer<ParserResult> =
+                slot.deref as pointer<ParserResult>
 
-            if prefixAtom != null && prefixAtom.isToken():
-            {
-                if parsedTokens == null:
-                    parsedTokens = prefixResult.getTokens().clone()
-                else:
-                    parsedTokens.pushAll(prefixResult.getTokens())
-            }
-
+            parsedTokens.pushAll(prefixResult.getTokens())
             consumed += prefixResult.getConsumed()
             currentToken = prefixResult.getEndToken()
         }
@@ -195,7 +230,7 @@ struct ProceduralParser
         {
             val atom: pointer<RuleAtom> = rule.getAtom(i)
             val result: pointer<ParserResult> =
-                Parsing.parseAtom(atomParser, atom, tokens, currentToken)
+                this.parseAtom(atom, tokens, currentToken)
             
             if result == null:
                 return result
@@ -208,20 +243,14 @@ struct ProceduralParser
                         result.getEndToken(),
                         results)
                 sequenceResult.pushTokens(parsedTokens)
+                sequenceResult.pushTokens(result.getTokens())
                 sequenceResult.pushDiagnostics(result.getDiagnostics())
                 return sequenceResult
             }
 
             results.push(result.ref)
 
-            if atom != null && atom.isToken():
-            {
-                if parsedTokens == null:
-                    parsedTokens = result.getTokens().clone()
-                else:
-                    parsedTokens.pushAll(result.getTokens())
-            }
-
+            parsedTokens.pushAll(result.getTokens())
             consumed += result.getConsumed()
             currentToken = result.getEndToken()
         }
@@ -252,8 +281,7 @@ struct ProceduralParser
     ) -> pointer<ParserResult>
     {
         val parseTokens: pointer<TokenList> = rules.before(tokens, fromToken)
-        val results: pointer<ArrayList> =
-            new ArrayList(sizeof(pointer<ParserResult>))
+        val results: pointer<ArrayList> = new ArrayList(sizeof(ParserResult))
 
         // select here
         for (var i: int = 0; i < rules.length(); i++):
@@ -278,41 +306,26 @@ struct ProceduralParser
                 rule.after(
                     parseTokens,
                     result.getEndToken())
-
-                this.freeResults(results, 0, results.length)
                 return parseResult
             }
 
-            results.push(result.ref)
+            results.push(result)
         }
 
         // all of rule are fail
         if results.length <= 0:
-        {
-            results.free()
             return ParserUtil.internalErrorParseResult(fromToken)
-        }
 
-        val firstSlot: pointer<pointer<ParserResult>> =
-            results.get(0) as pointer<pointer<ParserResult>>
-        var longest: pointer<ParserResult> = firstSlot.deref
-        var longestIndex: int = 0
+        var longest: pointer<ParserResult> = results.get(0) as pointer<ParserResult>
 
         for (var i: int = 1; i < results.length; i++):
         {
-            val slot: pointer<pointer<ParserResult>> =
-                results.get(i) as pointer<pointer<ParserResult>>
-            val result: pointer<ParserResult> = slot.deref
+            val result: pointer<ParserResult> =
+                results.get(i) as pointer<ParserResult>
 
             if result.getConsumed() > longest.getConsumed():
-            {
                 longest = result
-                longestIndex = i
-            }
         }
-
-        results.removeAt(longestIndex)
-        this.freeResults(results, 0, results.length)
 
         return longest
     }
@@ -337,64 +350,4 @@ struct ProceduralParser
 
     fun clone() -> pointer<ProceduralParser> =
         new ProceduralParser(this.rule, this.atoms, this.commonPrefixTable)
-
-
-    private fun freeResults(results: pointer<ArrayList>, fromIndex: int, toIndex: int)
-    {
-        if results == null:
-            return
-
-        val fromI: int =if fromIndex < 0:
-                0
-            elif fromIndex > results.length:
-                results.length
-            else:
-                fromIndex
-        val toI: int = if toIndex < fromI:
-                fromI
-            elif toIndex > results.length:
-                results.length
-            else:
-                toIndex
-
-        for (var i: int = fromI; i < toI; i++):
-        {
-            val slot: pointer<pointer<ParserResult>> =
-                results.get(i) as pointer<pointer<ParserResult>>
-
-            if slot != null:
-                this.freeResult(slot.deref)
-        }
-
-        results.free()
-    }
-
-
-    private fun freeResult(result: pointer<ParserResult>)
-    {
-        if result == null:
-            return
-
-        if result.isKind(ParserResult.ARRAY_LIST_KIND):
-        {
-            val children: pointer<ArrayList> =
-                result.getValue() as pointer<ArrayList>
-
-            if children != null:
-            {
-                for (var i: int = 0; i < children.length; i++):
-                {
-                    val slot: pointer<pointer<ParserResult>> =
-                        children.get(i) as pointer<pointer<ParserResult>>
-
-                    if slot != null:
-                        this.freeResult(slot.deref)
-                }
-
-                children.free()
-            }
-        }
-
-        result.free()
-    }
 }
