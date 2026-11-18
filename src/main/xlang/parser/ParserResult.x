@@ -455,13 +455,22 @@ struct ParserResult
      * Releases token storage owned by this parser result and then releases the
      * parser-result object itself.
      *
-     * The diagnostics collection, stored value, and any child ParserResult
-     * objects referenced by it are not released. Parser results can share
-     * prefix children, and value is documented as a borrowed pointer, so
-     * recursively releasing it here would risk double-freeing shared state.
+     * The owned diagnostics collection and token storage are released before
+     * the parser-result object itself. The stored value and any child
+     * ParserResult objects referenced by it are not released here; callers
+     * that own an ARRAY_LIST_KIND result must release that result tree before
+     * invoking this method on the root.
+     *
+     * Diagnostics must not be shared with another live ParserResult when this
+     * method is called. pushDiagnostics() currently performs a shallow copy,
+     * so ownership must be transferred or otherwise made unique before either
+     * result is released.
      */
     fun free()
     {
+        if this.diagnostics != null:
+            this.diagnostics.free()
+
         if this.tokens != null:
             this.tokens.free()
 
