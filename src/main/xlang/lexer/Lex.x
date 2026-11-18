@@ -25,7 +25,6 @@
 
 package xlang.lexer
 
-import xlang.System
 import xlang.TokenPosition
 
 

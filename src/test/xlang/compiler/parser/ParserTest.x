@@ -26,7 +26,6 @@ package xlang.compiler.parser
 import xlang.Files
 import xlang.Diagnostics
 import xlang.compiler.type.Type
-import xlang.System
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.expression.Assignment
 import xlang.compiler.parser.expression.Atom

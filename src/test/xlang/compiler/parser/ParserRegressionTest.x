@@ -23,7 +23,6 @@
 package xlang.compiler.parser
 
 import xlang.Diagnostics
-import xlang.System
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.expression.Expression
 import xlang.compiler.parser.expression.ExpressionTuple

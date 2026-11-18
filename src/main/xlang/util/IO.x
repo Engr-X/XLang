@@ -26,7 +26,6 @@
 #file.outerClass("IO")
 package xlang.util
 
-import xlang.System
 import xlang.util.Memory
 import xlang.util.string.String
 import xlang.util.string.StringBuilder

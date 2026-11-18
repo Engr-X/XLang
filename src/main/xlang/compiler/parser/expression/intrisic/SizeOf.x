@@ -22,7 +22,6 @@
 
 package xlang.compiler.parser.expression.intrisic
 
-import xlang.System
 import xlang.compiler.type.Type
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.expression.Atom

@@ -26,7 +26,6 @@
 #file.outerClass("String")
 package xlang.util.string
 
-import xlang.System
 import xlang.util.ArrayList
 import xlang.util.Memory
 

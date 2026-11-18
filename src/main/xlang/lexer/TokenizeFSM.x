@@ -24,7 +24,6 @@
 package xlang.lexer
 
 import xlang.Diagnostic
-import xlang.System
 import xlang.util.Memory
 import xlang.util.string.Regex
 import xlang.util.string.String

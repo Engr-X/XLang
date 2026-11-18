@@ -2,7 +2,6 @@
 package xlang.compiler.lexer
 
 
-import xlang.System
 import xlang.lexer.NormalizeFSM
 import xlang.lexer.NormalizeRule
 import xlang.lexer.Token

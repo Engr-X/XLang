@@ -24,7 +24,6 @@
 package xlang.compiler.parser.expression
 
 import xlang.Operation
-import xlang.System
 import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.Token
 import xlang.lexer.TokenPosition

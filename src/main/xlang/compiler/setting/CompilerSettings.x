@@ -22,7 +22,6 @@
 
 package xlang.compiler.setting
 
-import xlang.System
 import xlang.compiler.parser.expression.Atom
 import xlang.compiler.parser.program.PreprocessSetting
 import xlang.util.ArrayList

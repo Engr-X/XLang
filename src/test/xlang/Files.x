@@ -26,7 +26,6 @@
 #file.outerClass("Files")
 package xlang
 
-import xlang.System
 import xlang.lexer.TokenList
 import xlang.util.ArrayList
 import xlang.util.IO

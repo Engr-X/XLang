@@ -26,7 +26,6 @@
 package xlang.util.string
 
 import xlang.util.Memory
-import xlang.System
 
 
 /**

@@ -23,7 +23,6 @@
 
 package xlang.util
 
-import xlang.System
 import xlang.util.Memory
 
 

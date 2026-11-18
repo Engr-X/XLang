@@ -25,7 +25,6 @@
 
 package xlang.lexer
 
-import xlang.System
 import xlang.util.ArrayList
 import xlang.util.LinkedList
 import xlang.util.LinkedListNode

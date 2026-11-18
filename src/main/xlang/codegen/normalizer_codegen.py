@@ -38,7 +38,6 @@ TOKENIZER_RULES_TYPE: str = "compiler_tokenizer_rules"
 PatternSpec = dict[str, int | str | None]
 
 DEFAULT_IMPORTS: set[str] = {
-    "xlang.System",
     "xlang.lexer.NormalizeFSM",
     "xlang.lexer.NormalizeRule",
     "xlang.lexer.Token",

@@ -23,7 +23,6 @@
 
 package xlang.lexer
 
-import xlang.System
 import xlang.parser.combinator.RegexAtomRule
 import xlang.parser.combinator.RuleAtom
 import xlang.util.ArrayList

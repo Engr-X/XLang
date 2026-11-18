@@ -27,7 +27,6 @@ package xlang.compiler.lexer
 
 import xlang.Files
 import xlang.Diagnostics
-import xlang.System
 import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.Token
 import xlang.lexer.TokenList
