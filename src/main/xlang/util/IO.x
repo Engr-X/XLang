@@ -27,6 +27,7 @@
 package xlang.util
 
 import xlang.System
+import xlang.util.Memory
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
 
@@ -153,7 +154,7 @@ fun readFile(path: pointer<char>) -> pointer<char>
     if size <= 0:
         return null
 
-    val buffer: pointer<char> = System.allocMemory((size + 1) * sizeof(char)) as pointer<char>
+    val buffer: pointer<char> = Memory.allocMemory((size + 1) * sizeof(char)) as pointer<char>
 
     if buffer == null:
         return null

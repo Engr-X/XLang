@@ -30,6 +30,7 @@ import xlang.System
 import xlang.lexer.TokenList
 import xlang.util.ArrayList
 import xlang.util.IO
+import xlang.util.Memory
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
 
@@ -46,7 +47,7 @@ private fun builderToString(builder: pointer<StringBuilder>) -> pointer<char>
     if builder == null:
         return null
 
-    val result: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
+    val result: pointer<char> = Memory.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
     builder.toString(result)
     return result
 }
@@ -73,7 +74,7 @@ private fun joinPath(parent: pointer<char>, child: pointer<char>) -> pointer<cha
 private fun copyPathPart(text: pointer<char>, start: int, end: int) -> pointer<char>
 {
     val length: int = end - start
-    val result: pointer<char> = System.allocMemory((length + 1) * sizeof(char)) as pointer<char>
+    val result: pointer<char> = Memory.allocMemory((length + 1) * sizeof(char)) as pointer<char>
 
     String.substring(result, text, start, length)
     return result
@@ -145,7 +146,7 @@ private fun collectFiles(root: pointer<char>) -> pointer<ArrayList>
     if !IO.isDirectory(root):
         return result
 
-    val entries: pointer<char> = System.allocMemory(65536 * sizeof(char)) as pointer<char>
+    val entries: pointer<char> = Memory.allocMemory(65536 * sizeof(char)) as pointer<char>
     val count: int = IO.subFiles(root, entries)
 
     if count <= 0:

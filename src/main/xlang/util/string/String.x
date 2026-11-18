@@ -28,6 +28,7 @@ package xlang.util.string
 
 import xlang.System
 import xlang.util.ArrayList
+import xlang.util.Memory
 
 /**
  * Provides basic utilities for C-style null-terminated strings.
@@ -213,7 +214,7 @@ fun strdup(src: pointer<char>) -> pointer<char>
         return null
 
     val textLength: int = strlen(src)
-    val dest: pointer<char> = System.allocMemory((textLength + 1) * sizeof(char)) as pointer<char>
+    val dest: pointer<char> = Memory.allocMemory((textLength + 1) * sizeof(char)) as pointer<char>
 
     strcpy(dest, src)
 
@@ -618,7 +619,7 @@ fun split(string: pointer<char>, spliter: pointer<char>) -> pointer<ArrayList>
 
             if partLength > 0:
             {
-                val part: pointer<char> = System.allocMemory((partLength + 1) * sizeof(char)) as pointer<char>
+                val part: pointer<char> = Memory.allocMemory((partLength + 1) * sizeof(char)) as pointer<char>
 
                 strncpy(part, string + start, partLength)
                 result.push(part.ref)
@@ -635,7 +636,7 @@ fun split(string: pointer<char>, spliter: pointer<char>) -> pointer<ArrayList>
 
     if tailLength > 0:
     {
-        val tail: pointer<char> = System.allocMemory((tailLength + 1) * sizeof(char)) as pointer<char>
+        val tail: pointer<char> = Memory.allocMemory((tailLength + 1) * sizeof(char)) as pointer<char>
 
         strncpy(tail, string + start, tailLength)
         result.push(tail.ref)

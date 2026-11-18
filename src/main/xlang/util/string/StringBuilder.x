@@ -25,6 +25,7 @@
 
 package xlang.util.string
 
+import xlang.util.Memory
 import xlang.System
 
 
@@ -83,7 +84,7 @@ struct StringBuilder
     {
         this.length = 0
         this.capacity = INIT_CAPACITY
-        this.list = System.allocMemory(this.capacity * sizeof(char))
+        this.list = Memory.allocMemory(this.capacity * sizeof(char))
         this.list.deref = String.NULL_CHAR
     }
 
@@ -104,7 +105,7 @@ struct StringBuilder
 
         this.length = strLength
         this.capacity = if strLength * 2 > INIT_CAPACITY: strLength * 2 else: INIT_CAPACITY
-        this.list = System.allocMemory(this.capacity * sizeof(char))
+        this.list = Memory.allocMemory(this.capacity * sizeof(char))
         String.strcpy(this.list, string)
     }
 

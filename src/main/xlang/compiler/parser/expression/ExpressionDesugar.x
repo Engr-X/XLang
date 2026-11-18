@@ -29,6 +29,7 @@ import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.Token
 import xlang.lexer.TokenPosition
 import xlang.util.ArrayList
+import xlang.util.Memory
 import xlang.util.TypeConvert
 import xlang.util.string.String
 
@@ -758,7 +759,7 @@ struct ExpressionDesugar
      */
     private static fun intLiteral(value: int) -> pointer<Expression>
     {
-        val text: pointer<char> = System.allocMemory(16 * sizeof(char)) as pointer<char>
+        val text: pointer<char> = Memory.allocMemory(16 * sizeof(char)) as pointer<char>
         TypeConvert.intToString(text, value, 10)
 
         val position: pointer<TokenPosition> = TokenPosition.autoGenPos()

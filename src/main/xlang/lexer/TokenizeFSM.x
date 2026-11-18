@@ -25,6 +25,7 @@ package xlang.lexer
 
 import xlang.Diagnostic
 import xlang.System
+import xlang.util.Memory
 import xlang.util.string.Regex
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
@@ -122,7 +123,7 @@ struct TokenizeRule
         this.pattern = pattern
         this.action = action
 
-        this.compiledPattern = System.allocMemory(Regex.compileSize())
+        this.compiledPattern = Memory.allocMemory(Regex.compileSize())
         Regex.compile(pattern, this.compiledPattern)
     }
 }
@@ -390,7 +391,7 @@ struct TokenizeFSM
                 if matchLength >= 0:
                 {
                     val preChar: char = if this.cursorPos.offset == 0: -1 else: this.code[this.cursorPos.offset - 1] as int
-                    val token: pointer<char> = System.allocMemory((matchLength + 1) * sizeof(char)) as pointer<char>
+                    val token: pointer<char> = Memory.allocMemory((matchLength + 1) * sizeof(char)) as pointer<char>
                     String.strncpy(token, currentPtr, matchLength)
 
                     this.inputPos.offset = this.cursorPos.offset

@@ -32,6 +32,7 @@ import xlang.compiler.parser.statement.Statement
 import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.parser.ParserResult
+import xlang.util.Memory
 import xlang.util.string.StringBuilder
 import xlang.test.TestCase
 import xlang.test.TestGroup
@@ -491,7 +492,7 @@ private fun builderToString(builder: pointer<StringBuilder>) -> pointer<char>
     if builder == null:
         return null
 
-    val buffer: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
+    val buffer: pointer<char> = Memory.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
     builder.toString(buffer)
     return buffer
 }

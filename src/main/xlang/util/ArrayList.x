@@ -24,6 +24,7 @@
 package xlang.util
 
 import xlang.System
+import xlang.util.Memory
 
 
 /**
@@ -186,7 +187,7 @@ struct ArrayList
         this.tsize = tsize
         this.capacity = LIST_INITIAL_CAPACITY
         this.loadFactor = LIST_LOAD_FACTOR
-        this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.data = Memory.allocMemory(tsize * this.capacity) as pointer<byte>
         this.cmpFun = ArrayList.noComparator
         this.eqFun = ArrayList.noEquality
     }
@@ -219,7 +220,7 @@ struct ArrayList
         this.tsize = tsize
         this.capacity = initialCapacity
         this.loadFactor = loadFactor
-        this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.data = Memory.allocMemory(tsize * this.capacity) as pointer<byte>
         this.cmpFun = ArrayList.noComparator
         this.eqFun = ArrayList.noEquality
     }
@@ -255,7 +256,7 @@ struct ArrayList
         this.tsize = tsize
         this.capacity = initialCapacity
         this.loadFactor = loadFactor
-        this.data = System.allocMemory(tsize * this.capacity) as pointer<byte>
+        this.data = Memory.allocMemory(tsize * this.capacity) as pointer<byte>
         this.cmpFun = cmpFun
         this.eqFun = ArrayList.noEquality
     }
@@ -357,7 +358,7 @@ struct ArrayList
      */
     private fun copySlot(index: int) -> pointer<*>
     {
-        val result: pointer<byte> = System.allocMemory(this.tsize) as pointer<byte>
+        val result: pointer<byte> = Memory.allocMemory(this.tsize) as pointer<byte>
         System.memcopy(result, this.data + index * this.tsize, this.tsize)
 
         return result

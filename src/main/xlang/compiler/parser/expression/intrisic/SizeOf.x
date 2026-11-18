@@ -30,6 +30,7 @@ import xlang.compiler.parser.expression.Expression
 import xlang.lexer.Token
 import xlang.lexer.TokenPosition
 import xlang.util.ArrayList
+import xlang.util.Memory
 import xlang.util.TypeConvert
 
 
@@ -189,7 +190,7 @@ struct SizeOf
      */
     private static fun intExpression(value: int) -> pointer<Expression>
     {
-        val text: pointer<char> = System.allocMemory(16 * sizeof(char)) as pointer<char>
+        val text: pointer<char> = Memory.allocMemory(16 * sizeof(char)) as pointer<char>
         TypeConvert.intToString(text, value, 10)
 
         val token: pointer<Token> = new Token(

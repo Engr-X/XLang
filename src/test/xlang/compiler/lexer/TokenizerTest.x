@@ -37,6 +37,7 @@ import xlang.test.TestGroup
 import xlang.test.TestUnion
 import xlang.util.ArrayList
 import xlang.util.File
+import xlang.util.Memory
 import xlang.util.string.String
 
 
@@ -95,7 +96,7 @@ private fun sourceTokenTestName(path: pointer<char>) -> pointer<char>
         end -= 2
 
     val nameLength: int = end - start
-    val result: pointer<char> = System.allocMemory((nameLength + 1) * sizeof(char)) as pointer<char>
+    val result: pointer<char> = Memory.allocMemory((nameLength + 1) * sizeof(char)) as pointer<char>
 
     for (var i = 0; i < nameLength; i++):
     {

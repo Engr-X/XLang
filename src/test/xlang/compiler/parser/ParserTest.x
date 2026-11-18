@@ -66,6 +66,7 @@ import xlang.parser.ParserResult
 import xlang.util.ArrayList
 import xlang.util.HashSet
 import xlang.util.IO
+import xlang.util.Memory
 import xlang.util.string.String
 import xlang.util.string.StringBuilder
 import xlang.test.TestCase
@@ -581,7 +582,7 @@ private fun builderToString(builder: pointer<StringBuilder>) -> pointer<char>
     if builder == null:
         return null
 
-    val result: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
+    val result: pointer<char> = Memory.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
     builder.toString(result)
     return result
 }
@@ -810,7 +811,7 @@ private fun expressionTextEquals(input: pointer<char>, expected: pointer<char>) 
         return false
 
     val builder: pointer<StringBuilder> = expression.toString()
-    val actual: pointer<char> = System.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
+    val actual: pointer<char> = Memory.allocMemory((builder.length + 1) * sizeof(char)) as pointer<char>
 
     builder.toString(actual)
     return String.streq(actual, expected)
@@ -1129,7 +1130,7 @@ private fun sourceProgramTestName(path: pointer<char>) -> pointer<char>
         end -= 2
 
     val nameLength: int = end - start
-    val result: pointer<char> = System.allocMemory((nameLength + 1) * sizeof(char)) as pointer<char>
+    val result: pointer<char> = Memory.allocMemory((nameLength + 1) * sizeof(char)) as pointer<char>
 
     for (var i = 0; i < nameLength; i++):
     {
@@ -2280,7 +2281,7 @@ private fun typeCastExpressionTest() -> int
         return 7
 
     val blobTypeText: pointer<StringBuilder> = blobType.toString()
-    val blobTypeChars: pointer<char> = System.allocMemory((blobTypeText.length + 1) * sizeof(char)) as pointer<char>
+    val blobTypeChars: pointer<char> = Memory.allocMemory((blobTypeText.length + 1) * sizeof(char)) as pointer<char>
 
     blobTypeText.toString(blobTypeChars)
 

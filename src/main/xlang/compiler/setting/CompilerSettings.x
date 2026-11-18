@@ -27,6 +27,7 @@ import xlang.compiler.parser.expression.Atom
 import xlang.compiler.parser.program.PreprocessSetting
 import xlang.util.ArrayList
 import xlang.util.IO
+import xlang.util.Memory
 import xlang.util.string.StringBuilder
 
 
@@ -100,7 +101,7 @@ struct CompilerSettings
         val outerClassName: pointer<StringBuilder> = IO.getFileName(filepath)
         outerClassName.append(OUTER_CLASS_POSTFIX)
 
-        this.outerClass = System.allocMemory((outerClassName.length + 1) * sizeof(char)) as pointer<char>
+        this.outerClass = Memory.allocMemory((outerClassName.length + 1) * sizeof(char)) as pointer<char>
         outerClassName.toString(this.outerClass)
     }
 

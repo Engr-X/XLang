@@ -29,6 +29,7 @@ import xlang.parser.combinator.RuleAtom
 import xlang.util.ArrayList
 import xlang.util.LinkedList
 import xlang.util.LinkedListNode
+import xlang.util.Memory
 
 
 /**
@@ -120,8 +121,8 @@ struct NormalizeReceiver
         }
 
         this.length = length
-        this.deleted = System.allocMemory(length * sizeof(bool)) as pointer<bool>
-        this.addedTokens = System.allocMemory(length * sizeof(pointer<Token>)) as pointer<pointer<Token>>
+        this.deleted = Memory.allocMemory(length * sizeof(bool)) as pointer<bool>
+        this.addedTokens = Memory.allocMemory(length * sizeof(pointer<Token>)) as pointer<pointer<Token>>
 
         for (var i = 0; i < length; i++):
         {
