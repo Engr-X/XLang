@@ -311,7 +311,7 @@ struct ArrayList
      * current length + inserted element count + one spare slot.
      *
      * If the current capacity is too small, it is doubled until it can hold the
-     * required number of element slots. System.reallocMemory may move the
+     * required number of element slots. Memory.reallocMemory may move the
      * buffer, so any pointer previously returned by get() must be considered
      * invalid after this function runs.
      *
@@ -326,7 +326,7 @@ struct ArrayList
         while this.capacity < requiredCapacity:
             this.capacity *= 2
 
-        this.data = System.reallocMemory(this.data, this.capacity * this.tsize) as pointer<byte>
+        this.data = Memory.reallocMemory(this.data, this.capacity * this.tsize) as pointer<byte>
     }
 
 
@@ -344,7 +344,7 @@ struct ArrayList
      * @param item              pointer to the source bytes to clone
      */
     private inline fun copyToSlot(index: int, item: pointer<*>):
-        System.memcopy(this.data + index * this.tsize, item, this.tsize)
+        Memory.memcopy(this.data + index * this.tsize, item, this.tsize)
 
 
     /**
@@ -359,7 +359,7 @@ struct ArrayList
     private fun copySlot(index: int) -> pointer<*>
     {
         val result: pointer<byte> = Memory.allocMemory(this.tsize) as pointer<byte>
-        System.memcopy(result, this.data + index * this.tsize, this.tsize)
+        Memory.memcopy(result, this.data + index * this.tsize, this.tsize)
 
         return result
     }
@@ -370,7 +370,7 @@ struct ArrayList
      *
      * Slot indexes are converted to byte offsets using tsize. length is counted
      * in element slots, not bytes. The source and destination ranges may
-     * overlap; this relies on System.memcopy being the runtime primitive used
+     * overlap; this relies on Memory.memcopy being the runtime primitive used
      * throughout ArrayList for overlapping internal shifts.
      *
      * @param destIndex         first destination slot
@@ -378,7 +378,7 @@ struct ArrayList
      * @param length            number of slots to move
      */
     private inline fun moveSlots(destIndex: int, fromIndex: int, length: int):
-        System.memcopy(
+        Memory.memcopy(
             this.data + destIndex * this.tsize,
             this.data + fromIndex * this.tsize,
             length * this.tsize)
@@ -642,7 +642,7 @@ struct ArrayList
             this.resize(length)
 
         this.moveSlots(index + length, index, this.length - index)
-        System.memcopy(this.data + index * this.tsize, items, length * this.tsize)
+        Memory.memcopy(this.data + index * this.tsize, items, length * this.tsize)
         this.length += length
     }
 
@@ -858,12 +858,12 @@ struct ArrayList
 
             if this.cmpFun(leftItem, rightItem) <= 0:
             {
-                System.memcopy(destItem, leftItem, elementSize)
+                Memory.memcopy(destItem, leftItem, elementSize)
                 leftIndex++
             }
             else:
             {
-                System.memcopy(destItem, rightItem, elementSize)
+                Memory.memcopy(destItem, rightItem, elementSize)
                 rightIndex++
             }
 
@@ -872,7 +872,7 @@ struct ArrayList
 
         while leftIndex < middle:
         {
-            System.memcopy(
+            Memory.memcopy(
                 buffer + destIndex * elementSize,
                 this.data + leftIndex * elementSize,
                 elementSize)
@@ -882,7 +882,7 @@ struct ArrayList
 
         while rightIndex < right:
         {
-            System.memcopy(
+            Memory.memcopy(
                 buffer + destIndex * elementSize,
                 this.data + rightIndex * elementSize,
                 elementSize)
@@ -890,7 +890,7 @@ struct ArrayList
             destIndex++
         }
 
-        System.memcopy(
+        Memory.memcopy(
             this.data + left * elementSize,
             buffer + left * elementSize,
             (right - left) * elementSize)
@@ -1026,7 +1026,7 @@ struct ArrayList
 
         if size > 0:
         {
-            System.memcopy(
+            Memory.memcopy(
                 sublist.data,
                 this.data + fromIndex * this.tsize,
                 size * this.tsize)

@@ -142,7 +142,7 @@ struct StringBuilder
         while this.capacity < requiredCapacity:
             this.capacity *= 2
 
-        this.list = System.reallocMemory(this.list, this.capacity * sizeof(char))
+        this.list = Memory.reallocMemory(this.list, this.capacity * sizeof(char))
     }
 
 

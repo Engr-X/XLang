@@ -262,7 +262,7 @@ private fun thisMethodCallTwoArgsStatementTest() -> int =
 
 
 private fun systemMethodCallTwoArgsStatementTest() -> int =
-    if parseStatementText("System.memcopy(1, 2)\n") != null:
+    if parseStatementText("Memory.memcopy(1, 2)\n") != null:
         0
     else:
         1
@@ -290,7 +290,7 @@ private fun functionCallInfixFieldArgStatementTest() -> int =
 
 
 private fun singleLineMethodCallStatementTest() -> int =
-    if parseStatementText("System.memcopy(sublist.data, this.data + fromIndex * this.tsize, size * this.tsize)\n") != null:
+    if parseStatementText("Memory.memcopy(sublist.data, this.data + fromIndex * this.tsize, size * this.tsize)\n") != null:
         0
     else:
         1
@@ -365,7 +365,7 @@ private fun tokenListSubTokenFunctionTest() -> int
 private fun multilineMethodCallStatementTest() -> int
 {
     val source: pointer<StringBuilder> = new StringBuilder()
-    source.append("System.memcopy(\n")
+    source.append("Memory.memcopy(\n")
     source.append("    sublist.data,\n")
     source.append("    this.data + fromIndex * this.tsize,\n")
     source.append("    size * this.tsize)\n")
@@ -390,7 +390,7 @@ private fun arrayListSublistFunctionTest() -> int
     source.append("\n")
     source.append("    if size > 0:\n")
     source.append("    {\n")
-    source.append("        System.memcopy(\n")
+    source.append("        Memory.memcopy(\n")
     source.append("            sublist.data,\n")
     source.append("            this.data + fromIndex * this.tsize,\n")
     source.append("            size * this.tsize)\n")
