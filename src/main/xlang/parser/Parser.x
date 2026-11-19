@@ -96,13 +96,6 @@ struct Parser
         }
         elif this.kind == PROCEDURAL_KIND:
         {
-            val aaa: pointer<Token> = fromToken.value as pointer<Token>
-            val line: int = aaa.pos.line
-            
-            if line == 1122:
-                putln(aaa.pos.column)
-
-            // TypeConvert.intToString(space as pointer<char>, token.line, 10)
             val parser: pointer<ProceduralParser> = this.host as pointer<ProceduralParser>
             parser.parse(tokens, fromToken)
         }

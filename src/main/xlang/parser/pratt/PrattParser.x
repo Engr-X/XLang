@@ -340,6 +340,7 @@ struct PrattParser
      * @param tokens            the token list that owns the parsed nodes
      * @param fromToken         the first token node after the left result
      * @param dest              destination receiving successful atom results
+    * @param minPriority        the minimum accepted continuation priority
      *
      * @return                  the first matching continuation rule, or null
      *                          when no priority group matches
@@ -348,7 +349,8 @@ struct PrattParser
         left: pointer<ParserResult>,
         tokens: pointer<TokenList>,
         fromToken: pointer<LinkedListNode>,
-        dest: pointer<ArrayList>
+        dest: pointer<ArrayList>,
+        minPriority: int
     ) -> pointer<InputRule>
     {
         val continuationRules: pointer<InputRules> = this.continuationRules.getInputRule()
@@ -362,6 +364,16 @@ struct PrattParser
         {
             val firstRule: pointer<InputRule> = continuationRules.getRule(index)
             val currentPriority: int = firstRule.getPriority()
+
+            if currentPriority < minPriority:
+            {
+                while index < continuationRules.length() &&
+                    continuationRules.getRule(index).getPriority() == currentPriority:
+                    index++
+
+                continue
+            }
+
             val rules: pointer<LinkedList> = new LinkedList()
 
             while index < continuationRules.length():
@@ -373,7 +385,6 @@ struct PrattParser
 
                 index++
 
-                // check first is ref and ref.id == left result.kind
                 val first: pointer<RuleAtom> = rule.getAtom(0)
 
                 if first == null || !first.isRef():
@@ -386,6 +397,9 @@ struct PrattParser
 
                 rules.push(rule)
             }
+
+            if rules.length <= 0:
+                continue
 
             val matched: pointer<InputRule> =
                 this.findContinuation(left, rules, tokens, fromToken, dest)
@@ -426,7 +440,7 @@ struct PrattParser
 
         val attempts: pointer<ArrayList> = new ArrayList(sizeof(pointer<ParserResult>))
         val rule: pointer<InputRule> =
-            this.findContinuation(left, tokens, fromToken, attempts)
+            this.findContinuation(left, tokens, fromToken, attempts, minPriority)
 
         if rule == null || rule.getPriority() < minPriority:
             return null

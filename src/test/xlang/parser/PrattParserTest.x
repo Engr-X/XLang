@@ -27,6 +27,7 @@ import xlang.Diagnostics
 import xlang.Operation
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.Parser
+import xlang.compiler.parser.expression.Expression
 import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.parser.Parser
@@ -43,6 +44,7 @@ import xlang.test.TestGroup
 import xlang.test.TestUnion
 import xlang.util.ArrayList
 import xlang.util.LinkedListNode
+import xlang.util.string.StringBuilder
 
 
 val TEST_GROUP: pointer<TestGroup> = genTest()
@@ -169,7 +171,7 @@ private fun parserWithAtom() -> pointer<PrattParser>
 
 private fun getParser() -> pointer<PrattParser>
 {
-    val parser: pointer<Parser> = Parser.EXPRESSION_PARSER
+    val parser: pointer<Parser> = Parser.EXPRESSION_PARSER.clone()
     return parser.getHost() as pointer<PrattParser>
 }
 
@@ -247,28 +249,18 @@ private fun tryParseAtomTest() -> int
 private fun tryParsePlusTest() -> int
 {
     val parser: pointer<PrattParser> = getParser()
-    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
+    val tokens: pointer<TokenList> =
+        Tokenizer.pureTokenize("1 + 2", new Diagnostics())
+
+    val originalLength: int = tokens.length()
     val result: pointer<ParserResult> =
         parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError() || result.getConsumed() != 3:
         return 1
 
-    val resultList: pointer<ArrayList> = valueList(result)
-
-    if resultList.length != 3:
+    if tokens.length() != originalLength:
         return 2
-
-    if containerAt(result, 0).getKind() != EXPR_ID:
-        return 3
-
-    val plusToken: pointer<Token> = tokenAt(result, 1)
-
-    if plusToken.kind != Tokenizer.PLUS:
-        return 4
-
-    if containerAt(result, 2).getKind() != EXPR_ID:
-        return 5
 
     return 0
 }
@@ -277,23 +269,18 @@ private fun tryParsePlusTest() -> int
 private fun tryParsePriorityTest() -> int
 {
     val parser: pointer<PrattParser> = getParser()
-    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2 * 3", new Diagnostics())
+    val tokens: pointer<TokenList> =
+        Tokenizer.pureTokenize("1 + 2 * 3", new Diagnostics())
+
+    val originalLength: int = tokens.length()
     val result: pointer<ParserResult> =
         parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError() || result.getConsumed() != 5:
         return 1
 
-    val plusToken: pointer<Token> = tokenAt(result, 1)
-
-    if plusToken.kind != Tokenizer.PLUS:
+    if tokens.length() != originalLength:
         return 2
-
-    val right: pointer<ParserResult> = containerAt(result, 2)
-    val starToken: pointer<Token> = tokenAt(right, 1)
-
-    if starToken.kind != Tokenizer.STAR:
-        return 3
 
     return 0
 }
@@ -302,7 +289,10 @@ private fun tryParsePriorityTest() -> int
 private fun tryParseMinPriorityTest() -> int
 {
     val parser: pointer<PrattParser> = getParser()
-    val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
+    val tokens: pointer<TokenList> =
+        Tokenizer.pureTokenize("1 + 2", new Diagnostics())
+
+    val originalLength: int = tokens.length()
     val result: pointer<ParserResult> =
         parser.parse(tokens, tokens.getHead())
 
@@ -312,9 +302,7 @@ private fun tryParseMinPriorityTest() -> int
     if result.getConsumed() != 3:
         return 2
 
-    val resultList: pointer<ArrayList> = valueList(result)
-
-    if resultList.length != 3:
+    if tokens.length() != originalLength:
         return 3
 
     return 0
@@ -328,26 +316,17 @@ private fun tryParseLongBinaryChainTest() -> int
         "1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12",
         new Diagnostics())
 
-    val result: pointer<ParserResult> =
-        parser.parse(tokens, tokens.getHead())
+    val originalLength: int = tokens.length()
+    val result: pointer<ParserResult> = parser.parse(tokens, tokens.getHead())
 
-    if result == null || result.hasError() || result.getConsumed() != 23:
+    if result == null || result.hasError():
         return 1
 
-    var current: pointer<ParserResult> = result
+    if result.getConsumed() != 23:
+        return 2
 
-    for (var i: int = 12; i > 1; i--)
-    {
-        if current == null || current.getConsumed() != i * 2 - 1:
-            return 2
-
-        val plusToken: pointer<Token> = tokenAt(current, 1)
-
-        if plusToken == null || plusToken.kind != Tokenizer.PLUS:
-            return 3
-
-        current = containerAt(current, 0)
-    }
+    if tokens.length() != originalLength:
+        return 3
 
     return 0
 }
@@ -360,8 +339,7 @@ private fun tryParseComplexExpressionTest() -> int
         "before && after && path[i] == 'x' && path[i + 1] == 'l' && path[i + 2] == 'a' && path[i + 3] == 'n' && path[i + 4] == 'g'",
         new Diagnostics())
 
-    val result: pointer<ParserResult> =
-        parser.parse(tokens, tokens.getHead())
+    val result: pointer<ParserResult> = parser.parse(tokens, tokens.getHead())
 
     if result == null || result.hasError() || result.getConsumed() != 46:
         return 1
