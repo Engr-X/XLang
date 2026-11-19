@@ -125,7 +125,8 @@ native inline fun freeMemory(memory: pointer<*>) -> void
  */
 fun memcopy(mut dest: pointer<*>, mut src: pointer<*>, size: int) -> void
 {
-    if size <= 0: { return; }
+    if size <= 0:
+        return
 
     val s: long = src as long
     val d: long = dest as long
@@ -133,7 +134,7 @@ fun memcopy(mut dest: pointer<*>, mut src: pointer<*>, size: int) -> void
     val longCount: int = size / 8
     val remain: int = size % 8
 
-    if d <= s || d >= s + n
+    if d <= s || d >= s + n:
     {
         var srcLong: pointer<long> = src as pointer<long>
         var destLong: pointer<long> = dest as pointer<long>
@@ -147,12 +148,12 @@ fun memcopy(mut dest: pointer<*>, mut src: pointer<*>, size: int) -> void
         for (var i: int = 0; i < remain; i++, srcByte++, destByte++):
             destByte.deref = srcByte.deref
     }
-    else
+    else:
     {
         var srcByteEnd: pointer<byte> = src as pointer<byte> + size
         var destByteEnd: pointer<byte> = dest as pointer<byte> + size
 
-        for (var i: int = 0; i < remain; i++)
+        for (var i: int = 0; i < remain; i++):
         {
             srcByteEnd--
             destByteEnd--

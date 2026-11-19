@@ -41,7 +41,7 @@ private fun printTime(label: pointer<char>, value: int, unit: pointer<char>)
 fun main()
 {
     val path: pointer<char> =
-        "D:/Coding/projects/XLang/xlang/src/main/xlang/util/LinkedList.x"
+        "D:/Coding/projects/XLang/xlang/src/test/xlang/compiler/parser/ParserTest.x"
     val file: pointer<File> = new File(path)
     val source: pointer<char> = file.getContent()
 

@@ -102,32 +102,13 @@ struct Parser
 
 
     fun parse(
-        rule: pointer<ParserRule>,
-        tokens: pointer<TokenList>,
-        fromToken: pointer<LinkedListNode>
-    ) -> pointer<ParserResult> =
-        if this.kind == RECURSIVE_KIND:
-        {
-            val parser: pointer<RecursiveParser> = this.host as pointer<RecursiveParser>
-            parser.parse(rule, tokens, fromToken)
-        }
-        elif this.kind == PROCEDURAL_KIND:
-        {
-            val parser: pointer<ProceduralParser> = this.host as pointer<ProceduralParser>
-            parser.parse(rule, tokens, fromToken)
-        }
-        else:
-            null
-
-
-    fun parse(
         tokens: pointer<TokenList>,
         fromIndex: int
     ) -> pointer<ParserResult>
     {
         if tokens == null || fromIndex < 0 || fromIndex >= tokens.length():
             return null
-
+        
         val tokenPtr: pointer<LinkedListNode> = tokens.getHead().forward(fromIndex)
         return this.parse(tokens, tokenPtr)
     }

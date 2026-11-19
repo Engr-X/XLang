@@ -107,8 +107,8 @@ fun parseOpticalAtom(
     if parser == null || rule == null:
         return ParserResult.fromEmpty(fromToken)
 
-    val result: pointer<ParserResult> =
-        parser.parse(rule.getRule(), tokens, fromToken)
+    val cloneParser: pointer<Parser> = parser.clone()
+    val result: pointer<ParserResult> = parser.parse(tokens, fromToken)
     return if result == null || result.hasError():
         ParserResult.fromEmpty(fromToken)
     else:
