@@ -22,11 +22,13 @@
 
 package xlang.parser
 
+import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.parser.pratt.PrattParser
 import xlang.parser.recursive.ProceduralParser
 import xlang.parser.recursive.RecursiveParser
 import xlang.parser.rule.ParserRule
+import xlang.io.Console
 import xlang.util.LinkedListNode
 
 
@@ -94,6 +96,13 @@ struct Parser
         }
         elif this.kind == PROCEDURAL_KIND:
         {
+            val aaa: pointer<Token> = fromToken.value as pointer<Token>
+            val line: int = aaa.pos.line
+            
+            if line == 1122:
+                putln(aaa.pos.column)
+
+            // TypeConvert.intToString(space as pointer<char>, token.line, 10)
             val parser: pointer<ProceduralParser> = this.host as pointer<ProceduralParser>
             parser.parse(tokens, fromToken)
         }
@@ -201,4 +210,7 @@ struct Parser
         }
         else:
             null
+
+
+    fun getHost() -> pointer<*> = this.host
 }

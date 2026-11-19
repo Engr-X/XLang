@@ -26,6 +26,7 @@ package xlang.parser
 import xlang.Diagnostics
 import xlang.Operation
 import xlang.compiler.lexer.Tokenizer
+import xlang.compiler.parser.Parser
 import xlang.lexer.Token
 import xlang.lexer.TokenList
 import xlang.parser.Parser
@@ -56,6 +57,8 @@ fun genTest() -> pointer<TestGroup>
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("tryParse", tryParseTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("parse", parseTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("doParse", doParseEntryTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("tryParseLongBinaryChainTest", tryParseLongBinaryChainTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("tryParseComplexExpressionTest", tryParseComplexExpressionTest), null))
 
     return result
 }
@@ -63,7 +66,7 @@ fun genTest() -> pointer<TestGroup>
 
 private fun parseTest() -> int
 {
-    val parser: pointer<PrattParser> = parserWithBinary()
+    val parser: pointer<PrattParser> = getParser()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
     val result: pointer<ParserResult> =
@@ -82,7 +85,7 @@ private fun parseTest() -> int
 private fun doParseEntryTest() -> int
 {
     val parser: pointer<xlang.parser.Parser> =
-        xlang.parser.Parser.fromPratt(parserWithBinary())
+        xlang.parser.Parser.fromPratt(getParser())
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
     val result: pointer<ParserResult> =
@@ -164,24 +167,10 @@ private fun parserWithAtom() -> pointer<PrattParser>
 }
 
 
-private fun parserWithBinary() -> pointer<PrattParser>
+private fun getParser() -> pointer<PrattParser>
 {
-    val root: pointer<xlang.parser.Parser> =
-        xlang.parser.Parser.fromPratt(null)
-    val atom: pointer<ParserRule> = atomRule()
-    val plus: pointer<InputRule> =
-        continuationRule(root, Tokenizer.PLUS, 10)
-    val star: pointer<InputRule> =
-        continuationRule(root, Tokenizer.STAR, 20)
-    val continuationInputs: pointer<InputRules> =
-        new InputRules(EXPR_ID).push(plus).push(star)
-    val continuation: pointer<ParserRule> = new ParserRule(
-        continuationInputs,
-        RuleExpression.fromSequence(new RuleSequence()))
-    val parser: pointer<PrattParser> =
-        new PrattParser(EXPR_ID, atom, continuation)
-    root.setPrattHost(parser)
-    return parser
+    val parser: pointer<Parser> = Parser.EXPRESSION_PARSER
+    return parser.getHost() as pointer<PrattParser>
 }
 
 
@@ -257,7 +246,7 @@ private fun tryParseAtomTest() -> int
 
 private fun tryParsePlusTest() -> int
 {
-    val parser: pointer<PrattParser> = parserWithBinary()
+    val parser: pointer<PrattParser> = getParser()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val result: pointer<ParserResult> =
         parser.parse(tokens, tokens.getHead())
@@ -287,7 +276,7 @@ private fun tryParsePlusTest() -> int
 
 private fun tryParsePriorityTest() -> int
 {
-    val parser: pointer<PrattParser> = parserWithBinary()
+    val parser: pointer<PrattParser> = getParser()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2 * 3", new Diagnostics())
     val result: pointer<ParserResult> =
         parser.parse(tokens, tokens.getHead())
@@ -312,7 +301,7 @@ private fun tryParsePriorityTest() -> int
 
 private fun tryParseMinPriorityTest() -> int
 {
-    val parser: pointer<PrattParser> = parserWithBinary()
+    val parser: pointer<PrattParser> = getParser()
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val result: pointer<ParserResult> =
         parser.parse(tokens, tokens.getHead())
@@ -327,6 +316,55 @@ private fun tryParseMinPriorityTest() -> int
 
     if resultList.length != 3:
         return 3
+
+    return 0
+}
+
+
+private fun tryParseLongBinaryChainTest() -> int
+{
+    val parser: pointer<PrattParser> = getParser()
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize(
+        "1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12",
+        new Diagnostics())
+
+    val result: pointer<ParserResult> =
+        parser.parse(tokens, tokens.getHead())
+
+    if result == null || result.hasError() || result.getConsumed() != 23:
+        return 1
+
+    var current: pointer<ParserResult> = result
+
+    for (var i: int = 12; i > 1; i--)
+    {
+        if current == null || current.getConsumed() != i * 2 - 1:
+            return 2
+
+        val plusToken: pointer<Token> = tokenAt(current, 1)
+
+        if plusToken == null || plusToken.kind != Tokenizer.PLUS:
+            return 3
+
+        current = containerAt(current, 0)
+    }
+
+    return 0
+}
+
+
+private fun tryParseComplexExpressionTest() -> int
+{
+    val parser: pointer<PrattParser> = getParser()
+    val tokens: pointer<TokenList> = Tokenizer.pureTokenize(
+        "before && after && path[i] == 'x' && path[i + 1] == 'l' && path[i + 2] == 'a' && path[i + 3] == 'n' && path[i + 4] == 'g'",
+        new Diagnostics())
+
+    val result: pointer<ParserResult> =
+        parser.parse(tokens, tokens.getHead())
+
+    if result == null || result.hasError() || result.getConsumed() != 46:
+        return 1
 
     return 0
 }

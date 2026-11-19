@@ -583,6 +583,5 @@ struct PrattParser
     fun reset() -> pointer<PrattParser> = this
 
 
-    fun clone() -> pointer<PrattParser> =
-        new PrattParser(this, true)
+    fun clone() -> pointer<PrattParser> = new PrattParser(this, true)
 }
