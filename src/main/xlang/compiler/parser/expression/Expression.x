@@ -70,7 +70,7 @@ struct Expression
     static val ASSIGNMENT_KIND: int = 7
 
     // Identifies an expression that creates a new function-based object.
-    static val NEW_FUNCTION_KIND: int = 9
+    static val CONSTRUCTOR_CALL_KIND: int = 9
 
     // Identifies a block expression.
     static val BLOCK_EXPR_KIND: int = 10
@@ -156,10 +156,10 @@ struct Expression
      *
      * @param function          a pointer to the new-function node
      *
-     * @return                  a new expression of kind {@code NEW_FUNCTION_KIND}
+     * @return                  a new expression of kind {@code CONSTRUCTOR_CALL_KIND}
      */
-    inline static fun fromNewFunction(function: pointer<NewFunction>) -> pointer<Expression> =
-        new Expression(NEW_FUNCTION_KIND, function)
+    inline static fun fromConstructortion(function: pointer<ConstructorCall>) -> pointer<Expression> =
+        new Expression(CONSTRUCTOR_CALL_KIND, function)
 
 
     /**
@@ -357,9 +357,9 @@ struct Expression
             val assignment: pointer<Assignment> = this.root as pointer<Assignment>
             assignment.getAllTokens()
         }
-        elif this.kind == NEW_FUNCTION_KIND:
+        elif this.kind == CONSTRUCTOR_CALL_KIND:
         {
-            val function: pointer<NewFunction> = this.root as pointer<NewFunction>
+            val function: pointer<ConstructorCall> = this.root as pointer<ConstructorCall>
             function.getAllTokens()
         }
         elif this.kind == BLOCK_EXPR_KIND:
@@ -430,9 +430,9 @@ struct Expression
             val assignment: pointer<Assignment> = this.root as pointer<Assignment>
             assignment.toString()
         }
-        elif this.kind == NEW_FUNCTION_KIND:
+        elif this.kind == CONSTRUCTOR_CALL_KIND:
         {
-            val function: pointer<NewFunction> = this.root as pointer<NewFunction>
+            val function: pointer<ConstructorCall> = this.root as pointer<ConstructorCall>
             function.toString()
         }
         elif this.kind == BLOCK_EXPR_KIND:

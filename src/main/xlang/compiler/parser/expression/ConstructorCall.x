@@ -33,7 +33,7 @@ import xlang.util.string.StringBuilder
  * Represents a {@code new} expression that invokes an identifier with an
  * argument list.
  *
- * <p>A {@code NewFunction} stores the identifier being instantiated or invoked,
+ * <p>A {@code ConstructorCall} stores the identifier being instantiated or invoked,
  * an ordered collection of argument expressions, and additional syntax tokens
  * associated with the expression.
  *
@@ -44,7 +44,7 @@ import xlang.util.string.StringBuilder
  * parentheses, commas, or other delimiters that are not directly represented
  * by the contained expressions.
  */
-struct NewFunction
+struct ConstructorCall
 {
     // The duplicated null-terminated identifier being instantiated or invoked.
     private var host: pointer<char>
@@ -110,9 +110,9 @@ struct NewFunction
      *
      * @param argument          a pointer to the argument expression to append
      *
-     * @return                  this {@code NewFunction} instance
+     * @return                  this {@code ConstructorCall} instance
      */
-    fun addArgument(argument: pointer<Expression>) -> pointer<NewFunction>
+    fun addArgument(argument: pointer<Expression>) -> pointer<ConstructorCall>
     {
         if argument != null:
             this.arguments.push(argument.ref)
@@ -136,9 +136,9 @@ struct NewFunction
      * @param arguments         a pointer to the expression tuple containing the new
      *                          arguments and associated syntax tokens
      *
-     * @return                  this {@code NewFunction} instance
+     * @return                  this {@code ConstructorCall} instance
      */
-    fun setArguments(arguments: pointer<ExpressionTuple>) -> pointer<NewFunction>
+    fun setArguments(arguments: pointer<ExpressionTuple>) -> pointer<ConstructorCall>
     {
         if arguments != null:
         {
@@ -159,9 +159,9 @@ struct NewFunction
      *
      * @param token             a pointer to the syntax token to add
      *
-     * @return                  this {@code NewFunction} instance
+     * @return                  this {@code ConstructorCall} instance
      */
-    fun addExtraToken(token: pointer<Token>) -> pointer<NewFunction>
+    fun addExtraToken(token: pointer<Token>) -> pointer<ConstructorCall>
     {
         if token != null:
             this.extraTokens.push(token)
@@ -180,9 +180,9 @@ struct NewFunction
      *
      * @param tokens            a pointer to the token collection to append
      *
-     * @return                  this {@code NewFunction} instance
+     * @return                  this {@code ConstructorCall} instance
      */
-    fun addExtraTokens(tokens: pointer<ArrayList>) -> pointer<NewFunction>
+    fun addExtraTokens(tokens: pointer<ArrayList>) -> pointer<ConstructorCall>
     {
         if tokens != null:
             this.extraTokens.pushAll(tokens)

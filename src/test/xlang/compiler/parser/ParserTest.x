@@ -33,7 +33,7 @@ import xlang.compiler.parser.expression.Expression
 import xlang.compiler.parser.expression.FieldAccess
 import xlang.compiler.parser.expression.IndexAccess
 import xlang.compiler.parser.expression.MethodAccess
-import xlang.compiler.parser.expression.NewFunction
+import xlang.compiler.parser.expression.ConstructorCall
 import xlang.compiler.parser.expression.TypeCast
 import xlang.compiler.parser.program.Field
 import xlang.compiler.parser.program.Function
@@ -1754,10 +1754,10 @@ private fun newExpressionTest() -> int
 {
     val funcExpression: pointer<Expression> = parseExpressionText("new Foo(1, x + 2)")
 
-    if funcExpression == null || funcExpression.getKind() != Expression.NEW_FUNCTION_KIND:
+    if funcExpression == null || funcExpression.getKind() != Expression.CONSTRUCTOR_CALL_KIND:
         return 6
 
-    val function: pointer<NewFunction> = funcExpression.getRoot() as pointer<NewFunction>
+    val function: pointer<ConstructorCall> = funcExpression.getRoot() as pointer<ConstructorCall>
 
     if function == null || !String.streq(function.getHost(), "Foo"):
         return 7

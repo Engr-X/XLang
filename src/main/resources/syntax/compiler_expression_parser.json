@@ -16,7 +16,7 @@
         "xlang.compiler.parser.expression.IndexAccess",
         "xlang.compiler.parser.expression.ListLiteral",
         "xlang.compiler.parser.expression.MethodAccess",
-        "xlang.compiler.parser.expression.NewFunction",
+        "xlang.compiler.parser.expression.ConstructorCall",
         "xlang.compiler.parser.expression.TypeCast",
         "xlang.compiler.parser.expression.intrisic.SizeOf",
         "xlang.compiler.parser.stmtexpr.Block",
@@ -115,7 +115,7 @@
                 { "symbol": "!|=", "function_name": "bitwiseNorAssign", "fixity": "Operation.INFIX_TYPE", "associativity": "Operation.RIGHT_ASSOC", "priority": 10 }
             ],
             "sub_rules": [
-                { "role": "starter", "patterns": [{ "kind": "Tokenizer.KW_NEW" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromNewFunc", "priority": 250 },
+                { "role": "starter", "patterns": [{ "kind": "Tokenizer.KW_NEW" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromConstructor", "priority": 250 },
                 { "role": "starter", "patterns": [{ "kind": "$SizeOf" }], "action": "makeExprFromSizeOf", "priority": 240 },
                 { "role": "starter", "patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromFuncCall", "priority": 240 },
                 { "role": "starter", "patterns": [{ "kind": "$IfElseExpression" }], "action": "makeExprFromIfElseExpr", "priority": 240 },
@@ -367,16 +367,16 @@
             "}" ],
 
 
-        [   "private fun makeExprFromNewFunc(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private fun makeExprFromConstructor(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val newToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>",
             "    val nameToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
             "    val tuple: pointer<ExpressionTuple> = getContainerValue(results, 2) as pointer<ExpressionTuple>",
             "",
-            "    val function: pointer<NewFunction> = new NewFunction(nameToken.text).setArguments(tuple)",
+            "    val function: pointer<ConstructorCall> = new ConstructorCall(nameToken.text).setArguments(tuple)",
             "    function.addExtraToken(newToken).addExtraToken(nameToken)",
             "",
-            "    return Expression.fromNewFunction(function)",
+            "    return Expression.fromConstructortion(function)",
             "}" ],
 
 

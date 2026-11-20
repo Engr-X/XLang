@@ -14,7 +14,7 @@ import xlang.compiler.parser.expression.FieldAccess
 import xlang.compiler.parser.expression.IndexAccess
 import xlang.compiler.parser.expression.ListLiteral
 import xlang.compiler.parser.expression.MethodAccess
-import xlang.compiler.parser.expression.NewFunction
+import xlang.compiler.parser.expression.ConstructorCall
 import xlang.compiler.parser.expression.TypeCast
 import xlang.compiler.parser.expression.intrisic.SizeOf
 import xlang.compiler.parser.program.Annotation
@@ -568,16 +568,16 @@ private fun makeExprFromPostfixWith(
     return result.addExtraToken(opToken)
 }
 
-private fun makeExprFromNewFunc(results: pointer<ArrayList>) -> pointer<*>
+private fun makeExprFromConstructor(results: pointer<ArrayList>) -> pointer<*>
 {
     val newToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val nameToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val tuple: pointer<ExpressionTuple> = getContainerValue(results, 2) as pointer<ExpressionTuple>
 
-    val function: pointer<NewFunction> = new NewFunction(nameToken.text).setArguments(tuple)
+    val function: pointer<ConstructorCall> = new ConstructorCall(nameToken.text).setArguments(tuple)
     function.addExtraToken(newToken).addExtraToken(nameToken)
 
-    return Expression.fromNewFunction(function)
+    return Expression.fromConstructortion(function)
 }
 
 private fun makeExprFromFuncCall(results: pointer<ArrayList>) -> pointer<*>
@@ -3375,7 +3375,7 @@ private fun initializeParserGraph() -> bool
     TYPE_RULE.push(TYPE_RULE_1)
 
     EXPRESSION_RULE_0 =
-        new InputRule(250, null, makeExprFromNewFunc, parserRuleIdentity)
+        new InputRule(250, null, makeExprFromConstructor, parserRuleIdentity)
             .push(RuleAtom.fromRegex(Tokenizer.KW_NEW))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromParserRef(EXPRESSION_TUPLE_PARSER))
