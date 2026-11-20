@@ -271,10 +271,41 @@ struct PrattParser
                 else:
                 {
                     val atom: pointer<RuleAtom> = rule.getAtom(atomIndex)
-                    val result: pointer<ParserResult> = parser.parseAtom(
-                        atom,
-                        tokens,
-                        cursorNode.value as pointer<LinkedListNode>)
+                    val refParser: pointer<Parser> = if atom != null && atom.isRef():
+                            atom.getRefParser()
+                        else:
+                            null
+
+                    val isRight: bool =
+                        atomIndex == rule.length() - 1 &&
+                        refParser != null &&
+                        refParser.getId() == left.getKind()
+
+                    var result: pointer<ParserResult> = null
+
+                    if isRight:
+                    {
+                        val operation: pointer<Operation> = rule.getOperation()
+
+                        val rightMinPriority: int =
+                            if operation != null &&
+                                operation.associativity == Operation.RIGHT_ASSOC:
+                                rule.getPriority()
+                            else:
+                                rule.getPriority() + 1
+
+                        result = this.parse(
+                            tokens,
+                            cursorNode.value as pointer<LinkedListNode>,
+                            rightMinPriority)
+                    }
+                    else:
+                    {
+                        result = parser.parseAtom(
+                            atom,
+                            tokens,
+                            cursorNode.value as pointer<LinkedListNode>)
+                    }
 
                     if result == null || result.hasError():
                     {
@@ -284,8 +315,8 @@ struct PrattParser
                     }
                     else:
                     {
-                        val ruleAttempts: pointer<ArrayList> =
-                            attemptNode.value as pointer<ArrayList>
+                        val ruleAttempts: pointer<ArrayList> = attemptNode.value as pointer<ArrayList>
+
                         ruleAttempts.push(result.ref)
                         cursorNode.value = result.getEndToken()
 
@@ -312,12 +343,10 @@ struct PrattParser
                 if completedCount >= 2:
                     this.reportAmbiguousRule(left)
 
-                val selectedAttempts: pointer<LinkedListNode> =
-                    attempts.getHead()
+                val selectedAttempts: pointer<LinkedListNode> = attempts.getHead()
 
                 if dest != null && selectedAttempts != null:
-                    dest.pushAll(
-                        selectedAttempts.value as pointer<ArrayList>)
+                    dest.pushAll(selectedAttempts.value as pointer<ArrayList>)
 
                 return firstCompleted
             }
@@ -439,29 +468,53 @@ struct PrattParser
             return left
 
         val attempts: pointer<ArrayList> = new ArrayList(sizeof(pointer<ParserResult>))
-        val rule: pointer<InputRule> =
-            this.findContinuation(left, tokens, fromToken, attempts, minPriority)
+
+        val rule: pointer<InputRule> = this.findContinuation(
+                left, tokens, fromToken, attempts, minPriority)
 
         if rule == null || rule.getPriority() < minPriority:
             return null
 
         val lastIndex: int = rule.length() - 1
         val last: pointer<RuleAtom> = rule.getAtom(lastIndex)
+
         val hasRight: bool = rule.length() > 1 &&
             last != null && last.isRef() &&
             last.getRefParser() != null &&
             last.getRefParser().getId() == left.getKind()
+
+        // Reuse the RHS already parsed by findContinuation.
+        var right: pointer<ParserResult> = null
+
+        if hasRight:
+        {
+            if attempts.length != lastIndex:
+                return null
+
+            val slot: pointer<pointer<ParserResult>> =
+                attempts.get(lastIndex - 1) as pointer<pointer<ParserResult>>
+
+            if slot == null:
+                return null
+
+            right = slot.deref
+
+            if right == null || right.hasError():
+                return right
+        }
+
         val continuationEnd: int =
             if hasRight: lastIndex else: rule.length()
+
         val continuationLength: int = continuationEnd - 1
-        val prefixLength: int =
-            if attempts.length < continuationLength:
+        val prefixLength: int = if attempts.length < continuationLength:
                 attempts.length
             else:
                 continuationLength
+
         val prefix: pointer<ArrayList> = attempts.extract(0, prefixLength)
-        val remainingRule: pointer<InputRule> =
-            rule.extract(1 + prefixLength, continuationEnd)
+
+        val remainingRule: pointer<InputRule> = rule.extract(1 + prefixLength, continuationEnd)
 
         if prefix == null || remainingRule == null:
             return null
@@ -477,44 +530,29 @@ struct PrattParser
         if continuation == null || continuation.hasError():
             return continuation
 
-        val results: pointer<ArrayList> =
-            continuation.getValue() as pointer<ArrayList>
+        val results: pointer<ArrayList> = continuation.getValue() as pointer<ArrayList>
 
         results.pushFront(left.ref)
 
         var rightConsumed: int = 0
-        var right: pointer<ParserResult> = null
 
         if hasRight:
         {
-            val operation: pointer<Operation> = rule.getOperation()
-            val rightMinPriority: int =
-                if operation != null && operation.associativity == Operation.RIGHT_ASSOC:
-                    rule.getPriority()
-                else:
-                    rule.getPriority() + 1
-            right = this.parse(
-                tokens,
-                continuation.getEndToken(),
-                rightMinPriority)
-
-            if right == null || right.hasError():
-                return right
-
             results.push(right.ref)
             rightConsumed = right.getConsumed()
         }
 
-        val totalContinuationConsumed: int =
-            continuation.getConsumed() + rightConsumed
+        val totalContinuationConsumed: int = continuation.getConsumed() + rightConsumed
+
         val consumed: int = left.getConsumed() + totalContinuationConsumed
-        val endToken: pointer<LinkedListNode> =
-            if hasRight:
+
+        val endToken: pointer<LinkedListNode> = if hasRight:
                 right.getEndToken()
             else:
                 continuation.getEndToken()
-        val result: pointer<ParserResult> =
-            rule.getResult(this.id, results, consumed, endToken)
+
+        val result: pointer<ParserResult> = rule.getResult(this.id, results, consumed, endToken)
+
         result.pushTokens(left.getTokens())
         result.pushTokens(continuation.getTokens())
 
@@ -524,6 +562,7 @@ struct PrattParser
         rule.after(tokens, endToken)
         return result
     }
+
 
 
     private fun parseContinuation(

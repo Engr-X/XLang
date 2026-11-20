@@ -69,6 +69,7 @@ fun genTest() -> pointer<TestGroup>
 private fun parseTest() -> int
 {
     val parser: pointer<PrattParser> = getParser()
+    // putln(parser.getId())
     val tokens: pointer<TokenList> = Tokenizer.pureTokenize("1 + 2", new Diagnostics())
     val originalLength: int = tokens.length()
     val result: pointer<ParserResult> =

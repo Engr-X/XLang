@@ -185,6 +185,15 @@ struct Parser
     }
 
 
+    fun isRecursive() -> bool = this.kind == RECURSIVE_KIND
+
+
+    fun isProcedural() -> bool = this.kind == PROCEDURAL_KIND
+
+
+    fun isPratt() -> bool = this.kind == PRATT_KIND
+
+
     fun clone() -> pointer<Parser> =
         if this.kind == RECURSIVE_KIND:
         {

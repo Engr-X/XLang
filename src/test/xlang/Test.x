@@ -35,9 +35,9 @@ import xlang.lexer.TokenTest
 import xlang.lexer.TokenizeFSMTest
 import xlang.compiler.lexer.TokenizerTest
 import xlang.compiler.lexer.TokenNormalizerTest
+import xlang.compiler.parser.Parser
 import xlang.compiler.parser.ParserTest
 import xlang.compiler.parser.ParserRegressionTest
-// import xlang.compiler.type.NormalTypeTest
 import xlang.parser.ParserUtilTest
 import xlang.parser.PrattParserTest
 import xlang.parser.RecursiveParserTest
@@ -74,11 +74,11 @@ private fun getTestGroup() -> pointer<TestGroup>
     testGroups[11] = TokenizerTest.TEST_GROUP
     testGroups[12] = TokenNormalizerTest.TEST_GROUP
     // testGroups[13] = NormalTypeTest.TEST_GROUP
-    testGroups[13] = ParserUtilTest.TEST_GROUP
-    testGroups[14] = RecursiveParserTest.TEST_GROUP
-    testGroups[15] = PrattParserTest.TEST_GROUP
-    testGroups[16] = TypeParserTest.TEST_GROUP
-    testGroups[17] = ParserRegressionTest.TEST_GROUP
+    testGroups[13] = PrattParserTest.TEST_GROUP
+    testGroups[14] = ParserRegressionTest.TEST_GROUP
+    testGroups[15] = ParserUtilTest.TEST_GROUP
+    testGroups[16] = RecursiveParserTest.TEST_GROUP
+    testGroups[17] = TypeParserTest.TEST_GROUP
     testGroups[18] = ParserTest.TEST_GROUP
 
     for (var i = 0; i < testGroupLength; i++):
