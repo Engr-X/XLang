@@ -38,7 +38,7 @@ import xlang.util.string.String
  * expression forms.
  *
  * <p>This structure converts prefix, infix, postfix, assignment, comparison,
- * logical, and bitwise operations into combinations of {@code MethodCall},
+ * logical, and bitwise operations into combinations of {@code MethodAccess},
  * {@code Assignment}, and literal expressions.
  *
  * <p>The generated expressions use intrinsic operation names such as
@@ -64,8 +64,8 @@ struct ExpressionDesugar
      */
     inline static fun fromPrefix(op: pointer<Operation>, exp: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, op).addArgument(exp)
-        return Expression.fromMethodCall(call)
+        val call: pointer<MethodAccess> = new MethodAccess(null, op).addArgument(exp)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -83,8 +83,8 @@ struct ExpressionDesugar
      */
     inline static fun fromInfix(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, op).addArgument(exp1).addArgument(exp2)
-        return Expression.fromMethodCall(call)
+        val call: pointer<MethodAccess> = new MethodAccess(null, op).addArgument(exp1).addArgument(exp2)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -101,8 +101,8 @@ struct ExpressionDesugar
      */
     inline static fun fromPostfix(op: pointer<Operation>, exp: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, op).addArgument(exp)
-        return Expression.fromMethodCall(call)
+        val call: pointer<MethodAccess> = new MethodAccess(null, op).addArgument(exp)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -198,19 +198,19 @@ struct ExpressionDesugar
             ExpressionDesugar.compareSign(exp1, exp2, -1)
         elif String.streq(functionName, "greaterEqual"):
         {
-            val call: pointer<MethodCall> = new MethodCall(null, "logicalOr")
+            val call: pointer<MethodAccess> = new MethodAccess(null, "logicalOr")
                 .addArgument(ExpressionDesugar.compareSign(exp1, exp2, 1))
                 .addArgument(ExpressionDesugar.compareSign(exp1, exp2, 0))
 
-            Expression.fromMethodCall(call)
+            Expression.fromMethodAccess(call)
         }
         elif String.streq(functionName, "lessEqual"):
         {
-            val call: pointer<MethodCall> = new MethodCall(null, "logicalOr")
+            val call: pointer<MethodAccess> = new MethodAccess(null, "logicalOr")
                 .addArgument(ExpressionDesugar.compareSign(exp1, exp2, -1))
                 .addArgument(ExpressionDesugar.compareSign(exp1, exp2, 0))
 
-            Expression.fromMethodCall(call)
+            Expression.fromMethodAccess(call)
         }
         else: null
     }
@@ -262,13 +262,13 @@ struct ExpressionDesugar
      */
     static fun makeBitwiseNand(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val bitwiseAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val bitwiseAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(exp1)
             .addArgument(exp2)
-        val invCall: pointer<MethodCall> = new MethodCall(null, "inv")
-            .addArgument(Expression.fromMethodCall(bitwiseAndCall))
+        val invCall: pointer<MethodAccess> = new MethodAccess(null, "inv")
+            .addArgument(Expression.fromMethodAccess(bitwiseAndCall))
 
-        return Expression.fromMethodCall(invCall)
+        return Expression.fromMethodAccess(invCall)
     }
 
 
@@ -289,13 +289,13 @@ struct ExpressionDesugar
      */
     static fun makeBitwiseNor(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val bitwiseOrCall: pointer<MethodCall> = new MethodCall(null, "bitwiseOr")
+        val bitwiseOrCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseOr")
             .addArgument(exp1)
             .addArgument(exp2)
-        val invCall: pointer<MethodCall> = new MethodCall(null, "inv")
-            .addArgument(Expression.fromMethodCall(bitwiseOrCall))
+        val invCall: pointer<MethodAccess> = new MethodAccess(null, "inv")
+            .addArgument(Expression.fromMethodAccess(bitwiseOrCall))
 
-        return Expression.fromMethodCall(invCall)
+        return Expression.fromMethodAccess(invCall)
     }
 
 
@@ -319,17 +319,17 @@ struct ExpressionDesugar
      */
     static fun makeBitwiseXor(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val leftAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val leftAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(exp1)
             .addArgument(ExpressionDesugar.wrapInv(exp2))
-        val rightAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val rightAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(ExpressionDesugar.wrapInv(exp1))
             .addArgument(exp2)
-        val orCall: pointer<MethodCall> = new MethodCall(null, "bitwiseOr")
-            .addArgument(Expression.fromMethodCall(leftAndCall))
-            .addArgument(Expression.fromMethodCall(rightAndCall))
+        val orCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseOr")
+            .addArgument(Expression.fromMethodAccess(leftAndCall))
+            .addArgument(Expression.fromMethodAccess(rightAndCall))
 
-        return Expression.fromMethodCall(orCall)
+        return Expression.fromMethodAccess(orCall)
     }
 
 
@@ -350,17 +350,17 @@ struct ExpressionDesugar
      */
     static fun makeBitwiseXnor(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val leftAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val leftAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(exp1)
             .addArgument(exp2)
-        val rightAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val rightAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(ExpressionDesugar.wrapInv(exp1))
             .addArgument(ExpressionDesugar.wrapInv(exp2))
-        val orCall: pointer<MethodCall> = new MethodCall(null, "bitwiseOr")
-            .addArgument(Expression.fromMethodCall(leftAndCall))
-            .addArgument(Expression.fromMethodCall(rightAndCall))
+        val orCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseOr")
+            .addArgument(Expression.fromMethodAccess(leftAndCall))
+            .addArgument(Expression.fromMethodAccess(rightAndCall))
 
-        return Expression.fromMethodCall(orCall)
+        return Expression.fromMethodAccess(orCall)
     }
 
 
@@ -381,11 +381,11 @@ struct ExpressionDesugar
      */
     static fun makeImplies(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, "bitwiseOr")
+        val call: pointer<MethodAccess> = new MethodAccess(null, "bitwiseOr")
             .addArgument(ExpressionDesugar.wrapInv(exp1))
             .addArgument(exp2)
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -406,11 +406,11 @@ struct ExpressionDesugar
      */
     static fun makeNimplies(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val call: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(exp1)
             .addArgument(ExpressionDesugar.wrapInv(exp2))
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -431,17 +431,17 @@ struct ExpressionDesugar
      */
     static fun makeIff(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val trueAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val trueAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(exp1)
             .addArgument(exp2)
-        val falseAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val falseAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(ExpressionDesugar.wrapInv(exp1))
             .addArgument(ExpressionDesugar.wrapInv(exp2))
-        val call: pointer<MethodCall> = new MethodCall(null, "bitwiseOr")
-            .addArgument(Expression.fromMethodCall(trueAndCall))
-            .addArgument(Expression.fromMethodCall(falseAndCall))
+        val call: pointer<MethodAccess> = new MethodAccess(null, "bitwiseOr")
+            .addArgument(Expression.fromMethodAccess(trueAndCall))
+            .addArgument(Expression.fromMethodAccess(falseAndCall))
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -462,17 +462,17 @@ struct ExpressionDesugar
      */
     static fun makeNiff(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val leftAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val leftAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(exp1)
             .addArgument(ExpressionDesugar.wrapInv(exp2))
-        val rightAndCall: pointer<MethodCall> = new MethodCall(null, "bitwiseAnd")
+        val rightAndCall: pointer<MethodAccess> = new MethodAccess(null, "bitwiseAnd")
             .addArgument(ExpressionDesugar.wrapInv(exp1))
             .addArgument(exp2)
-        val call: pointer<MethodCall> = new MethodCall(null, "bitwiseOr")
-            .addArgument(Expression.fromMethodCall(leftAndCall))
-            .addArgument(Expression.fromMethodCall(rightAndCall))
+        val call: pointer<MethodAccess> = new MethodAccess(null, "bitwiseOr")
+            .addArgument(Expression.fromMethodAccess(leftAndCall))
+            .addArgument(Expression.fromMethodAccess(rightAndCall))
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -496,17 +496,17 @@ struct ExpressionDesugar
      */
     static fun makeLogicalXor(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val leftAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val leftAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(exp1)
             .addArgument(ExpressionDesugar.wrapNot(exp2))
-        val rightAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val rightAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(ExpressionDesugar.wrapNot(exp1))
             .addArgument(exp2)
-        val orCall: pointer<MethodCall> = new MethodCall(null, "logicalOr")
-            .addArgument(Expression.fromMethodCall(leftAndCall))
-            .addArgument(Expression.fromMethodCall(rightAndCall))
+        val orCall: pointer<MethodAccess> = new MethodAccess(null, "logicalOr")
+            .addArgument(Expression.fromMethodAccess(leftAndCall))
+            .addArgument(Expression.fromMethodAccess(rightAndCall))
 
-        return Expression.fromMethodCall(orCall)
+        return Expression.fromMethodAccess(orCall)
     }
 
 
@@ -527,17 +527,17 @@ struct ExpressionDesugar
      */
     static fun makeLogicalXnor(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val leftAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val leftAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(exp1)
             .addArgument(exp2)
-        val rightAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val rightAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(ExpressionDesugar.wrapNot(exp1))
             .addArgument(ExpressionDesugar.wrapNot(exp2))
-        val orCall: pointer<MethodCall> = new MethodCall(null, "logicalOr")
-            .addArgument(Expression.fromMethodCall(leftAndCall))
-            .addArgument(Expression.fromMethodCall(rightAndCall))
+        val orCall: pointer<MethodAccess> = new MethodAccess(null, "logicalOr")
+            .addArgument(Expression.fromMethodAccess(leftAndCall))
+            .addArgument(Expression.fromMethodAccess(rightAndCall))
 
-        return Expression.fromMethodCall(orCall)
+        return Expression.fromMethodAccess(orCall)
     }
 
 
@@ -558,11 +558,11 @@ struct ExpressionDesugar
      */
     static fun makeLogicalNand(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val logicalAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val logicalAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(exp1)
             .addArgument(exp2)
 
-        return ExpressionDesugar.wrapNot(Expression.fromMethodCall(logicalAndCall))
+        return ExpressionDesugar.wrapNot(Expression.fromMethodAccess(logicalAndCall))
     }
 
 
@@ -583,11 +583,11 @@ struct ExpressionDesugar
      */
     static fun makeLogicalImplies(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, "logicalOr")
+        val call: pointer<MethodAccess> = new MethodAccess(null, "logicalOr")
             .addArgument(ExpressionDesugar.wrapNot(exp1))
             .addArgument(exp2)
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -608,11 +608,11 @@ struct ExpressionDesugar
      */
     static fun makeLogicalNimplies(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val call: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(exp1)
             .addArgument(ExpressionDesugar.wrapNot(exp2))
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -632,17 +632,17 @@ struct ExpressionDesugar
      */
     static fun makeLogicalIff(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val trueAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val trueAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(exp1)
             .addArgument(exp2)
-        val falseAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val falseAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(ExpressionDesugar.wrapNot(exp1))
             .addArgument(ExpressionDesugar.wrapNot(exp2))
-        val call: pointer<MethodCall> = new MethodCall(null, "logicalOr")
-            .addArgument(Expression.fromMethodCall(trueAndCall))
-            .addArgument(Expression.fromMethodCall(falseAndCall))
+        val call: pointer<MethodAccess> = new MethodAccess(null, "logicalOr")
+            .addArgument(Expression.fromMethodAccess(trueAndCall))
+            .addArgument(Expression.fromMethodAccess(falseAndCall))
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -663,17 +663,17 @@ struct ExpressionDesugar
      */
     static fun makeLogicalNiff(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val leftAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val leftAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(exp1)
             .addArgument(ExpressionDesugar.wrapNot(exp2))
-        val rightAndCall: pointer<MethodCall> = new MethodCall(null, "logicalAnd")
+        val rightAndCall: pointer<MethodAccess> = new MethodAccess(null, "logicalAnd")
             .addArgument(ExpressionDesugar.wrapNot(exp1))
             .addArgument(exp2)
-        val call: pointer<MethodCall> = new MethodCall(null, "logicalOr")
-            .addArgument(Expression.fromMethodCall(leftAndCall))
-            .addArgument(Expression.fromMethodCall(rightAndCall))
+        val call: pointer<MethodAccess> = new MethodAccess(null, "logicalOr")
+            .addArgument(Expression.fromMethodAccess(leftAndCall))
+            .addArgument(Expression.fromMethodAccess(rightAndCall))
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -694,11 +694,11 @@ struct ExpressionDesugar
      */
     static fun makeLogicalNor(op: pointer<Operation>, exp1: pointer<Expression>, exp2: pointer<Expression>) -> pointer<Expression>
     {
-        val logicalOrCall: pointer<MethodCall> = new MethodCall(null, "logicalOr")
+        val logicalOrCall: pointer<MethodAccess> = new MethodAccess(null, "logicalOr")
             .addArgument(exp1)
             .addArgument(exp2)
 
-        return ExpressionDesugar.wrapNot(Expression.fromMethodCall(logicalOrCall))
+        return ExpressionDesugar.wrapNot(Expression.fromMethodAccess(logicalOrCall))
     }
 
 
@@ -717,8 +717,8 @@ struct ExpressionDesugar
      */
     private static fun wrapInv(expression: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, "inv").addArgument(expression)
-        return Expression.fromMethodCall(call)
+        val call: pointer<MethodAccess> = new MethodAccess(null, "inv").addArgument(expression)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -737,8 +737,8 @@ struct ExpressionDesugar
      */
     private static fun wrapNot(expression: pointer<Expression>) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, "not").addArgument(expression)
-        return Expression.fromMethodCall(call)
+        val call: pointer<MethodAccess> = new MethodAccess(null, "not").addArgument(expression)
+        return Expression.fromMethodAccess(call)
     }
 
 
@@ -793,11 +793,11 @@ struct ExpressionDesugar
      */
     private static fun compareSign(exp1: pointer<Expression>, exp2: pointer<Expression>, sign: int) -> pointer<Expression>
     {
-        val call: pointer<MethodCall> = new MethodCall(null, "compareSign")
+        val call: pointer<MethodAccess> = new MethodAccess(null, "compareSign")
             .addArgument(exp1)
             .addArgument(exp2)
             .addArgument(ExpressionDesugar.intLiteral(sign))
 
-        return Expression.fromMethodCall(call)
+        return Expression.fromMethodAccess(call)
     }
 }

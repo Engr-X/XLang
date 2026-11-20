@@ -13,7 +13,7 @@ import xlang.compiler.parser.expression.ExpressionTuple
 import xlang.compiler.parser.expression.FieldAccess
 import xlang.compiler.parser.expression.IndexAccess
 import xlang.compiler.parser.expression.ListLiteral
-import xlang.compiler.parser.expression.MethodCall
+import xlang.compiler.parser.expression.MethodAccess
 import xlang.compiler.parser.expression.NewFunction
 import xlang.compiler.parser.expression.TypeCast
 import xlang.compiler.parser.expression.intrisic.SizeOf
@@ -585,10 +585,10 @@ private fun makeExprFromFuncCall(results: pointer<ArrayList>) -> pointer<*>
     val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val tuple: pointer<ExpressionTuple> = getContainerValue(results, 1) as pointer<ExpressionTuple>
 
-    val call: pointer<MethodCall> = new MethodCall(null, nameToken.text).setArguments(tuple)
+    val call: pointer<MethodAccess> = new MethodAccess(null, nameToken.text).setArguments(tuple)
     call.addExtraToken(nameToken)
 
-    return Expression.fromMethodCall(call)
+    return Expression.fromMethodAccess(call)
 }
 
 private fun makeExprFromAtom(results: pointer<ArrayList>) -> pointer<*>
@@ -643,17 +643,17 @@ private fun makeExprFromIndexAccess(results: pointer<ArrayList>) -> pointer<*>
     return Expression.fromIndexAccess(host, list)
 }
 
-private fun makeExprFromMethodCall(results: pointer<ArrayList>) -> pointer<*>
+private fun makeExprFromMethodAccess(results: pointer<ArrayList>) -> pointer<*>
 {
     val host: pointer<Expression> = getContainerValue(results, 0) as pointer<Expression>
     val dotToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val nameToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val tuple: pointer<ExpressionTuple> = getContainerValue(results, 3) as pointer<ExpressionTuple>
 
-    val call: pointer<MethodCall> = new MethodCall(host, nameToken.text).setArguments(tuple)
+    val call: pointer<MethodAccess> = new MethodAccess(host, nameToken.text).setArguments(tuple)
     call.addExtraToken(dotToken).addExtraToken(nameToken)
 
-    return Expression.fromMethodCall(call)
+    return Expression.fromMethodAccess(call)
 }
 
 private fun makeExprFromFieldAccess(results: pointer<ArrayList>) -> pointer<*>
@@ -682,8 +682,8 @@ private fun makeExprFromTypeCast(results: pointer<ArrayList>) -> pointer<*>
 
         if functionName != null:
         {
-            val call: pointer<MethodCall> = new MethodCall(null, functionName).addArgument(expression)
-            val result: pointer<Expression> = Expression.fromMethodCall(call).addExtraToken(asToken)
+            val call: pointer<MethodAccess> = new MethodAccess(null, functionName).addArgument(expression)
+            val result: pointer<Expression> = Expression.fromMethodAccess(call).addExtraToken(asToken)
             val typeTokens: pointer<ArrayList> = targetType.getAllTokens()
 
             if typeTokens != null:
@@ -3477,7 +3477,7 @@ private fun initializeParserGraph() -> bool
     EXPRESSION_CONTINUATION_RULE.push(EXPRESSION_RULE_14)
 
     EXPRESSION_RULE_15 =
-        new InputRule(230, null, makeExprFromMethodCall, parserRuleIdentity)
+        new InputRule(230, null, makeExprFromMethodAccess, parserRuleIdentity)
             .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.DOT))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))

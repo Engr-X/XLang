@@ -33,7 +33,7 @@ import xlang.util.string.StringBuilder
 /**
  * Represents a method or function call expression.
  *
- * <p>A {@code MethodCall} stores an optional host expression, the name of the
+ * <p>A {@code MethodAccess} stores an optional host expression, the name of the
  * function or method being invoked, an ordered collection of argument
  * expressions, and any additional syntax tokens associated with the call.
  *
@@ -46,7 +46,7 @@ import xlang.util.string.StringBuilder
  * Additional syntax tokens may be retained to preserve source information such
  * as parentheses, commas, member-access operators, and other delimiters.
  */
-struct MethodCall
+struct MethodAccess
 {
     /**
      * The optional host expression on which the method is invoked.
@@ -146,9 +146,9 @@ struct MethodCall
      *
      * @param argument          a pointer to the argument expression to append
      *
-     * @return                  this {@code MethodCall} instance
+     * @return                  this {@code MethodAccess} instance
      */
-    fun addArgument(argument: pointer<Expression>) -> pointer<MethodCall>
+    fun addArgument(argument: pointer<Expression>) -> pointer<MethodAccess>
     {
         this.arguments.push(argument.ref)
         return this
@@ -166,9 +166,9 @@ struct MethodCall
      *
      * @param token             a pointer to the syntax token to add
      *
-     * @return                  this {@code MethodCall} instance
+     * @return                  this {@code MethodAccess} instance
      */
-    fun addExtraToken(token: pointer<Token>) -> pointer<MethodCall>
+    fun addExtraToken(token: pointer<Token>) -> pointer<MethodAccess>
     {
         if token != null:
             this.extraTokens.push(token)
@@ -192,9 +192,9 @@ struct MethodCall
      * @param arguments         a pointer to the expression tuple containing the new
      *                          argument expressions and associated syntax tokens
      *
-     * @return                  this {@code MethodCall} instance
+     * @return                  this {@code MethodAccess} instance
      */
-    fun setArguments(arguments: pointer<ExpressionTuple>) -> pointer<MethodCall>
+    fun setArguments(arguments: pointer<ExpressionTuple>) -> pointer<MethodAccess>
     {
         this.arguments = arguments.getList()
         this.extraTokens.pushAll(arguments.getExtraTokens())

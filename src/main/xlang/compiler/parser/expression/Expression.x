@@ -58,7 +58,7 @@ struct Expression
     static val FIELD_ACCESS_KIND: int = 3
 
     // Identifies a method-call expression.
-    static val METHOD_CALL_KIND: int = 4
+    static val METHOD_ACCESS_KIND: int = 4
 
     // Identifies an index-access expression.
     static val INDEX_ACCESS_KIND: int = 5
@@ -110,9 +110,9 @@ struct Expression
      * Creates a method-call expression.
      *
      * @param method            a pointer to the method-call node
-     * @return                  a new expression of kind {@code METHOD_CALL_KIND}
+     * @return                  a new expression of kind {@code METHOD_ACCESS_KIND}
      */
-    inline static fun fromMethodCall(method: pointer<MethodCall>) -> pointer<Expression> = new Expression(METHOD_CALL_KIND, method) 
+    inline static fun fromMethodAccess(method: pointer<MethodAccess>) -> pointer<Expression> = new Expression(METHOD_ACCESS_KIND, method) 
 
 
     /**
@@ -199,7 +199,7 @@ struct Expression
      *
      * <p>The actual pointer type is determined by {@code kind}. For example,
      * {@code ATOM_KIND} indicates an {@code Atom}, while
-     * {@code METHOD_CALL_KIND} indicates a {@code MethodCall}.
+     * {@code METHOD_ACCESS_KIND} indicates a {@code MethodAccess}.
      */
     private var root: pointer<*>
 
@@ -332,9 +332,9 @@ struct Expression
             val atom: pointer<Atom> = this.root as pointer<Atom>
             atom.getAllTokens()
         }
-        elif this.kind == METHOD_CALL_KIND:
+        elif this.kind == METHOD_ACCESS_KIND:
         {
-            val call: pointer<MethodCall> = this.root as pointer<MethodCall>
+            val call: pointer<MethodAccess> = this.root as pointer<MethodAccess>
             call.getAllTokens()
         }
         elif this.kind == FIELD_ACCESS_KIND:
@@ -405,9 +405,9 @@ struct Expression
             val atom: pointer<Atom> = this.root as pointer<Atom>
             atom.toString()
         }
-        elif this.kind == METHOD_CALL_KIND:
+        elif this.kind == METHOD_ACCESS_KIND:
         {
-            val call: pointer<MethodCall> = this.root as pointer<MethodCall>
+            val call: pointer<MethodAccess> = this.root as pointer<MethodAccess>
             call.toString()
         }
         elif this.kind == FIELD_ACCESS_KIND:

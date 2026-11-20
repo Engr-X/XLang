@@ -15,7 +15,7 @@
         "xlang.compiler.parser.expression.FieldAccess",
         "xlang.compiler.parser.expression.IndexAccess",
         "xlang.compiler.parser.expression.ListLiteral",
-        "xlang.compiler.parser.expression.MethodCall",
+        "xlang.compiler.parser.expression.MethodAccess",
         "xlang.compiler.parser.expression.NewFunction",
         "xlang.compiler.parser.expression.TypeCast",
         "xlang.compiler.parser.expression.intrisic.SizeOf",
@@ -136,7 +136,7 @@
                 
 
                 { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "$ListLiteral" }], "action": "makeExprFromIndexAccess", "priority": 230 },
-                { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "Tokenizer.DOT"}, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromMethodCall", "priority": 230 },
+                { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "Tokenizer.DOT"}, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromMethodAccess", "priority": 230 },
                 { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "Tokenizer.DOT"}, { "kind": "Tokenizer.TK_IDENTIFIER" }], "action": "makeExprFromFieldAccess", "priority": 220 },
 
                 { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "Tokenizer.DOUBLE_PLUS" }], "operation": "succ", "action": "makeExprFromPostfix" },
@@ -385,10 +385,10 @@
             "    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>",
             "    val tuple: pointer<ExpressionTuple> = getContainerValue(results, 1) as pointer<ExpressionTuple>",
             "",
-            "    val call: pointer<MethodCall> = new MethodCall(null, nameToken.text).setArguments(tuple)",
+            "    val call: pointer<MethodAccess> = new MethodAccess(null, nameToken.text).setArguments(tuple)",
             "    call.addExtraToken(nameToken)",
             "",
-            "    return Expression.fromMethodCall(call)",
+            "    return Expression.fromMethodAccess(call)",
             "}" ],
 
             
@@ -452,17 +452,17 @@
             "}" ],
 
 
-        [   "private fun makeExprFromMethodCall(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private fun makeExprFromMethodAccess(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val host: pointer<Expression> = getContainerValue(results, 0) as pointer<Expression>",
             "    val dotToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
             "    val nameToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>",
             "    val tuple: pointer<ExpressionTuple> = getContainerValue(results, 3) as pointer<ExpressionTuple>",
             "",
-            "    val call: pointer<MethodCall> = new MethodCall(host, nameToken.text).setArguments(tuple)",
+            "    val call: pointer<MethodAccess> = new MethodAccess(host, nameToken.text).setArguments(tuple)",
             "    call.addExtraToken(dotToken).addExtraToken(nameToken)",
             "",
-            "    return Expression.fromMethodCall(call)",
+            "    return Expression.fromMethodAccess(call)",
             "}" ],
 
 
@@ -494,8 +494,8 @@
             "",
             "        if functionName != null:",
             "        {",
-            "            val call: pointer<MethodCall> = new MethodCall(null, functionName).addArgument(expression)",
-            "            val result: pointer<Expression> = Expression.fromMethodCall(call).addExtraToken(asToken)",
+            "            val call: pointer<MethodAccess> = new MethodAccess(null, functionName).addArgument(expression)",
+            "            val result: pointer<Expression> = Expression.fromMethodAccess(call).addExtraToken(asToken)",
             "            val typeTokens: pointer<ArrayList> = targetType.getAllTokens()",
             "",
             "            if typeTokens != null:",

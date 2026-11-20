@@ -50,27 +50,27 @@ fun genTest() -> pointer<TestGroup>
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("genericReturnMultilineBlockFunction", genericReturnMultilineBlockFunctionTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("ifReturnStatement", ifReturnStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("blockIfReturnFunction", blockIfReturnFunctionTest), null))
-    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("typedValMethodCallStatement", typedValMethodCallStatementTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("typedValMethodAccessStatement", typedValMethodAccessStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("subTokenWithoutIfFunction", subTokenWithoutIfFunctionTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("emptyExpressionTuple", emptyExpressionTupleTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("oneArgExpressionTuple", oneArgExpressionTupleTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("twoArgExpressionTuple", twoArgExpressionTupleTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("functionCallOneArgStatement", functionCallOneArgStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("functionCallTwoArgsStatement", functionCallTwoArgsStatementTest), null))
-    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("methodCallOneArgStatement", methodCallOneArgStatementTest), null))
-    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("methodCallTwoArgsStatement", methodCallTwoArgsStatementTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("MethodAccessOneArgStatement", MethodAccessOneArgStatementTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("MethodAccessTwoArgsStatement", MethodAccessTwoArgsStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("thisFieldAccessExpression", thisFieldAccessExpressionTest), null))
-    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("thisMethodCallTwoArgsStatement", thisMethodCallTwoArgsStatementTest), null))
-    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("systemMethodCallTwoArgsStatement", systemMethodCallTwoArgsStatementTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("thisMethodAccessTwoArgsStatement", thisMethodAccessTwoArgsStatementTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("systemMethodAccessTwoArgsStatement", systemMethodAccessTwoArgsStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("functionCallFieldArgStatement", functionCallFieldArgStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("functionCallThisFieldArgStatement", functionCallThisFieldArgStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("functionCallInfixFieldArgStatement", functionCallInfixFieldArgStatementTest), null))
-    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("singleLineMethodCallStatement", singleLineMethodCallStatementTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("singleLineMethodAccessStatement", singleLineMethodAccessStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("multilinePlainFunctionCallStatement", multilinePlainFunctionCallStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("emptyCallExpression", emptyCallExpressionTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("valNewEmptyCallStatement", valNewEmptyCallStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("tokenListSubTokenFunction", tokenListSubTokenFunctionTest), null))
-    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("multilineMethodCallStatement", multilineMethodCallStatementTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("multilineMethodAccessStatement", multilineMethodAccessStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("arrayListSublistFunction", arrayListSublistFunctionTest), null))
 
     return result
@@ -165,7 +165,7 @@ private fun blockIfReturnFunctionTest() -> int
 }
 
 
-private fun typedValMethodCallStatementTest() -> int
+private fun typedValMethodAccessStatementTest() -> int
 {
     val statement: pointer<Statement> =
         parseStatementText("val copiedTokens: pointer<ArrayList> = this.tokens.sublist(fromIndex, toIndex)\n")
@@ -232,14 +232,14 @@ private fun functionCallTwoArgsStatementTest() -> int =
         1
 
 
-private fun methodCallOneArgStatementTest() -> int =
+private fun MethodAccessOneArgStatementTest() -> int =
     if parseStatementText("a.b(1)\n") != null:
         0
     else:
         1
 
 
-private fun methodCallTwoArgsStatementTest() -> int =
+private fun MethodAccessTwoArgsStatementTest() -> int =
     if parseStatementText("a.b(1, 2)\n") != null:
         0
     else:
@@ -253,14 +253,14 @@ private fun thisFieldAccessExpressionTest() -> int =
         1
 
 
-private fun thisMethodCallTwoArgsStatementTest() -> int =
+private fun thisMethodAccessTwoArgsStatementTest() -> int =
     if parseStatementText("this.tokens.sublist(fromIndex, toIndex)\n") != null:
         0
     else:
         1
 
 
-private fun systemMethodCallTwoArgsStatementTest() -> int =
+private fun systemMethodAccessTwoArgsStatementTest() -> int =
     if parseStatementText("Memory.memcopy(1, 2)\n") != null:
         0
     else:
@@ -288,7 +288,7 @@ private fun functionCallInfixFieldArgStatementTest() -> int =
         1
 
 
-private fun singleLineMethodCallStatementTest() -> int =
+private fun singleLineMethodAccessStatementTest() -> int =
     if parseStatementText("Memory.memcopy(sublist.data, this.data + fromIndex * this.tsize, size * this.tsize)\n") != null:
         0
     else:
@@ -317,9 +317,9 @@ private fun emptyCallExpressionTest() -> int
     if newCall == null:
         return 1
 
-    val methodCall: pointer<Expression> = parseExpressionText("this.tokens.clone()")
+    val MethodAccess: pointer<Expression> = parseExpressionText("this.tokens.clone()")
 
-    if methodCall == null:
+    if MethodAccess == null:
         return 2
 
     return 0
@@ -361,7 +361,7 @@ private fun tokenListSubTokenFunctionTest() -> int
 }
 
 
-private fun multilineMethodCallStatementTest() -> int
+private fun multilineMethodAccessStatementTest() -> int
 {
     val source: pointer<StringBuilder> = new StringBuilder()
     source.append("Memory.memcopy(\n")

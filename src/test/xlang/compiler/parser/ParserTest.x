@@ -32,7 +32,7 @@ import xlang.compiler.parser.expression.Atom
 import xlang.compiler.parser.expression.Expression
 import xlang.compiler.parser.expression.FieldAccess
 import xlang.compiler.parser.expression.IndexAccess
-import xlang.compiler.parser.expression.MethodCall
+import xlang.compiler.parser.expression.MethodAccess
 import xlang.compiler.parser.expression.NewFunction
 import xlang.compiler.parser.expression.TypeCast
 import xlang.compiler.parser.program.Field
@@ -188,7 +188,7 @@ private fun genParseExpressionTestGroup() -> pointer<TestGroup>
     result.addTestUnion(new TestUnion(TestCase.TYPE,
         new TestCase("indexAccessExpression", indexAccessExpressionTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE,
-        new TestCase("methodCallExpression", methodCallExpressionTest), null))
+        new TestCase("MethodAccessExpression", MethodAccessExpressionTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE,
         new TestCase("fieldAccessExpression", fieldAccessExpressionTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE,
@@ -784,18 +784,18 @@ private fun parseProgramFile(path: pointer<char>, source: pointer<char>, cachedT
 }
 
 
-private fun getRootMethodCall(expression: pointer<Expression>) -> pointer<MethodCall>
+private fun getRootMethodAccess(expression: pointer<Expression>) -> pointer<MethodAccess>
 {
-    if expression == null || expression.getKind() != Expression.METHOD_CALL_KIND:
+    if expression == null || expression.getKind() != Expression.METHOD_ACCESS_KIND:
         return null
 
-    return expression.getRoot() as pointer<MethodCall>
+    return expression.getRoot() as pointer<MethodAccess>
 }
 
 
-private fun hasRootMethodCall(input: pointer<char>, callName: pointer<char>) -> bool
+private fun hasRootMethodAccess(input: pointer<char>, callName: pointer<char>) -> bool
 {
-    val call: pointer<MethodCall> = getRootMethodCall(parseExpressionText(input))
+    val call: pointer<MethodAccess> = getRootMethodAccess(parseExpressionText(input))
 
     return call != null && String.streq(call.getCallName(), callName)
 }
@@ -1767,7 +1767,7 @@ private fun newExpressionTest() -> int
 
     val secondArgument: pointer<Expression> = function.getArgument(1)
 
-    if secondArgument == null || secondArgument.getKind() != Expression.METHOD_CALL_KIND:
+    if secondArgument == null || secondArgument.getKind() != Expression.METHOD_ACCESS_KIND:
         return 9
 
     if !expressionTextEquals("new Foo(1, x + 2)", "new Foo(1, plus(x, 2))"):
@@ -1787,7 +1787,7 @@ private fun newExpressionTest() -> int
 private fun functionCallExpressionTest() -> int
 {
     val expression: pointer<Expression> = parseExpressionText("f(1, 2 + 3)")
-    val call: pointer<MethodCall> = getRootMethodCall(expression)
+    val call: pointer<MethodAccess> = getRootMethodAccess(expression)
 
     if call == null:
         return 1
@@ -1803,7 +1803,7 @@ private fun functionCallExpressionTest() -> int
 
     val second: pointer<Expression> = call.getArgument(1)
 
-    if second == null || second.getKind() != Expression.METHOD_CALL_KIND:
+    if second == null || second.getKind() != Expression.METHOD_ACCESS_KIND:
         return 5
 
     val tokens: pointer<ArrayList> = expression.getAllTokens()
@@ -1899,7 +1899,7 @@ private fun blockExpressionTest() -> int
         return 6
 
     val returnExpr: pointer<Expression> = returnRoot.getExpression()
-    val call: pointer<MethodCall> = getRootMethodCall(returnExpr)
+    val call: pointer<MethodAccess> = getRootMethodAccess(returnExpr)
 
     if call == null || String.streq(call.getCallName(), "times") == false:
         return 7
@@ -1997,7 +1997,7 @@ private fun ifElseExpressionTest() -> int
 private fun parenthesizedExpressionTest() -> int
 {
     val expression: pointer<Expression> = parseExpressionText("(1 + 2) * (3 * 4)")
-    val rootCall: pointer<MethodCall> = getRootMethodCall(expression)
+    val rootCall: pointer<MethodAccess> = getRootMethodAccess(expression)
 
     if rootCall == null || String.streq(rootCall.getCallName(), "times") == false:
         return 1
@@ -2008,14 +2008,14 @@ private fun parenthesizedExpressionTest() -> int
     val left: pointer<Expression> = rootCall.getArgument(0)
     val right: pointer<Expression> = rootCall.getArgument(1)
 
-    if left == null || left.getKind() != Expression.METHOD_CALL_KIND:
+    if left == null || left.getKind() != Expression.METHOD_ACCESS_KIND:
         return 3
 
-    if right == null || right.getKind() != Expression.METHOD_CALL_KIND:
+    if right == null || right.getKind() != Expression.METHOD_ACCESS_KIND:
         return 4
 
-    val leftCall: pointer<MethodCall> = left.getRoot() as pointer<MethodCall>
-    val rightCall: pointer<MethodCall> = right.getRoot() as pointer<MethodCall>
+    val leftCall: pointer<MethodAccess> = left.getRoot() as pointer<MethodAccess>
+    val rightCall: pointer<MethodAccess> = right.getRoot() as pointer<MethodAccess>
 
     if leftCall == null || String.streq(leftCall.getCallName(), "plus") == false:
         return 5
@@ -2037,32 +2037,32 @@ private fun parenthesizedExpressionTest() -> int
 
 private fun prefixExpressionTest() -> int
 {
-    if !hasRootMethodCall("+x", "pos"):
+    if !hasRootMethodAccess("+x", "pos"):
         return 1
 
-    if !hasRootMethodCall("-x", "neg"):
+    if !hasRootMethodAccess("-x", "neg"):
         return 2
 
     val incExpression: pointer<Expression> = parseExpressionText("++x + y")
-    val incRoot: pointer<MethodCall> = getRootMethodCall(incExpression)
+    val incRoot: pointer<MethodAccess> = getRootMethodAccess(incExpression)
 
     if incRoot == null || String.streq(incRoot.getCallName(), "plus") == false:
         return 3
 
     val incLeft: pointer<Expression> = incRoot.getArgument(0)
-    val incLeftCall: pointer<MethodCall> = getRootMethodCall(incLeft)
+    val incLeftCall: pointer<MethodAccess> = getRootMethodAccess(incLeft)
 
     if incLeftCall == null || String.streq(incLeftCall.getCallName(), "inc") == false:
         return 4
 
     val decExpression: pointer<Expression> = parseExpressionText("--x + y")
-    val decRoot: pointer<MethodCall> = getRootMethodCall(decExpression)
+    val decRoot: pointer<MethodAccess> = getRootMethodAccess(decExpression)
 
     if decRoot == null || String.streq(decRoot.getCallName(), "plus") == false:
         return 5
 
     val decLeft: pointer<Expression> = decRoot.getArgument(0)
-    val decLeftCall: pointer<MethodCall> = getRootMethodCall(decLeft)
+    val decLeftCall: pointer<MethodAccess> = getRootMethodAccess(decLeft)
 
     if decLeftCall == null || String.streq(decLeftCall.getCallName(), "dec") == false:
         return 6
@@ -2096,7 +2096,7 @@ private fun indexAccessExpressionTest() -> int
 
     val second: pointer<Expression> = access.getIndex(1)
 
-    if second == null || second.getKind() != Expression.METHOD_CALL_KIND:
+    if second == null || second.getKind() != Expression.METHOD_ACCESS_KIND:
         return 4
 
     val nested: pointer<Expression> = parseExpressionText("function()[a + b]")
@@ -2116,10 +2116,10 @@ private fun indexAccessExpressionTest() -> int
 }
 
 
-private fun methodCallExpressionTest() -> int
+private fun MethodAccessExpressionTest() -> int
 {
     val expression: pointer<Expression> = parseExpressionText("a.func(1, 2 + 3)")
-    val call: pointer<MethodCall> = getRootMethodCall(expression)
+    val call: pointer<MethodAccess> = getRootMethodAccess(expression)
 
     if call == null:
         return 1
@@ -2135,7 +2135,7 @@ private fun methodCallExpressionTest() -> int
 
     val second: pointer<Expression> = call.getArgument(1)
 
-    if second == null || second.getKind() != Expression.METHOD_CALL_KIND:
+    if second == null || second.getKind() != Expression.METHOD_ACCESS_KIND:
         return 5
 
     val tokens: pointer<ArrayList> = expression.getAllTokens()
@@ -2202,10 +2202,10 @@ private fun fieldAccessExpressionTest() -> int
 
 private fun postfixExpressionTest() -> int
 {
-    if !hasRootMethodCall("x++", "succ"):
+    if !hasRootMethodAccess("x++", "succ"):
         return 1
 
-    if !hasRootMethodCall("x--", "pred"):
+    if !hasRootMethodAccess("x--", "pred"):
         return 2
 
     val expression: pointer<Expression> = parseExpressionText("x++")
@@ -2224,17 +2224,17 @@ private fun postfixExpressionTest() -> int
 private fun typeCastExpressionTest() -> int
 {
     val expression: pointer<Expression> = parseExpressionText("1 + 1 as double")
-    val call: pointer<MethodCall> = getRootMethodCall(expression)
+    val call: pointer<MethodAccess> = getRootMethodAccess(expression)
 
     if call == null || call.argumentsCount() != 2:
         return 1
 
     val castExpression: pointer<Expression> = call.getArgument(1)
 
-    if castExpression == null || castExpression.getKind() != Expression.METHOD_CALL_KIND:
+    if castExpression == null || castExpression.getKind() != Expression.METHOD_ACCESS_KIND:
         return 2
 
-    val castCall: pointer<MethodCall> = castExpression.getRoot() as pointer<MethodCall>
+    val castCall: pointer<MethodAccess> = castExpression.getRoot() as pointer<MethodAccess>
 
     if castCall == null || String.streq(castCall.getCallName(), "toDouble") == false:
         return 3
@@ -2287,52 +2287,52 @@ private fun typeCastExpressionTest() -> int
 
 private fun infixExpressionTest() -> int
 {
-    if !hasRootMethodCall("1 ** 2", "pow"):
+    if !hasRootMethodAccess("1 ** 2", "pow"):
         return 1
 
-    if !hasRootMethodCall("1 * 2", "times"):
+    if !hasRootMethodAccess("1 * 2", "times"):
         return 2
 
-    if !hasRootMethodCall("1 / 2", "div"):
+    if !hasRootMethodAccess("1 / 2", "div"):
         return 3
 
-    if !hasRootMethodCall("1 % 2", "rem"):
+    if !hasRootMethodAccess("1 % 2", "rem"):
         return 4
 
-    if !hasRootMethodCall("1 + 2", "plus"):
+    if !hasRootMethodAccess("1 + 2", "plus"):
         return 5
 
-    if !hasRootMethodCall("1 - 2", "minus"):
+    if !hasRootMethodAccess("1 - 2", "minus"):
         return 6
 
     val priorityExpression: pointer<Expression> = parseExpressionText("1 + 2 * 3")
-    val priorityCall: pointer<MethodCall> = getRootMethodCall(priorityExpression)
+    val priorityCall: pointer<MethodAccess> = getRootMethodAccess(priorityExpression)
 
     if priorityCall == null || String.streq(priorityCall.getCallName(), "plus") == false:
         return 7
 
     val priorityRight: pointer<Expression> = priorityCall.getArgument(1)
 
-    if priorityRight == null || priorityRight.getKind() != Expression.METHOD_CALL_KIND:
+    if priorityRight == null || priorityRight.getKind() != Expression.METHOD_ACCESS_KIND:
         return 8
 
-    val priorityRightCall: pointer<MethodCall> = priorityRight.getRoot() as pointer<MethodCall>
+    val priorityRightCall: pointer<MethodAccess> = priorityRight.getRoot() as pointer<MethodAccess>
 
     if priorityRightCall == null || String.streq(priorityRightCall.getCallName(), "times") == false:
         return 9
 
     val leftExpression: pointer<Expression> = parseExpressionText("1 + 2 + 3")
-    val leftCall: pointer<MethodCall> = getRootMethodCall(leftExpression)
+    val leftCall: pointer<MethodAccess> = getRootMethodAccess(leftExpression)
 
     if leftCall == null || String.streq(leftCall.getCallName(), "plus") == false:
         return 10
 
     val leftArgument: pointer<Expression> = leftCall.getArgument(0)
 
-    if leftArgument == null || leftArgument.getKind() != Expression.METHOD_CALL_KIND:
+    if leftArgument == null || leftArgument.getKind() != Expression.METHOD_ACCESS_KIND:
         return 11
 
-    val nestedLeftCall: pointer<MethodCall> = leftArgument.getRoot() as pointer<MethodCall>
+    val nestedLeftCall: pointer<MethodAccess> = leftArgument.getRoot() as pointer<MethodAccess>
 
     if nestedLeftCall == null || String.streq(nestedLeftCall.getCallName(), "plus") == false:
         return 12
@@ -2439,7 +2439,7 @@ private fun compoundOperatorExpressionTest() -> int
 private fun mixedExpressionTest() -> int
 {
     val expression: pointer<Expression> = parseExpressionText("f(1 + 2 * 3, a.b(4)[5 + -x]++, y as double) - z--")
-    val rootCall: pointer<MethodCall> = getRootMethodCall(expression)
+    val rootCall: pointer<MethodAccess> = getRootMethodAccess(expression)
 
     if rootCall == null || String.streq(rootCall.getCallName(), "minus") == false:
         return 1
@@ -2450,14 +2450,14 @@ private fun mixedExpressionTest() -> int
     val left: pointer<Expression> = rootCall.getArgument(0)
     val right: pointer<Expression> = rootCall.getArgument(1)
 
-    if left == null || left.getKind() != Expression.METHOD_CALL_KIND:
+    if left == null || left.getKind() != Expression.METHOD_ACCESS_KIND:
         return 3
 
-    if right == null || right.getKind() != Expression.METHOD_CALL_KIND:
+    if right == null || right.getKind() != Expression.METHOD_ACCESS_KIND:
         return 4
 
-    val functionCall: pointer<MethodCall> = left.getRoot() as pointer<MethodCall>
-    val postfixRight: pointer<MethodCall> = right.getRoot() as pointer<MethodCall>
+    val functionCall: pointer<MethodAccess> = left.getRoot() as pointer<MethodAccess>
+    val postfixRight: pointer<MethodAccess> = right.getRoot() as pointer<MethodAccess>
 
     if functionCall == null || String.streq(functionCall.getCallName(), "f") == false:
         return 5
@@ -2472,18 +2472,18 @@ private fun mixedExpressionTest() -> int
     val secondArg: pointer<Expression> = functionCall.getArgument(1)
     val thirdArg: pointer<Expression> = functionCall.getArgument(2)
 
-    if firstArg == null || firstArg.getKind() != Expression.METHOD_CALL_KIND:
+    if firstArg == null || firstArg.getKind() != Expression.METHOD_ACCESS_KIND:
         return 8
 
-    val firstCall: pointer<MethodCall> = firstArg.getRoot() as pointer<MethodCall>
+    val firstCall: pointer<MethodAccess> = firstArg.getRoot() as pointer<MethodAccess>
 
     if firstCall == null || String.streq(firstCall.getCallName(), "plus") == false:
         return 9
 
-    if secondArg == null || secondArg.getKind() != Expression.METHOD_CALL_KIND:
+    if secondArg == null || secondArg.getKind() != Expression.METHOD_ACCESS_KIND:
         return 10
 
-    val secondCall: pointer<MethodCall> = secondArg.getRoot() as pointer<MethodCall>
+    val secondCall: pointer<MethodAccess> = secondArg.getRoot() as pointer<MethodAccess>
 
     if secondCall == null || String.streq(secondCall.getCallName(), "succ") == false:
         return 11
@@ -2493,10 +2493,10 @@ private fun mixedExpressionTest() -> int
     if indexedArg == null || indexedArg.getKind() != Expression.INDEX_ACCESS_KIND:
         return 12
 
-    if thirdArg == null || thirdArg.getKind() != Expression.METHOD_CALL_KIND:
+    if thirdArg == null || thirdArg.getKind() != Expression.METHOD_ACCESS_KIND:
         return 13
 
-    val thirdCall: pointer<MethodCall> = thirdArg.getRoot() as pointer<MethodCall>
+    val thirdCall: pointer<MethodAccess> = thirdArg.getRoot() as pointer<MethodAccess>
 
     if thirdCall == null || String.streq(thirdCall.getCallName(), "toDouble") == false:
         return 13
