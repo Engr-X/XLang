@@ -57,46 +57,27 @@ struct Expression
     // Identifies a field-access expression.
     static val FIELD_ACCESS_KIND: int = 3
 
-    /**
-     * Identifies a method-call expression.
-     */
+    // Identifies a method-call expression.
     static val METHOD_CALL_KIND: int = 4
 
-    /**
-     * Identifies an index-access expression.
-     */
+    // Identifies an index-access expression.
     static val INDEX_ACCESS_KIND: int = 5
 
-    /**
-     * Identifies an explicit type-cast expression.
-     */
+    // Identifies an explicit type-cast expression.
     static val TYPE_CAST_KIND: int = 6
 
-    /**
-     * Identifies an assignment expression.
-     */
+    // Identifies an assignment expression.
     static val ASSIGNMENT_KIND: int = 7
 
-    /**
-     * Identifies an expression that creates a new identifier-based object.
-     */
-    static val NEW_IDENTIFIER_KIND: int = 8
-
-    /**
-     * Identifies an expression that creates a new function-based object.
-     */
+    // Identifies an expression that creates a new function-based object.
     static val NEW_FUNCTION_KIND: int = 9
 
-    /**
-     * Identifies a block expression.
-     */
+    // Identifies a block expression.
     static val BLOCK_EXPR_KIND: int = 10
 
     // static val IF_BRANCH_KIND: int = 11
 
-    /**
-     * Identifies an if-else expression.
-     */
+    // Identifies an if-else expression.
     static val IFELSE_BRANCH_KIND: int = 12
 
 
@@ -168,16 +149,6 @@ struct Expression
      */
     inline static fun fromAssignment(target: pointer<Expression>, value: pointer<Expression>) -> pointer<Expression> = 
         new Expression(ASSIGNMENT_KIND, new Assignment(target, value))
-    
-
-    /**
-     * Creates an expression from a new-identifier node.
-     *
-     * @param ident             a pointer to the new-identifier node
-     *
-     * @return                  a new expression of kind {@code NEW_IDENTIFIER_KIND}
-     */
-    inline static fun fromNewIdentifier(ident: pointer<NewIdentifier>) -> pointer<Expression> = new Expression(NEW_IDENTIFIER_KIND, ident)
 
 
     /**
@@ -187,7 +158,8 @@ struct Expression
      *
      * @return                  a new expression of kind {@code NEW_FUNCTION_KIND}
      */
-    inline static fun fromNewFunction(function: pointer<NewFunction>) -> pointer<Expression> = new Expression(NEW_FUNCTION_KIND, function)
+    inline static fun fromNewFunction(function: pointer<NewFunction>) -> pointer<Expression> =
+        new Expression(NEW_FUNCTION_KIND, function)
 
 
     /**
@@ -197,7 +169,8 @@ struct Expression
      *
      * @return                  a new expression of kind {@code BLOCK_EXPR_KIND}
      */
-    inline static fun fromBlockExpr(block: pointer<Block>) -> pointer<Expression> = new Expression(BLOCK_EXPR_KIND, block)
+    inline static fun fromBlockExpr(block: pointer<Block>) -> pointer<Expression> =
+        new Expression(BLOCK_EXPR_KIND, block)
 
 
     // inline static fun fromIfExpr(branch: pointer<IfExpression>) -> pointer<Expression> = new Expression(IF_BRANCH_KIND, branch)
@@ -210,7 +183,8 @@ struct Expression
      *
      * @return                  a new expression of kind {@code IFELSE_BRANCH_KIND}
      */
-    inline static fun fromIfElseExpr(branch: pointer<IfElseExpression>) -> pointer<Expression> = new Expression(IFELSE_BRANCH_KIND, branch)
+    inline static fun fromIfElseExpr(branch: pointer<IfElseExpression>) -> pointer<Expression> =
+        new Expression(IFELSE_BRANCH_KIND, branch)
 
 
     /**
@@ -383,11 +357,6 @@ struct Expression
             val assignment: pointer<Assignment> = this.root as pointer<Assignment>
             assignment.getAllTokens()
         }
-        elif this.kind == NEW_IDENTIFIER_KIND:
-        {
-            val ident: pointer<NewIdentifier> = this.root as pointer<NewIdentifier>
-            ident.getAllTokens()
-        }
         elif this.kind == NEW_FUNCTION_KIND:
         {
             val function: pointer<NewFunction> = this.root as pointer<NewFunction>
@@ -460,11 +429,6 @@ struct Expression
         {
             val assignment: pointer<Assignment> = this.root as pointer<Assignment>
             assignment.toString()
-        }
-        elif this.kind == NEW_IDENTIFIER_KIND:
-        {
-            val ident: pointer<NewIdentifier> = this.root as pointer<NewIdentifier>
-            ident.toString()
         }
         elif this.kind == NEW_FUNCTION_KIND:
         {

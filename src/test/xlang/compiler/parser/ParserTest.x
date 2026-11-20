@@ -34,7 +34,6 @@ import xlang.compiler.parser.expression.FieldAccess
 import xlang.compiler.parser.expression.IndexAccess
 import xlang.compiler.parser.expression.MethodCall
 import xlang.compiler.parser.expression.NewFunction
-import xlang.compiler.parser.expression.NewIdentifier
 import xlang.compiler.parser.expression.TypeCast
 import xlang.compiler.parser.program.Field
 import xlang.compiler.parser.program.Function
@@ -1753,27 +1752,6 @@ private fun statementNestedIfRuleTest() -> int
 
 private fun newExpressionTest() -> int
 {
-    val identExpression: pointer<Expression> = parseExpressionText("new Foo")
-
-    if identExpression == null || identExpression.getKind() != Expression.NEW_IDENTIFIER_KIND:
-        return 1
-
-    val ident: pointer<NewIdentifier> = identExpression.getRoot() as pointer<NewIdentifier>
-
-    if ident == null || !String.streq(ident.getIdentifier(), "Foo"):
-        return 2
-
-    if !expressionTextEquals("new Foo", "new Foo"):
-        return 3
-
-    val identTokens: pointer<ArrayList> = identExpression.getAllTokens()
-
-    if identTokens == null || identTokens.length != 2:
-        return 4
-
-    if !tokenTextAt(identTokens, 0, "new") || !tokenTextAt(identTokens, 1, "Foo"):
-        return 5
-
     val funcExpression: pointer<Expression> = parseExpressionText("new Foo(1, x + 2)")
 
     if funcExpression == null || funcExpression.getKind() != Expression.NEW_FUNCTION_KIND:

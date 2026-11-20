@@ -17,7 +17,6 @@
         "xlang.compiler.parser.expression.ListLiteral",
         "xlang.compiler.parser.expression.MethodCall",
         "xlang.compiler.parser.expression.NewFunction",
-        "xlang.compiler.parser.expression.NewIdentifier",
         "xlang.compiler.parser.expression.TypeCast",
         "xlang.compiler.parser.expression.intrisic.SizeOf",
         "xlang.compiler.parser.stmtexpr.Block",
@@ -117,7 +116,6 @@
             ],
             "sub_rules": [
                 { "role": "starter", "patterns": [{ "kind": "Tokenizer.KW_NEW" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromNewFunc", "priority": 250 },
-                { "role": "starter", "patterns": [{ "kind": "Tokenizer.KW_NEW" }, { "kind": "Tokenizer.TK_IDENTIFIER" }], "action": "makeExprFromNewIdent", "priority": 240 },
                 { "role": "starter", "patterns": [{ "kind": "$SizeOf" }], "action": "makeExprFromSizeOf", "priority": 240 },
                 { "role": "starter", "patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromFuncCall", "priority": 240 },
                 { "role": "starter", "patterns": [{ "kind": "$IfElseExpression" }], "action": "makeExprFromIfElseExpr", "priority": 240 },
@@ -379,18 +377,6 @@
             "    function.addExtraToken(newToken).addExtraToken(nameToken)",
             "",
             "    return Expression.fromNewFunction(function)",
-            "}" ],
-
-
-        [   "private fun makeExprFromNewIdent(results: pointer<ArrayList>) -> pointer<*>",
-            "{",
-            "    val newToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>",
-            "    val nameToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
-            "",
-            "    val ident: pointer<NewIdentifier> = new NewIdentifier(nameToken.text)",
-            "    ident.addExtraToken(newToken).addExtraToken(nameToken)",
-            "",
-            "    return Expression.fromNewIdentifier(ident)",
             "}" ],
 
 

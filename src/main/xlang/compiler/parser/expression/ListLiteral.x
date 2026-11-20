@@ -127,9 +127,9 @@ struct ListLiteral
      *
      * @param token             a pointer to the syntax token to add
      *
-     * @return                  this {@code NewIdentifier} instance
+     * @return                  this {@code ListLiteral} instance
      */
-    fun addExtraToken(token: pointer<Token>) -> pointer<NewIdentifier>
+    fun addExtraToken(token: pointer<Token>) -> pointer<ListLiteral>
     {
         if token != null:
             this.extraTokens.push(token)
