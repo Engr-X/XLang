@@ -202,24 +202,23 @@ struct PrattParser
     /**
      * Finds a continuation rule by eliminating candidates one atom at a time.
      *
-     * The first atom of every candidate represents the already parsed left
-     * result, so matching begins at atom index one. A cursor list is maintained
-     * in parallel with the candidate-rule list. A second parallel list stores
-     * one ArrayList of successful atom results for every candidate. Each
-     * successful atom advances only its candidate's cursor and appends its
-     * result. A failed candidate, cursor, and result list are removed together
-     * in constant time.
+     * Matching begins at atom index one, since the first atom represents the
+     * already parsed left operand. Each candidate maintains an independent
+     * cursor and a list of successfully parsed atom results.
      *
-     * @param left              the already parsed left result, used to report
-     *                          an ambiguous continuation
+     * For a trailing Pratt self-reference, the right operand is parsed using
+     * the minimum priority determined by the rule's precedence and associativity.
+     * Successful results are cached for reuse during continuation construction.
+     * Failed candidates and their associated state are removed together.
+     *
+     * @param left              the previously parsed left operand
      * @param rules             the mutable continuation candidates
-     * @param tokens            the token list that owns the parsed nodes
-     * @param fromToken         the first token node after the left result
-     * @param dest              destination receiving the selected rule's
-     *                          successful atom results
+     * @param tokens            the token list containing the input
+     * @param fromToken         the first token after the left operand
+     * @param dest              destination for the selected rule's cached results
      *
-     * @return                  the selected continuation rule, or null when all
-     *                          candidates are eliminated
+     * @return                  the selected continuation rule, or null if no
+     *                          candidate matches
      */
     private fun findContinuation(
         left: pointer<ParserResult>,
@@ -441,21 +440,25 @@ struct PrattParser
     }
 
 
+    
     /**
-     * Parses one continuation of an existing left result.
+     * Parses a continuation of an existing left operand.
      *
-     * The continuation body begins at fromToken. When the rule ends with a
-     * self-reference, the right operand begins at the continuation body's end
-     * token and is parsed with the minimum priority required by the operation's
-     * associativity.
+     * Selects a matching continuation rule and reuses the atom results cached
+     * by findContinuation(). When the rule ends with a Pratt self-reference,
+     * the previously parsed right operand is reused directly, avoiding
+     * redundant recursive parsing.
      *
-     * @param left              the already parsed left result
-     * @param tokens            the token list that owns the parsed nodes
-     * @param fromToken         the first token node after the left result
-     * @param minPriority       the minimum continuation priority accepted here
+     * The left operand, continuation body, and optional right operand are
+     * combined into a single result with their consumed tokens and positions.
      *
-     * @return                  the combined continuation result, the first
-     *                          nested error, or null when no rule is applicable
+     * @param left              the previously parsed left operand
+     * @param tokens            the token list containing the input
+     * @param fromToken         the first token after the left operand
+     * @param minPriority       the minimum accepted continuation priority
+     *
+     * @return                  the combined continuation result, a parsing
+     *                          error, or null if no continuation matches
      */
     private fun parseContinuation(
         left: pointer<ParserResult>,
