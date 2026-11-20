@@ -62,6 +62,12 @@ fun genTest() -> pointer<TestGroup>
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("thisFieldAccessExpression", thisFieldAccessExpressionTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("thisMethodAccessTwoArgsStatement", thisMethodAccessTwoArgsStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("systemMethodAccessTwoArgsStatement", systemMethodAccessTwoArgsStatementTest), null))
+
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("classAccessExpressionTest", classAccessExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("chainedClassAccessExpressionTest", chainedClassAccessExpressionTest), null))
+    result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("mixedClassAccessExpressionTest", mixedClassAccessExpressionTest), null))
+
+
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("functionCallFieldArgStatement", functionCallFieldArgStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("functionCallThisFieldArgStatement", functionCallThisFieldArgStatementTest), null))
     result.addTestUnion(new TestUnion(TestCase.TYPE, new TestCase("functionCallInfixFieldArgStatement", functionCallInfixFieldArgStatementTest), null))
@@ -262,6 +268,27 @@ private fun thisMethodAccessTwoArgsStatementTest() -> int =
 
 private fun systemMethodAccessTwoArgsStatementTest() -> int =
     if parseStatementText("Memory.memcopy(1, 2)\n") != null:
+        0
+    else:
+        1
+
+
+private fun classAccessExpressionTest() -> int =
+    if parseExpressionText("a.new Class()") != null:
+        0
+    else:
+        1
+
+
+private fun chainedClassAccessExpressionTest() -> int =
+    if parseExpressionText("b.new Class().newClass()") != null:
+        0
+    else:
+        1
+
+
+private fun mixedClassAccessExpressionTest() -> int =
+    if parseExpressionText("a.b.c().new Class().fun().d") != null:
         0
     else:
         1

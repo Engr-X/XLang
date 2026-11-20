@@ -43,19 +43,13 @@ import xlang.util.string.StringBuilder
  */
 struct ClassAccess
 {
-    /**
-     * The enclosing expression preceding {@code .new}.
-     */
+    // The enclosing expression preceding {@code .new}.
     private var host: pointer<Expression>
 
-    /**
-     * The duplicated null-terminated name of the class being instantiated.
-     */
+    // The duplicated null-terminated name of the class being instantiated.
     private var className: pointer<char>
 
-    /**
-     * The ordered list of argument expression pointers.
-     */
+    // The ordered list of argument expression pointers.
     private var arguments: pointer<ArrayList>
 
     /**

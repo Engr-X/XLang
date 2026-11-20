@@ -8,8 +8,8 @@
         "xlang.compiler.lexer.Tokenizer",
         "xlang.lexer.Token",
         "xlang.compiler.parser.expression.Atom",
+        "xlang.compiler.parser.expression.ClassAccess",
         "xlang.compiler.parser.expression.Expression",
-
         "xlang.compiler.parser.expression.ExpressionDesugar",
         "xlang.compiler.parser.expression.ExpressionTuple",
         "xlang.compiler.parser.expression.FieldAccess",
@@ -137,6 +137,7 @@
 
                 { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "$ListLiteral" }], "action": "makeExprFromIndexAccess", "priority": 230 },
                 { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "Tokenizer.DOT"}, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromMethodAccess", "priority": 230 },
+                { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "Tokenizer.DOT" }, { "kind": "Tokenizer.KW_NEW" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ExpressionTuple" }], "action": "makeExprFromClassAccess", "priority": 230 },
                 { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "Tokenizer.DOT"}, { "kind": "Tokenizer.TK_IDENTIFIER" }], "action": "makeExprFromFieldAccess", "priority": 220 },
 
                 { "role": "continuation", "patterns": [{ "kind": "$Expression" }, { "kind": "Tokenizer.DOUBLE_PLUS" }], "operation": "succ", "action": "makeExprFromPostfix" },
@@ -463,6 +464,21 @@
             "    call.addExtraToken(dotToken).addExtraToken(nameToken)",
             "",
             "    return Expression.fromMethodAccess(call)",
+            "}" ],
+        
+        
+        [   "private fun makeExprFromClassAccess(results: pointer<ArrayList>) -> pointer<*>",
+            "{",
+            "    val host: pointer<Expression> = getContainerValue(results, 0) as pointer<Expression>",
+            "    val dotToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
+            "    val newToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>",
+            "    val classToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>",
+            "    val tuple: pointer<ExpressionTuple> = getContainerValue(results, 4) as pointer<ExpressionTuple>",
+            "",
+            "    val access: pointer<ClassAccess> = new ClassAccess(host, classToken.text).setArguments(tuple)",
+            "    access.addExtraToken(dotToken).addExtraToken(newToken).addExtraToken(classToken)",
+            "",
+            "    return Expression.fromClassAccess(access)",
             "}" ],
 
 

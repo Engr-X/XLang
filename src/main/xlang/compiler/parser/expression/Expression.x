@@ -60,14 +60,17 @@ struct Expression
     // Identifies a method-call expression.
     static val METHOD_ACCESS_KIND: int = 4
 
+    // Identifies a class-access expression.
+    static val CLASS_ACCESS_KIND: int = 5
+
     // Identifies an index-access expression.
-    static val INDEX_ACCESS_KIND: int = 5
+    static val INDEX_ACCESS_KIND: int = 6
 
     // Identifies an explicit type-cast expression.
-    static val TYPE_CAST_KIND: int = 6
+    static val TYPE_CAST_KIND: int = 7
 
     // Identifies an assignment expression.
-    static val ASSIGNMENT_KIND: int = 7
+    static val ASSIGNMENT_KIND: int = 8
 
     // Identifies an expression that creates a new function-based object.
     static val CONSTRUCTOR_CALL_KIND: int = 9
@@ -112,7 +115,19 @@ struct Expression
      * @param method            a pointer to the method-call node
      * @return                  a new expression of kind {@code METHOD_ACCESS_KIND}
      */
-    inline static fun fromMethodAccess(method: pointer<MethodAccess>) -> pointer<Expression> = new Expression(METHOD_ACCESS_KIND, method) 
+    inline static fun fromMethodAccess(method: pointer<MethodAccess>) -> pointer<Expression> =
+        new Expression(METHOD_ACCESS_KIND, method)
+
+
+    /**
+     * Creates an expression representing a qualified class instantiation.
+     *
+     * @param access            the class-access node
+     *
+     * @return                  a new expression wrapping the class access
+     */
+    static fun fromClassAccess(access: pointer<ClassAccess>) -> pointer<Expression> =
+        new Expression(CLASS_ACCESS_KIND, access)
 
 
     /**
@@ -332,14 +347,19 @@ struct Expression
             val atom: pointer<Atom> = this.root as pointer<Atom>
             atom.getAllTokens()
         }
+        elif this.kind == FIELD_ACCESS_KIND:
+        {
+            val access: pointer<FieldAccess> = this.root as pointer<FieldAccess>
+            access.getAllTokens()
+        }
         elif this.kind == METHOD_ACCESS_KIND:
         {
             val call: pointer<MethodAccess> = this.root as pointer<MethodAccess>
             call.getAllTokens()
         }
-        elif this.kind == FIELD_ACCESS_KIND:
+        elif this.kind == CLASS_ACCESS_KIND:
         {
-            val access: pointer<FieldAccess> = this.root as pointer<FieldAccess>
+            val access: pointer<ClassAccess> = this.root as pointer<ClassAccess>
             access.getAllTokens()
         }
         elif this.kind == INDEX_ACCESS_KIND:
@@ -405,14 +425,19 @@ struct Expression
             val atom: pointer<Atom> = this.root as pointer<Atom>
             atom.toString()
         }
+        elif this.kind == FIELD_ACCESS_KIND:
+        {
+            val access: pointer<FieldAccess> = this.root as pointer<FieldAccess>
+            access.toString()
+        }
         elif this.kind == METHOD_ACCESS_KIND:
         {
             val call: pointer<MethodAccess> = this.root as pointer<MethodAccess>
             call.toString()
         }
-        elif this.kind == FIELD_ACCESS_KIND:
+        elif this.kind == CLASS_ACCESS_KIND:
         {
-            val access: pointer<FieldAccess> = this.root as pointer<FieldAccess>
+            val access: pointer<ClassAccess> = this.root as pointer<ClassAccess>
             access.toString()
         }
         elif this.kind == INDEX_ACCESS_KIND:
