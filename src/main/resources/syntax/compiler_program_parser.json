@@ -164,32 +164,32 @@
             "class": "Field",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAR" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFieldWithInitialValue" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAL" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFieldWithInitialValue" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAR" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeField" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAL" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeField" }
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAR" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFieldWithInitialValue" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAL" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFieldWithInitialValue" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAR" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeField" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAL" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeField" }
             ]
         },
         {
             "class": "Function",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunction" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunction" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunctionFromBlock" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunctionFromEmptyBlock" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunction" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunction" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunctionFromBlock" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunctionFromEmptyBlock" },
 
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunction" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunctionFromBlock" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunctionFromEmptyBlock" }
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunction" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunctionFromBlock" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunctionFromEmptyBlock" }
             ]
         },
         {
             "class": "StructConstructor",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_CONSTRUCTOR" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStructConstructor" },
-                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_CONSTRUCTOR" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStructConstructorFromBlock" }
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_CONSTRUCTOR" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStructConstructor" },
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_CONSTRUCTOR" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStructConstructorFromBlock" }
             ]
         },
         {
@@ -206,14 +206,14 @@
             "class": "Struct",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_STRUCT" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_BRACE" }, { "kind": "[$Member]" }, { "kind": "Tokenizer.RIGHT_BRACE" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStruct" }
+                { "patterns": [{ "maybe_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_STRUCT" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_BRACE" }, { "kind": "[$Member]" }, { "kind": "Tokenizer.RIGHT_BRACE" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStruct" }
             ]
         },
         {
             "class": "Program",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "[$PreprocessSetting]" }, { "optical_kind": "$PackageDeclaration" }, { "optical_kind": "$ImportDeclarations" }, { "kind": "[$Member]" }], "action": "makeProgram" }
+                { "patterns": [{ "kind": "[$PreprocessSetting]" }, { "maybe_kind": "$PackageDeclaration" }, { "maybe_kind": "$ImportDeclarations" }, { "kind": "[$Member]" }], "action": "makeProgram" }
             ]
         }
     ],
@@ -677,18 +677,20 @@
 
         [   "private inline fun makeStruct(results: pointer<ArrayList>) -> pointer<*>",
             "{",
-            "    val modifiers: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
-            "    val structToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
-            "    val nameToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>",
-            "    val leftBrace: pointer<Token> = getContainerValue(results, 3) as pointer<Token>",
-            "    val parsedMembers: pointer<ArrayList> = getContainerValue(results, 4) as pointer<ArrayList>",
+            "    val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
+            "    val modifiers: pointer<ArrayList> = getContainerValue(results, 1) as pointer<ArrayList>",
+            "    val structToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>",
+            "    val nameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>",
+            "    val leftBrace: pointer<Token> = getContainerValue(results, 4) as pointer<Token>",
+            "    val parsedMembers: pointer<ArrayList> = getContainerValue(results, 5) as pointer<ArrayList>",
             "    val members: pointer<ArrayList> = new ArrayList(sizeof(Member))",
-            "    val rightBrace: pointer<Token> = getContainerValue(results, 5) as pointer<Token>",
+            "    val rightBrace: pointer<Token> = getContainerValue(results, 6) as pointer<Token>",
             "",
             "    for (var i: int = 0; i < parsedMembers.length; i++):",
             "        members.push(getContainerValue(parsedMembers, i) as pointer<Member>)",
             "",
             "    return new Struct(nameToken.text, members)",
+            "        .setAnnotations(annotations)",
             "        .setModifiers(modifiers)",
             "        .addExtraToken(structToken)",
             "        .addExtraToken(nameToken)",

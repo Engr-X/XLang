@@ -261,35 +261,33 @@ def getOpticalPatterns(pattern: object) -> list[object] | None:
     if not isinstance(pattern, dict):
         return None
 
-    has_optical_kind = "optical_kind" in pattern
-    has_maybe_kind = "maybe_kind" in pattern
-
-    if has_optical_kind and has_maybe_kind:
+    if "optical_kind" in pattern:
         raise ValueError(
-            f"pattern cannot contain both optical_kind and maybe_kind: {pattern!r}"
+            f"optical_kind is disabled; use maybe_kind instead: {pattern!r}"
         )
 
-    if has_optical_kind or has_maybe_kind:
-        key = "optical_kind" if has_optical_kind else "maybe_kind"
-        unexpected = set(pattern) - {key}
+    if "maybe_kind" in pattern:
+        unexpected = set(pattern) - {"maybe_kind"}
 
         if unexpected:
             raise ValueError(
-                f"{key} contains unsupported fields "
+                "maybe_kind contains unsupported fields "
                 f"{sorted(unexpected)!r}: {pattern!r}"
             )
 
-        kind = pattern[key]
+        kind = pattern["maybe_kind"]
 
         if not isinstance(kind, str) or not kind:
-            raise TypeError(f"{key} must be a non-empty string: {pattern!r}")
+            raise TypeError(
+                f"maybe_kind must be a non-empty string: {pattern!r}"
+            )
 
         return [{"kind": kind}]
 
     if "inner_patterns" not in pattern:
         if "maybe" in pattern:
             raise ValueError(
-                f"use optical_kind or maybe_kind instead of kind with maybe: {pattern!r}"
+                f"use maybe_kind instead of kind with maybe: {pattern!r}"
             )
 
         return None
@@ -298,7 +296,7 @@ def getOpticalPatterns(pattern: object) -> list[object] | None:
 
     if unexpected:
         raise ValueError(
-            "optical inner_patterns contains unsupported fields "
+            "optional inner_patterns contains unsupported fields "
             f"{sorted(unexpected)!r}: {pattern!r}"
         )
 
@@ -322,9 +320,7 @@ def getOpticalPatterns(pattern: object) -> list[object] | None:
 
 
 def getOpticalResultAction(pattern: object) -> str:
-    if isinstance(pattern, dict) and (
-        "optical_kind" in pattern or "maybe_kind" in pattern
-    ):
+    if isinstance(pattern, dict) and "maybe_kind" in pattern:
         return "opticalRuleResult"
 
     return "parserRuleResult"

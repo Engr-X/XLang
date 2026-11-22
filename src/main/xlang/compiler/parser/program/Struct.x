@@ -474,8 +474,8 @@ struct StructConstructor
  * other member kinds supported by the language.
  *
  * <p>The member collection is normalized to an empty list when no collection is
- * supplied to the constructor. Annotations and declaration modifiers are also
- * initialized as empty collections.
+ * supplied to the constructor. Annotations and declaration modifiers are
+ * initialized lazily.
  *
  * <p>All tokens belonging to the structure and its child declarations can be
  * collected in lexical source order using {@code getAllTokens()}.
@@ -485,8 +485,8 @@ struct Struct
     /**
      * The ordered collection of annotations attached to this structure.
      *
-     * <p>The collection is initialized to an empty list and may later be
-     * replaced using {@code setAnnotations()}.
+     * <p>The collection is initialized lazily and remains {@code null} until
+     * annotations are assigned using {@code setAnnotations()}.
      */
     private var annotations: pointer<ArrayList>
 
@@ -529,8 +529,8 @@ struct Struct
      * Creates a structure declaration with the specified name and member
      * collection.
      *
-     * <p>A new empty annotation collection is allocated. The declaration
-     * modifiers are initialized lazily.
+     * <p>The annotation and declaration-modifier collections are initialized
+     * lazily.
      *
      * <p>The supplied structure name is stored directly and is not duplicated or
      * cloned.
@@ -548,7 +548,7 @@ struct Struct
      */
     constructor(structName: pointer<char>, members: pointer<ArrayList>)
     {
-        this.annotations = new ArrayList(sizeof(Annotation))
+        this.annotations = null
         this.modifiers = null
         this.structName = structName
         this.members = if members == null:
@@ -578,24 +578,18 @@ struct Struct
     /**
      * Replaces the annotation collection attached to this structure.
      *
-     * <p>If {@code annotations} is {@code null}, a new empty annotation
-     * collection is allocated. Otherwise, the supplied list is stored directly
-     * and is not copied or cloned.
-     *
-     * <p>This normalization ensures that the structure retains a valid
-     * annotation list after the operation.
+     * <p>The supplied list is stored directly and is not copied or cloned. A
+     * {@code null} value clears the annotations without allocating an empty
+     * collection.
      *
      * @param annotations       a pointer to the annotation collection, or
-     *                          {@code null} to replace it with an empty list
+     *                          {@code null} to clear the annotations
      *
      * @return                  this {@code Struct} instance
      */
     fun setAnnotations(annotations: pointer<ArrayList>) -> pointer<Struct>
     {
-        this.annotations = if annotations == null:
-                new ArrayList(sizeof(Annotation))
-            else:
-                annotations
+        this.annotations = annotations
 
         return this
     }
