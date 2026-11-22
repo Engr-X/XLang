@@ -81,8 +81,11 @@ fun main()
     IO.println("source: src/main/xlang/util/LinkedList.x")
     printNumber("source lines: ", 482)
     printNumber("normalized token count: ", tokenCount)
+
+    if result != null:
+        printNumber("consumed token count: ", result.getConsumed())
+
     printTime("parse total: ", parseElapsed, "ms")
-    printTime("parse total approximately: ", parseElapsed / 1000, "s")
     printTime("average per 100 tokens: ", perHundredTokens, "ms")
 
     if result == null:
@@ -91,10 +94,6 @@ fun main()
         return
     }
 
-    printNumber("consumed token count: ", result.getConsumed())
-
     if result.hasError():
         IO.println("parse result: error")
-    else:
-        IO.println("parse result: success")
 }
