@@ -1662,10 +1662,10 @@ private inline fun makeModifier(results: pointer<ArrayList>) -> pointer<*>
 private inline fun makeModifierList(results: pointer<ArrayList>) -> pointer<*>
 {
     val parsedModifiers: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
-    val modifiers: pointer<HashSet> = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
+    val modifiers: pointer<ArrayList> = new ArrayList(sizeof(Modifier))
 
     for (var i = 0; i < parsedModifiers.length; i++):
-        modifiers.add(getContainerValue(parsedModifiers, i) as pointer<Modifier>)
+        modifiers.push(getContainerValue(parsedModifiers, i) as pointer<Modifier>)
 
     return modifiers
 }
@@ -1895,11 +1895,7 @@ private inline fun makeFunctionParams(results: pointer<ArrayList>) -> pointer<*>
 private inline fun buildField(results: pointer<ArrayList>) -> pointer<Field>
 {
     val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
-    val modifierSet: pointer<HashSet> = getContainerValue(results, 1) as pointer<HashSet>
-    val modifiers: pointer<ArrayList> = if modifierSet == null:
-        null
-    else:
-        modifierSet.toArray()
+    val modifiers: pointer<ArrayList> = getContainerValue(results, 1) as pointer<ArrayList>
     val varToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val nameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val colonToken: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
@@ -1935,11 +1931,7 @@ private inline fun makeFieldWithInitialValue(results: pointer<ArrayList>) -> poi
 private inline fun buildFunction(results: pointer<ArrayList>, returnType: pointer<Type>, bodyExpr: pointer<Expression>) -> pointer<Function>
 {
     val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
-    val modifierSet: pointer<HashSet> = getContainerValue(results, 1) as pointer<HashSet>
-    val modifiers: pointer<ArrayList> = if modifierSet == null:
-        null
-    else:
-        modifierSet.toArray()
+    val modifiers: pointer<ArrayList> = getContainerValue(results, 1) as pointer<ArrayList>
     val functionNameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val params: pointer<FunctionParams> = getContainerValue(results, 5) as pointer<FunctionParams>
 
@@ -2017,15 +2009,17 @@ private inline fun makeVoidFunctionFromEmptyBlock(results: pointer<ArrayList>) -
 
 private inline fun makeStructConstructor(results: pointer<ArrayList>) -> pointer<*>
 {
-    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>
-    val constructorToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
-    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
-    val params: pointer<FunctionParams> = getContainerValue(results, 3) as pointer<FunctionParams>
-    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
-    val colonToken: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
-    val bodyExpr: pointer<Expression> = getContainerValue(results, 6) as pointer<Expression>
+    val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
+    val modifiers: pointer<ArrayList> = getContainerValue(results, 1) as pointer<ArrayList>
+    val constructorToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
+    val params: pointer<FunctionParams> = getContainerValue(results, 4) as pointer<FunctionParams>
+    val rightParen: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
+    val colonToken: pointer<Token> = getContainerValue(results, 6) as pointer<Token>
+    val bodyExpr: pointer<Expression> = getContainerValue(results, 7) as pointer<Expression>
 
     return new StructConstructor(params, bodyExpr)
+        .setAnnotations(annotations)
         .setModifiers(modifiers)
         .addExtraToken(constructorToken)
         .addExtraToken(leftParen)
@@ -2035,15 +2029,17 @@ private inline fun makeStructConstructor(results: pointer<ArrayList>) -> pointer
 
 private inline fun makeStructConstructorFromBlock(results: pointer<ArrayList>) -> pointer<*>
 {
-    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>
-    val constructorToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
-    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
-    val params: pointer<FunctionParams> = getContainerValue(results, 3) as pointer<FunctionParams>
-    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
-    val block: pointer<Block> = getContainerValue(results, 5) as pointer<Block>
+    val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
+    val modifiers: pointer<ArrayList> = getContainerValue(results, 1) as pointer<ArrayList>
+    val constructorToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
+    val leftParen: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
+    val params: pointer<FunctionParams> = getContainerValue(results, 4) as pointer<FunctionParams>
+    val rightParen: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
+    val block: pointer<Block> = getContainerValue(results, 6) as pointer<Block>
     val bodyExpr: pointer<Expression> = Expression.fromBlockExpr(block)
 
     return new StructConstructor(params, bodyExpr)
+        .setAnnotations(annotations)
         .setModifiers(modifiers)
         .addExtraToken(constructorToken)
         .addExtraToken(leftParen)
@@ -2076,7 +2072,7 @@ private inline fun makeMemberFromStruct(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeStruct(results: pointer<ArrayList>) -> pointer<*>
 {
-    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>
+    val modifiers: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
     val structToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val nameToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val leftBrace: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
@@ -3054,9 +3050,11 @@ private val STRUCT_CONSTRUCTOR_PARSER_RULE: pointer<ParserRule> =
 
 private var STRUCT_CONSTRUCTOR_RULE_0: pointer<InputRule> = null
 private var STRUCT_CONSTRUCTOR_OPTICAL_TEMP_0: pointer<ParserRule> = null
+private var STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1: pointer<ParserRule> = null
 private var STRUCT_CONSTRUCTOR_CRULE_0: pointer<ParserRule> = null
 private var STRUCT_CONSTRUCTOR_RULE_1: pointer<InputRule> = null
-private var STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1: pointer<ParserRule> = null
+private var STRUCT_CONSTRUCTOR_OPTICAL_TEMP_2: pointer<ParserRule> = null
+private var STRUCT_CONSTRUCTOR_OPTICAL_TEMP_3: pointer<ParserRule> = null
 private var STRUCT_CONSTRUCTOR_CRULE_1: pointer<ParserRule> = null
 private var STRUCT_CONSTRUCTOR_CRULE: pointer<RuleExpression> = null
 
@@ -3573,12 +3571,32 @@ private fun initializeParserGraph() -> bool
             new InputRules(134)
                 .push(
                     new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1 =
+        new ParserRule(
+            new InputRules(134)
+                .push(
+                    new InputRule(opticalRuleResult)
                         .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
 
-    STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1 =
+    STRUCT_CONSTRUCTOR_OPTICAL_TEMP_2 =
+        new ParserRule(
+            new InputRules(134)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    STRUCT_CONSTRUCTOR_OPTICAL_TEMP_3 =
         new ParserRule(
             new InputRules(134)
                 .push(
@@ -5161,6 +5179,7 @@ private fun initializeParserGraph() -> bool
     STRUCT_CONSTRUCTOR_RULE_0 =
         new InputRule(makeStructConstructor)
             .push(RuleAtom.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_0)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_CONSTRUCTOR))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
             .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
@@ -5172,7 +5191,8 @@ private fun initializeParserGraph() -> bool
 
     STRUCT_CONSTRUCTOR_RULE_1 =
         new InputRule(makeStructConstructorFromBlock)
-            .push(RuleAtom.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_2)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_3)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_CONSTRUCTOR))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
             .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
@@ -7466,6 +7486,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_0))))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1))))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.KW_CONSTRUCTOR, 0)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
@@ -7479,7 +7500,8 @@ private fun initializeParserGraph() -> bool
             STRUCT_CONSTRUCTOR_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1))))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_2))))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_3))))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.KW_CONSTRUCTOR, 1)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 1)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))

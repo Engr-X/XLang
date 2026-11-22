@@ -33,9 +33,9 @@ import xlang.util.string.StringBuilder
 /**
  * Represents a constructor declared inside a structure.
  *
- * <p>A {@code StructConstructor} stores declaration modifiers, an ordered
- * function-parameter list, an optional body expression, and additional syntax
- * tokens associated with the constructor declaration.
+ * <p>A {@code StructConstructor} stores annotations, declaration modifiers, an
+ * ordered function-parameter list, an optional body expression, and additional
+ * syntax tokens associated with the constructor declaration.
  *
  * <p>The parameter collection is normalized to an empty
  * {@code FunctionParams} instance when no parameter object is supplied. The
@@ -53,11 +53,20 @@ import xlang.util.string.StringBuilder
 struct StructConstructor
 {
     /**
+     * The ordered collection of annotations attached to this constructor.
+     *
+     * <p>The collection is initialized lazily and remains {@code null} until
+     * annotations are assigned using {@code setAnnotations()}.
+     */
+    private var annotations: pointer<ArrayList>
+
+
+    /**
      * The set of declaration modifiers attached to this
      * constructor.
      *
-     * <p>The collection is initialized to an empty set during construction and
-     * may later be replaced through {@code setModifiers()}.
+     * <p>The collection is initialized lazily and remains {@code null} until
+     * modifiers are assigned or added.
      */
     private var modifiers: pointer<HashSet>
 
@@ -91,7 +100,8 @@ struct StructConstructor
      * Creates a structure constructor with the specified parameter collection
      * and body expression.
      *
-     * <p>A new empty modifier collection is allocated.
+     * <p>The annotation and modifier collections are initialized to
+     * {@code null} and allocated only when needed.
      *
      * <p>If {@code params} is {@code null}, a new empty
      * {@code FunctionParams} instance is allocated. Otherwise, the supplied
@@ -110,7 +120,8 @@ struct StructConstructor
      */
     constructor(params: pointer<FunctionParams>, bodyExpr: pointer<Expression>)
     {
-        this.modifiers = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
+        this.annotations = null
+        this.modifiers = null
         this.params = if params == null:
                 new FunctionParams()
             else:
@@ -118,6 +129,32 @@ struct StructConstructor
 
         this.bodyExpr = bodyExpr
         this.extraTokens = new ArrayList(sizeof(Token))
+    }
+
+
+    /**
+     * Returns the annotations associated with this constructor.
+     *
+     * @return                  the internally stored annotation collection, or
+     *                          {@code null} when no annotations are assigned
+     */
+    fun getAnnotations() -> pointer<ArrayList> = this.annotations
+
+
+    /**
+     * Replaces the annotations associated with this constructor.
+     *
+     * <p>The supplied list is stored directly. A {@code null} value clears the
+     * annotations without allocating an empty collection.
+     *
+     * @param annotations       the annotation collection to assign
+     *
+     * @return                  this {@code StructConstructor} instance
+     */
+    fun setAnnotations(annotations: pointer<ArrayList>) -> pointer<StructConstructor>
+    {
+        this.annotations = annotations
+        return this
     }
 
 
@@ -141,25 +178,61 @@ struct StructConstructor
      * Replaces the declaration-modifier collection associated with this
      * constructor.
      *
-     * <p>If {@code modifiers} is {@code null}, a new empty modifier set is
-     * allocated. Otherwise, the supplied set is stored directly and is not
-     * copied or cloned.
-     *
-     * <p>This normalization ensures that the constructor retains a valid
-     * modifier collection after the operation.
+     * <p>A null or empty list clears the modifiers without allocating an
+     * internal set. Otherwise, a new set is allocated and populated with each
+     * non-null modifier. Duplicate modifiers are ignored by the set.
      *
      * @param modifiers         a pointer to the declaration-modifier
-     *                          collection, or {@code null} to use an empty list
+     *                          list, or {@code null} to clear the modifiers
      *
      * @return                  this {@code StructConstructor} instance
      */
-    fun setModifiers(modifiers: pointer<HashSet>) -> pointer<StructConstructor>
+    fun setModifiers(modifiers: pointer<ArrayList>) -> pointer<StructConstructor>
     {
-        this.modifiers = if modifiers == null:
-                new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
-            else:
-                modifiers
+        this.modifiers = null
 
+        if modifiers == null || modifiers.length <= 0:
+            return this
+
+        this.modifiers = new HashSet(
+            sizeof(Modifier),
+            Modifier.equalModifier,
+            Modifier.hashcode)
+
+        for (var i: int = 0; i < modifiers.length; i++):
+        {
+            val modifier: pointer<Modifier> = modifiers.get(i) as pointer<Modifier>
+
+            if modifier != null:
+                this.modifiers.add(modifier)
+        }
+
+        return this
+    }
+
+
+    /**
+     * Adds one declaration modifier to this constructor.
+     *
+     * <p>A null modifier is ignored. The internal set is allocated lazily when
+     * the first valid modifier is added.
+     *
+     * @param modifier          the modifier to add
+     *
+     * @return                  this {@code StructConstructor} instance
+     */
+    fun addModifier(modifier: pointer<Modifier>) -> pointer<StructConstructor>
+    {
+        if modifier == null:
+            return this
+
+        if this.modifiers == null:
+            this.modifiers = new HashSet(
+                sizeof(Modifier),
+                Modifier.equalModifier,
+                Modifier.hashcode)
+
+        this.modifiers.add(modifier)
         return this
     }
 
@@ -267,6 +340,18 @@ struct StructConstructor
     {
         val result: pointer<ArrayList> = new ArrayList(sizeof(Token))
 
+        if this.annotations != null:
+        {
+            for (var i = 0; i < this.annotations.length; i++):
+            {
+                val annotation: pointer<Annotation> =
+                    this.annotations.get(i) as pointer<Annotation>
+
+                if annotation != null:
+                    result.pushAll(annotation.getAllTokens())
+            }
+        }
+
         if this.modifiers != null:
         {
             for (var i = 0; i < this.modifiers.length; i++):
@@ -324,6 +409,21 @@ struct StructConstructor
     fun toString() -> pointer<StringBuilder>
     {
         val sb: pointer<StringBuilder> = new StringBuilder()
+
+        if this.annotations != null && this.annotations.length > 0:
+        {
+            for (var i = 0; i < this.annotations.length; i++):
+            {
+                val annotation: pointer<Annotation> =
+                    this.annotations.get(i) as pointer<Annotation>
+
+                if annotation != null:
+                {
+                    sb.append(annotation.toString())
+                    sb.newline()
+                }
+            }
+        }
 
         if this.modifiers != null && this.modifiers.length > 0:
         {
@@ -394,8 +494,8 @@ struct Struct
      * The set of declaration modifiers attached to this
      * structure.
      *
-     * <p>The collection is initialized to an empty set and may later be
-     * replaced using {@code setModifiers()}.
+     * <p>The collection is initialized lazily and remains {@code null} until
+     * modifiers are assigned using {@code setModifiers()}.
      */
     private var modifiers: pointer<HashSet>
 
@@ -429,8 +529,8 @@ struct Struct
      * Creates a structure declaration with the specified name and member
      * collection.
      *
-     * <p>New empty annotation and declaration-modifier collections are
-     * allocated.
+     * <p>A new empty annotation collection is allocated. The declaration
+     * modifiers are initialized lazily.
      *
      * <p>The supplied structure name is stored directly and is not duplicated or
      * cloned.
@@ -449,7 +549,7 @@ struct Struct
     constructor(structName: pointer<char>, members: pointer<ArrayList>)
     {
         this.annotations = new ArrayList(sizeof(Annotation))
-        this.modifiers = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
+        this.modifiers = null
         this.structName = structName
         this.members = if members == null:
                 new ArrayList(sizeof(Member))
@@ -519,21 +619,35 @@ struct Struct
     /**
      * Replaces the declaration-modifier collection attached to this structure.
      *
-     * <p>If {@code modifiers} is {@code null}, a new empty modifier set is
-     * allocated. Otherwise, the supplied set is stored directly and is not
-     * copied or cloned.
+     * <p>A null or empty list clears the modifiers without allocating an
+     * internal set. Otherwise, a new set is allocated and populated with each
+     * non-null modifier. Duplicate modifiers are ignored by the set.
      *
      * @param modifiers         a pointer to the declaration-modifier
-     *                          collection, or {@code null} to use an empty list
+     *                          list, or {@code null} to clear the modifiers
      *
      * @return                  this {@code Struct} instance
      */
-    fun setModifiers(modifiers: pointer<HashSet>) -> pointer<Struct>
+    fun setModifiers(modifiers: pointer<ArrayList>) -> pointer<Struct>
     {
-        this.modifiers = if modifiers == null:
-                new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
-            else:
-                modifiers
+        this.modifiers = null
+
+        if modifiers == null || modifiers.length <= 0:
+            return this
+
+        this.modifiers = new HashSet(
+            sizeof(Modifier),
+            Modifier.equalModifier,
+            Modifier.hashcode)
+
+        for (var i: int = 0; i < modifiers.length; i++):
+        {
+            val modifier: pointer<Modifier> =
+                modifiers.get(i) as pointer<Modifier>
+
+            if modifier != null:
+                this.modifiers.add(modifier)
+        }
 
         return this
     }
