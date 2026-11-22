@@ -1935,7 +1935,11 @@ private inline fun makeFieldWithInitialValue(results: pointer<ArrayList>) -> poi
 private inline fun buildFunction(results: pointer<ArrayList>, returnType: pointer<Type>, bodyExpr: pointer<Expression>) -> pointer<Function>
 {
     val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
-    val modifiers: pointer<HashSet> = getContainerValue(results, 1) as pointer<HashSet>
+    val modifierSet: pointer<HashSet> = getContainerValue(results, 1) as pointer<HashSet>
+    val modifiers: pointer<ArrayList> = if modifierSet == null:
+        null
+    else:
+        modifierSet.toArray()
     val functionNameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val params: pointer<FunctionParams> = getContainerValue(results, 5) as pointer<FunctionParams>
 

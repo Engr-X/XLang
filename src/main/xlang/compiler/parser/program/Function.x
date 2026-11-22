@@ -762,8 +762,8 @@ struct Function
      * Creates a function declaration with the specified name, parameter
      * collection, and body expression.
      *
-     * <p>New empty annotation and declaration-modifier collections are
-     * allocated.
+     * <p>The annotation and declaration-modifier collections are initialized
+     * lazily and remain {@code null} until values are assigned or added.
      *
      * <p>The function name, parameter collection, and body expression are stored
      * by reference and are not copied or cloned.
@@ -781,8 +781,8 @@ struct Function
      */
     constructor(functionName: pointer<char>, params: pointer<FunctionParams>, bodyExpr: pointer<Expression>)
     {
-        this.annotations = new ArrayList(sizeof(Annotation))
-        this.modifiers = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
+        this.annotations = null
+        this.modifiers = null
         this.functionName = functionName
         this.params = params
         this.returnType = null
@@ -821,21 +821,18 @@ struct Function
     /**
      * Replaces the annotation collection attached to this function.
      *
-     * <p>If {@code annotations} is {@code null}, a new empty annotation list is
-     * allocated. Otherwise, the supplied list is stored directly and is not
-     * copied or cloned.
+     * <p>The supplied list is stored directly and is not copied or cloned. A
+     * {@code null} value clears the annotations without allocating an empty
+     * collection.
      *
      * @param annotations		a pointer to the new annotation collection, or
-     * 					        {@code null} to replace it with an empty list
+     * 					        {@code null} to clear the annotations
      *
      * @return				    this {@code Function} instance
      */
     fun setAnnotations(annotations: pointer<ArrayList>) -> pointer<Function>
     {
-        this.annotations = if annotations == null:
-                new ArrayList(sizeof(Annotation))
-            else:
-                annotations
+        this.annotations = annotations
 
         return this
     }
@@ -854,6 +851,43 @@ struct Function
 
 
     /**
+     * Replaces the declaration-modifier collection attached to this function.
+     *
+     * <p>A null or empty list clears the modifiers without allocating an
+     * internal set. Otherwise, a new set is allocated and populated with each
+     * non-null modifier. Duplicate modifiers are ignored by the set.
+     *
+     * @param modifiers			a pointer to the declaration-modifier list, or
+     * 					        {@code null} to clear the modifiers
+     *
+     * @return				    this {@code Function} instance
+     */
+    fun setModifiers(modifiers: pointer<ArrayList>) -> pointer<Function>
+    {
+        this.modifiers = null
+
+        if modifiers == null || modifiers.length <= 0:
+            return this
+
+        this.modifiers = new HashSet(
+            sizeof(Modifier),
+            Modifier.equalModifier,
+            Modifier.hashcode)
+
+        for (var i: int = 0; i < modifiers.length; i++):
+        {
+            val modifier: pointer<Modifier> =
+                modifiers.get(i) as pointer<Modifier>
+
+            if modifier != null:
+                this.modifiers.add(modifier)
+        }
+
+        return this
+    }
+
+
+    /**
      * Adds a declaration modifier to this function.
      *
      * <p>The specified modifier is added directly to the internally stored
@@ -868,29 +902,15 @@ struct Function
     fun addModifier(modifier: pointer<Modifier>) -> pointer<Function>
     {
         if modifier != null:
+        {
+            if this.modifiers == null:
+                this.modifiers = new HashSet(
+                    sizeof(Modifier),
+                    Modifier.equalModifier,
+                    Modifier.hashcode)
+
             this.modifiers.add(modifier)
-
-        return this
-    }
-
-
-    /**
-     * Replaces the declaration-modifier collection attached to this function.
-     *
-     * <p>If {@code modifiers} is {@code null}, a new empty modifier set is
-     * allocated. Otherwise, the supplied set is stored directly.
-     *
-     * @param modifiers			a pointer to the new declaration-modifier
-     * 					        collection, or {@code null} to use an empty list
-     *
-     * @return				    this {@code Function} instance
-     */
-    fun setModifiers(modifiers: pointer<HashSet>) -> pointer<Function>
-    {
-        this.modifiers = if modifiers == null:
-                new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
-            else:
-                modifiers
+        }
 
         return this
     }
