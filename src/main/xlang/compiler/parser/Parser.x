@@ -1663,7 +1663,6 @@ private inline fun makeModifierList(results: pointer<ArrayList>) -> pointer<*>
 {
     val parsedModifiers: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
     val modifiers: pointer<ArrayList> = new ArrayList(sizeof(Modifier))
-
     for (var i = 0; i < parsedModifiers.length; i++):
         modifiers.push(getContainerValue(parsedModifiers, i) as pointer<Modifier>)
 

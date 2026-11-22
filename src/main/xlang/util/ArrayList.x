@@ -148,6 +148,33 @@ struct ArrayList
     private var eqFun: (pointer<*>, pointer<*>) -> bool
 
 
+    /**
+     * Initializes an ArrayList with the specified internal storage and configuration.
+     *
+     * The supplied data pointer, element size, length, capacity, load factor,
+     * comparison function, and equality function are stored directly without
+     * validation or modification.
+     *
+     * The underlying memory buffer is referenced directly and is not copied
+     * or reallocated during construction.
+     *
+     * @param tsize             the fixed size in bytes of each element.
+     * @param data              a pointer to the underlying element storage.
+     * @param length            the number of elements currently stored.
+     * @param capacity          the maximum number of elements the current storage can hold.
+     * @param loadFactor        the load factor used for capacity management.
+     * @param cmpFun            the comparison function used to order elements.
+     * @param eqFun             the equality function used to compare elements.
+     *
+     * @note                    This constructor does not allocate or initialize the
+     *                          underlying storage or validate its configuration.
+     *
+     * @warning                 The caller must ensure that the supplied data pointer
+     *                          and configuration values are valid and consistent.
+     *
+     * @warning                 The memory ownership and lifetime of the supplied
+     *                          buffer must be compatible with the ArrayList implementation.
+     */
     private constructor(
         tsize: int,
         data: pointer<byte>,
@@ -270,6 +297,36 @@ struct ArrayList
      */
     fun setComparator(cmpFun: (pointer<*>, pointer<*>) -> int):
         this.cmpFun = cmpFun
+
+
+    /**
+     * Retrieves the size in bytes of each element stored in this list.
+     *
+     * Returns the fixed element size specified when the list was created.
+     * This value determines the amount of memory occupied by each element
+     * slot, regardless of the number of elements currently stored.
+     *
+     * @return                  the fixed size in bytes of a single element.
+     *
+     * @note                    This method returns the element size, not the total
+     *                          memory allocated or used by the list.
+     */
+    fun getElementSize() -> int = this.tsize
+
+
+    /**
+     * Creates a hash set containing the values stored by this list.
+     *
+     * <p>The set inherits this list's element size and configured equality
+     * function. The supplied hash function defines its bucket-placement rule.
+     * Duplicate values are removed according to this list's equality function.
+     *
+     * @param hashCodeFun       the hash function for stored values
+     *
+     * @return                  a new hash set containing this list's values
+     */
+    fun toSet(hashCodeFun: (pointer<*>) -> int) -> pointer<HashSet> =
+        new HashSet(this, this.eqFun, hashCodeFun)
 
 
     /**
@@ -762,10 +819,20 @@ struct ArrayList
 
 
     /**
-     * Returns true if any element compares equal to item using the default comparator.
+     * Checks whether this collection contains the specified item.
+     *
+     * The search is delegated to indexOf, which uses the collection's
+     * default comparator to determine whether an element matches the item.
+     *
+     * @param item              a pointer to the item to search for.
+     *
+     * @return                  true if a matching element is found;
+     *                          false otherwise.
+     *
+     * @note                    The comparison behavior depends on the default
+     *                          comparator used by indexOf.
      */
-    fun contains(item: pointer<*>) -> bool =
-        this.indexOf(item) >= 0
+    fun contains(item: pointer<*>) -> bool = this.indexOf(item) >= 0
 
 
     /**

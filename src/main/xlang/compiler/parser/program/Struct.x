@@ -178,9 +178,8 @@ struct StructConstructor
      * Replaces the declaration-modifier collection associated with this
      * constructor.
      *
-     * <p>A null or empty list clears the modifiers without allocating an
-     * internal set. Otherwise, a new set is allocated and populated with each
-     * non-null modifier. Duplicate modifiers are ignored by the set.
+     * <p>The supplied list is converted to a set. A null or empty list clears
+     * the modifiers without allocating a set.
      *
      * @param modifiers         a pointer to the declaration-modifier
      *                          list, or {@code null} to clear the modifiers
@@ -191,20 +190,10 @@ struct StructConstructor
     {
         this.modifiers = null
 
-        if modifiers == null || modifiers.length <= 0:
-            return this
-
-        this.modifiers = new HashSet(
-            sizeof(Modifier),
-            Modifier.equalModifier,
-            Modifier.hashcode)
-
-        for (var i: int = 0; i < modifiers.length; i++):
+        if modifiers != null && modifiers.length > 0:
         {
-            val modifier: pointer<Modifier> = modifiers.get(i) as pointer<Modifier>
-
-            if modifier != null:
-                this.modifiers.add(modifier)
+            modifiers.setEquality(Modifier.equalModifier)
+            this.modifiers = modifiers.toSet(Modifier.hashcode)
         }
 
         return this
@@ -613,9 +602,8 @@ struct Struct
     /**
      * Replaces the declaration-modifier collection attached to this structure.
      *
-     * <p>A null or empty list clears the modifiers without allocating an
-     * internal set. Otherwise, a new set is allocated and populated with each
-     * non-null modifier. Duplicate modifiers are ignored by the set.
+     * <p>The supplied list is converted to a set. A null or empty list clears
+     * the modifiers without allocating a set.
      *
      * @param modifiers         a pointer to the declaration-modifier
      *                          list, or {@code null} to clear the modifiers
@@ -626,21 +614,10 @@ struct Struct
     {
         this.modifiers = null
 
-        if modifiers == null || modifiers.length <= 0:
-            return this
-
-        this.modifiers = new HashSet(
-            sizeof(Modifier),
-            Modifier.equalModifier,
-            Modifier.hashcode)
-
-        for (var i: int = 0; i < modifiers.length; i++):
+        if modifiers != null && modifiers.length > 0:
         {
-            val modifier: pointer<Modifier> =
-                modifiers.get(i) as pointer<Modifier>
-
-            if modifier != null:
-                this.modifiers.add(modifier)
+            modifiers.setEquality(Modifier.equalModifier)
+            this.modifiers = modifiers.toSet(Modifier.hashcode)
         }
 
         return this

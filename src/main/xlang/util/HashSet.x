@@ -77,6 +77,40 @@ struct HashSet
     }
 
 
+    /**
+     * Creates a hash set containing the values stored by an array list.
+     *
+     * <p>The element size is inherited from {@code items}. The caller supplies
+     * the equality and hash functions required by the set. Values are inserted
+     * through {@code add()}, so duplicate values are removed according to the
+     * supplied equality function.
+     *
+     * @param items             the source list and its collection metadata
+     * @param eqFun             the equality function for stored values
+     * @param hashCodeFun       the hash function for stored values
+     *
+     * @warning                {@code items}, {@code eqFun}, and
+     *                         {@code hashCodeFun} must not be {@code null}
+     */
+    constructor(
+        items: pointer<ArrayList>,
+        eqFun: (pointer<*>, pointer<*>) -> bool,
+        hashCodeFun: (pointer<*>) -> int
+    )
+    {
+        this.length = 0
+        this.tsize = items.getElementSize()
+        this.bucketCount = DEFAULT_CAPACITY
+        this.loadFactor = DEFAULT_LOAD_FACTOR
+        this.eqFun = eqFun
+        this.hashCodeFun = hashCodeFun
+        this.buckets = this.createBuckets(this.bucketCount)
+
+        for (var i: int = 0; i < items.length; i++):
+            this.add(items.get(i))
+    }
+
+
     private fun createBuckets(count: int) -> pointer<ArrayList>
     {
         val result: pointer<ArrayList> = new ArrayList(sizeof(pointer<ArrayList>))

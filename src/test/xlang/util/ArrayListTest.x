@@ -35,7 +35,7 @@ fun genTest() -> pointer<TestGroup>
     val result: pointer<TestGroup> = new TestGroup("xlang.util.ArrayList")
     val testCaseSpace: blob[sizeof(pointer<TestCase>) * 32]
     val testCase: pointer<pointer<TestCase>> = testCaseSpace as pointer<pointer<TestCase>>
-    val testCaseLength: int = 27
+    val testCaseLength: int = 28
 
     testCase[0] = new TestCase("noComparator", noComparatorFunctionTest)
     testCase[1] = new TestCase("noEquality", noEqualityFunctionTest)
@@ -64,6 +64,7 @@ fun genTest() -> pointer<TestGroup>
     testCase[24] = new TestCase("toLinkedList", toLinkedListTest)
     testCase[25] = new TestCase("clone", cloneFunctionTest)
     testCase[26] = new TestCase("extract", extractFunctionTest)
+    testCase[27] = new TestCase("toSet", toSetFunctionTest)
 
     for (var i = 0; i < testCaseLength; i++):
     {
@@ -92,6 +93,10 @@ private fun intCmp(left: pointer<*>, right: pointer<*>) -> int
 
 private fun intEq(left: pointer<*>, right: pointer<*>) -> bool =
     (left as pointer<int>).deref == (right as pointer<int>).deref
+
+
+private fun intHash(item: pointer<*>) -> int =
+    (item as pointer<int>).deref
 
 
 private fun noComparatorFunctionTest() -> int
@@ -1256,6 +1261,52 @@ private fun extractFunctionTest() -> int
 
     if list.extract(0, list.length + 1) != null:
         return 13
+
+    return 0
+}
+
+
+private fun toSetFunctionTest() -> int
+{
+    val list: pointer<ArrayList> = new ArrayList(sizeof(int))
+    val valueSpace: blob[sizeof(int)]
+    val value: pointer<int> = valueSpace as pointer<int>
+    list.setEquality(intEq)
+
+    value.deref = 10
+    list.push(value)
+    value.deref = 20
+    list.push(value)
+    value.deref = 10
+    list.push(value)
+
+    val set: pointer<HashSet> = list.toSet(intHash)
+
+    if set == null || set.length != 2:
+        return 1
+
+    value.deref = 10
+
+    if !set.contains(value):
+        return 2
+
+    value.deref = 20
+
+    if !set.contains(value):
+        return 3
+
+    value.deref = 30
+
+    if set.contains(value):
+        return 4
+
+    val empty: pointer<ArrayList> = new ArrayList(sizeof(int))
+    empty.setEquality(intEq)
+
+    val emptySet: pointer<HashSet> = empty.toSet(intHash)
+
+    if emptySet == null || emptySet.length != 0:
+        return 5
 
     return 0
 }
