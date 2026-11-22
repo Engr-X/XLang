@@ -103,28 +103,6 @@ struct RegexAtomRule
 }
 
 
-struct OptionalAtomRule
-{
-    private var rule: pointer<ParserRule>
-
-
-    constructor(rule: pointer<ParserRule>):
-        this.rule = rule
-
-
-    fun getRule() -> pointer<ParserRule> = this.rule
-
-
-    fun equals(other: pointer<OptionalAtomRule>) -> bool
-    {
-        if other == null:
-            return false
-
-        return this.rule.equals(other.rule)
-    }
-}
-
-
 struct LoopAtomRule
 {
     private var loopRule: pointer<Parser>
@@ -199,8 +177,8 @@ struct RuleAtom
         new RuleAtom(REF_TYPE, parser)
 
 
-    static inline fun createOptional(rule: pointer<ParserRule>) -> pointer<RuleAtom> =
-        new RuleAtom(OPTIONAL_KIND, new OptionalAtomRule(rule))
+    static inline fun fromOptional(parser: pointer<Parser>) -> pointer<RuleAtom> =
+        new RuleAtom(OPTIONAL_KIND, parser)
 
 
     static inline fun createLoop(loopParser: pointer<Parser>, allowTrailing: bool) -> pointer<RuleAtom> =
@@ -251,8 +229,14 @@ struct RuleAtom
     }
 
 
-    fun getOpticalRule() -> pointer<OptionalAtomRule> =
-        if this.kind == OPTIONAL_KIND: this.host as pointer<OptionalAtomRule> else: null
+    fun getOpticalParser() -> pointer<Parser>
+    {
+        if this.kind != OPTIONAL_KIND:
+            return null
+
+        val parser: pointer<Parser> = this.host as pointer<Parser>
+        return parser.reset()
+    }
 
 
     fun getLoopRule() -> pointer<LoopAtomRule> =
@@ -278,11 +262,7 @@ struct RuleAtom
             return this.host == other.host
 
         if this.kind == OPTIONAL_KIND:
-        {
-            val left: pointer<OptionalAtomRule> = this.host as pointer<OptionalAtomRule>
-            val right: pointer<OptionalAtomRule> = other.host as pointer<OptionalAtomRule>
-            return left.equals(right)
-        }
+            return this.host == other.host
 
         if this.kind == LOOP_KIND:
         {
@@ -431,8 +411,8 @@ struct RuleExpression
         new RuleExpression(ATOM_KIND, RuleAtom.fromParserRef(parser))
 
 
-    static fun createOptional(rule: pointer<ParserRule>) -> pointer<RuleExpression> =
-        new RuleExpression(ATOM_KIND, RuleAtom.createOptional(rule))
+    static fun fromOptional(parser: pointer<Parser>) -> pointer<RuleExpression> =
+        new RuleExpression(ATOM_KIND, RuleAtom.fromOptional(parser))
 
 
     static fun createLoop(loopParser: pointer<Parser>, allowTrailing: bool) -> pointer<RuleExpression> =

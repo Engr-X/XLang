@@ -19,22 +19,16 @@ import xlang.compiler.parser.expression.MethodAccess
 import xlang.compiler.parser.expression.TypeCast
 import xlang.compiler.parser.expression.intrisic.SizeOf
 import xlang.compiler.parser.program.Annotation
-import xlang.compiler.parser.program.AnnotationsMaybe
 import xlang.compiler.parser.program.Field
 import xlang.compiler.parser.program.Function
 import xlang.compiler.parser.program.FunctionParam
 import xlang.compiler.parser.program.FunctionParams
-import xlang.compiler.parser.program.FunctionParamsMaybe
 import xlang.compiler.parser.program.ImportDeclaration
-import xlang.compiler.parser.program.ImportDeclarationsMaybe
 import xlang.compiler.parser.program.ImportedSymbol
-import xlang.compiler.parser.program.ImportedSymbolAliasMaybe
 import xlang.compiler.parser.program.Member
 import xlang.compiler.parser.program.Modifier
-import xlang.compiler.parser.program.ModifierListMaybe
 import xlang.compiler.parser.program.NamespaceImport
 import xlang.compiler.parser.program.PackageDeclaration
-import xlang.compiler.parser.program.PackageDeclarationMaybe
 import xlang.compiler.parser.program.PreprocessSetting
 import xlang.compiler.parser.program.Program
 import xlang.compiler.parser.program.QualifiedName
@@ -1665,7 +1659,7 @@ private inline fun makeModifier(results: pointer<ArrayList>) -> pointer<*>
     return new Modifier(token.text).addExtraToken(token)
 }
 
-private inline fun makeModifierListMaybe(results: pointer<ArrayList>) -> pointer<*>
+private inline fun makeModifierList(results: pointer<ArrayList>) -> pointer<*>
 {
     val parsedModifiers: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
     val modifiers: pointer<HashSet> = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
@@ -1673,10 +1667,8 @@ private inline fun makeModifierListMaybe(results: pointer<ArrayList>) -> pointer
     for (var i = 0; i < parsedModifiers.length; i++):
         modifiers.add(getContainerValue(parsedModifiers, i) as pointer<Modifier>)
 
-    return new ModifierListMaybe(modifiers)
+    return modifiers
 }
-
-private inline fun makeEmptyModifierListMaybe(results: pointer<ArrayList>) -> pointer<*> = new ModifierListMaybe()
 
 private inline fun makePreprocessSetting(results: pointer<ArrayList>) -> pointer<*>
 {
@@ -1714,7 +1706,7 @@ private inline fun makeAnnotationWithValues(results: pointer<ArrayList>) -> poin
         .addExtraToken(rightParen)
 }
 
-private inline fun makeAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<*>
+private inline fun makeAnnotations(results: pointer<ArrayList>) -> pointer<*>
 {
     val parsedAnnotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
     val annotations: pointer<ArrayList> = new ArrayList(sizeof(Annotation))
@@ -1722,10 +1714,8 @@ private inline fun makeAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<
     for (var i = 0; i < parsedAnnotations.length; i++):
         annotations.push(getContainerValue(parsedAnnotations, i) as pointer<Annotation>)
 
-    return new AnnotationsMaybe(annotations)
+    return annotations
 }
-
-private inline fun makeEmptyAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<*> = new AnnotationsMaybe()
 
 private fun makeQualifiedName(results: pointer<ArrayList>) -> pointer<*>
 {
@@ -1754,16 +1744,13 @@ private fun makeQualifiedName(results: pointer<ArrayList>) -> pointer<*>
     return qualifiedName
 }
 
-private inline fun makePackageDeclarationMaybe(results: pointer<ArrayList>) -> pointer<*>
+private inline fun makePackageDeclaration(results: pointer<ArrayList>) -> pointer<*>
 {
     val packageToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>
 
-    val packageDeclaration: pointer<PackageDeclaration> = qualifiedName.toPackageDecl().addExtraToken(packageToken)
-    return new PackageDeclarationMaybe(packageDeclaration)
+    return qualifiedName.toPackageDecl().addExtraToken(packageToken)
 }
-
-private inline fun makeEmptyPackageDeclarationMaybe(results: pointer<ArrayList>) -> pointer<*> = new PackageDeclarationMaybe()
 
 private inline fun makeNamespaceImport(results: pointer<ArrayList>) -> pointer<*>
 {
@@ -1796,33 +1783,28 @@ private inline fun makeImportedFunction(results: pointer<ArrayList>) -> pointer<
 {
     val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
     val parsedTypes: pointer<ArrayList> = getContainerValue(results, 2) as pointer<ArrayList>
-    val alias: pointer<ImportedSymbolAliasMaybe> =
-        getContainerValue(results, 4) as pointer<ImportedSymbolAliasMaybe>
+    val aliasName: pointer<char> = getContainerValue(results, 4) as pointer<char>
     val parameterTypes: pointer<ArrayList> = new ArrayList(sizeof(Type))
 
     for (var i = 0; i < parsedTypes.length; i++):
         parameterTypes.push(getContainerValue(parsedTypes, i) as pointer<Type>)
 
-    return ImportedSymbol.fromFunction(nameToken.text, parameterTypes, alias.getAliasName())
+    return ImportedSymbol.fromFunction(nameToken.text, parameterTypes, aliasName)
 }
 
 private inline fun makeImportedVariable(results: pointer<ArrayList>) -> pointer<*>
 {
     val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
-    val alias: pointer<ImportedSymbolAliasMaybe> =
-        getContainerValue(results, 1) as pointer<ImportedSymbolAliasMaybe>
+    val aliasName: pointer<char> = getContainerValue(results, 1) as pointer<char>
 
-    return ImportedSymbol.fromVariable(nameToken.text, alias.getAliasName())
+    return ImportedSymbol.fromVariable(nameToken.text, aliasName)
 }
 
-private inline fun makeImportedFunctionAliasMaybe(results: pointer<ArrayList>) -> pointer<*>
+private inline fun makeImportedSymbolAlias(results: pointer<ArrayList>) -> pointer<*>
 {
     val aliasToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
-    return new ImportedSymbolAliasMaybe(aliasToken.text)
+    return aliasToken.text
 }
-
-private inline fun makeEmptyImportedFunctionAliasMaybe(results: pointer<ArrayList>) -> pointer<*> =
-    new ImportedSymbolAliasMaybe()
 
 private inline fun makeAllSelectiveImport(results: pointer<ArrayList>) -> pointer<*>
 {
@@ -1853,7 +1835,7 @@ private inline fun makeSelectiveImports(results: pointer<ArrayList>) -> pointer<
     return SelectiveImports.fromCertain(qualifiedName, importedFunctions)
 }
 
-private inline fun makeImportDeclarationsMaybe(results: pointer<ArrayList>) -> pointer<*>
+private inline fun makeImportDeclarations(results: pointer<ArrayList>) -> pointer<*>
 {
     val parsedImports: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
     val imports: pointer<ArrayList> = new ArrayList(sizeof(ImportDeclaration))
@@ -1861,11 +1843,8 @@ private inline fun makeImportDeclarationsMaybe(results: pointer<ArrayList>) -> p
     for (var i = 0; i < parsedImports.length; i++):
         imports.push(getContainerValue(parsedImports, i) as pointer<ImportDeclaration>)
 
-    return new ImportDeclarationsMaybe(imports)
+    return imports
 }
-
-private inline fun makeEmptyImportDeclarationsMaybe(results: pointer<ArrayList>) -> pointer<*> =
-    new ImportDeclarationsMaybe()
 
 private inline fun makeFunctionParam(results: pointer<ArrayList>) -> pointer<*>
 {
@@ -1894,7 +1873,7 @@ private inline fun makeMutFunctionParam(results: pointer<ArrayList>) -> pointer<
         .addExtraToken(mutToken)
 }
 
-private inline fun makeFunctionParamsMaybe(results: pointer<ArrayList>) -> pointer<*>
+private inline fun makeFunctionParams(results: pointer<ArrayList>) -> pointer<*>
 {
     val parsedParams: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
     val params: pointer<FunctionParams> = new FunctionParams()
@@ -1910,15 +1889,13 @@ private inline fun makeFunctionParamsMaybe(results: pointer<ArrayList>) -> point
     for (var i: int = 0; i < separatorTokens.length; i++):
         params.addExtraToken(separatorTokens.get(i) as pointer<Token>)
 
-    return new FunctionParamsMaybe(params)
+    return params
 }
-
-private inline fun makeEmptyFunctionParamsMaybe(results: pointer<ArrayList>) -> pointer<*> = new FunctionParamsMaybe(null)
 
 private inline fun buildField(results: pointer<ArrayList>) -> pointer<Field>
 {
-    val annotations: pointer<AnnotationsMaybe> = getContainerValue(results, 0) as pointer<AnnotationsMaybe>
-    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 1) as pointer<ModifierListMaybe>
+    val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
+    val modifiers: pointer<HashSet> = getContainerValue(results, 1) as pointer<HashSet>
     val varToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val nameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
     val colonToken: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
@@ -1930,8 +1907,8 @@ private inline fun buildField(results: pointer<ArrayList>) -> pointer<Field>
         new Field(nameToken.text, fieldType).markAsMut()
 
     return result
-        .setAnnotations(annotations.toAnnotations())
-        .setModifiers(modifiers.toModifierSet())
+        .setAnnotations(annotations)
+        .setModifiers(modifiers)
         .addExtraToken(varToken)
         .addExtraToken(nameToken)
         .addExtraToken(colonToken)
@@ -1953,14 +1930,14 @@ private inline fun makeFieldWithInitialValue(results: pointer<ArrayList>) -> poi
 
 private inline fun buildFunction(results: pointer<ArrayList>, returnType: pointer<Type>, bodyExpr: pointer<Expression>) -> pointer<Function>
 {
-    val annotations: pointer<AnnotationsMaybe> = getContainerValue(results, 0) as pointer<AnnotationsMaybe>
-    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 1) as pointer<ModifierListMaybe>
+    val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
+    val modifiers: pointer<HashSet> = getContainerValue(results, 1) as pointer<HashSet>
     val functionNameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
-    val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 5) as pointer<FunctionParamsMaybe>
+    val params: pointer<FunctionParams> = getContainerValue(results, 5) as pointer<FunctionParams>
 
-    return new Function(functionNameToken.text, params.toFunctionParams(), bodyExpr)
-        .setAnnotations(annotations.toAnnotations())
-        .setModifiers(modifiers.toModifierSet())
+    return new Function(functionNameToken.text, params, bodyExpr)
+        .setAnnotations(annotations)
+        .setModifiers(modifiers)
         .setReturnType(returnType)
 }
 
@@ -2032,16 +2009,16 @@ private inline fun makeVoidFunctionFromEmptyBlock(results: pointer<ArrayList>) -
 
 private inline fun makeStructConstructor(results: pointer<ArrayList>) -> pointer<*>
 {
-    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>
+    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>
     val constructorToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
-    val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 3) as pointer<FunctionParamsMaybe>
+    val params: pointer<FunctionParams> = getContainerValue(results, 3) as pointer<FunctionParams>
     val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
     val colonToken: pointer<Token> = getContainerValue(results, 5) as pointer<Token>
     val bodyExpr: pointer<Expression> = getContainerValue(results, 6) as pointer<Expression>
 
-    return new StructConstructor(params.toFunctionParams(), bodyExpr)
-        .setModifiers(modifiers.toModifierSet())
+    return new StructConstructor(params, bodyExpr)
+        .setModifiers(modifiers)
         .addExtraToken(constructorToken)
         .addExtraToken(leftParen)
         .addExtraToken(rightParen)
@@ -2050,16 +2027,16 @@ private inline fun makeStructConstructor(results: pointer<ArrayList>) -> pointer
 
 private inline fun makeStructConstructorFromBlock(results: pointer<ArrayList>) -> pointer<*>
 {
-    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>
+    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>
     val constructorToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
-    val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 3) as pointer<FunctionParamsMaybe>
+    val params: pointer<FunctionParams> = getContainerValue(results, 3) as pointer<FunctionParams>
     val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>
     val block: pointer<Block> = getContainerValue(results, 5) as pointer<Block>
     val bodyExpr: pointer<Expression> = Expression.fromBlockExpr(block)
 
-    return new StructConstructor(params.toFunctionParams(), bodyExpr)
-        .setModifiers(modifiers.toModifierSet())
+    return new StructConstructor(params, bodyExpr)
+        .setModifiers(modifiers)
         .addExtraToken(constructorToken)
         .addExtraToken(leftParen)
         .addExtraToken(rightParen)
@@ -2091,7 +2068,7 @@ private inline fun makeMemberFromStruct(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeStruct(results: pointer<ArrayList>) -> pointer<*>
 {
-    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>
+    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>
     val structToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
     val nameToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>
     val leftBrace: pointer<Token> = getContainerValue(results, 3) as pointer<Token>
@@ -2103,7 +2080,7 @@ private inline fun makeStruct(results: pointer<ArrayList>) -> pointer<*>
         members.push(getContainerValue(parsedMembers, i) as pointer<Member>)
 
     return new Struct(nameToken.text, members)
-        .setModifiers(modifiers.toModifierSet())
+        .setModifiers(modifiers)
         .addExtraToken(structToken)
         .addExtraToken(nameToken)
         .addExtraToken(leftBrace)
@@ -2114,8 +2091,8 @@ private inline fun makeProgram(results: pointer<ArrayList>) -> pointer<*>
 {
     val parsedSettings: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>
     val settings: pointer<ArrayList> = new ArrayList(sizeof(PreprocessSetting))
-    val packageDeclaration: pointer<PackageDeclarationMaybe> = getContainerValue(results, 1) as pointer<PackageDeclarationMaybe>
-    val imports: pointer<ImportDeclarationsMaybe> = getContainerValue(results, 2) as pointer<ImportDeclarationsMaybe>
+    val packageDeclaration: pointer<PackageDeclaration> = getContainerValue(results, 1) as pointer<PackageDeclaration>
+    val imports: pointer<ArrayList> = getContainerValue(results, 2) as pointer<ArrayList>
     val members: pointer<ArrayList> = getContainerValue(results, 3) as pointer<ArrayList>
 
     for (var i = 0; i < parsedSettings.length; i++):
@@ -2123,8 +2100,8 @@ private inline fun makeProgram(results: pointer<ArrayList>) -> pointer<*>
 
     return new Program(members)
         .setPreprocessSettings(settings)
-        .setPackageDeclaration(packageDeclaration.toPackageDeclaration())
-        .setImportDeclarations(imports.toImportDeclarations())
+        .setPackageDeclaration(packageDeclaration)
+        .setImportDeclarations(imports)
 }
 
 private inline fun parse(input: pointer<TokenList>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
@@ -2183,6 +2160,24 @@ private inline fun parserRuleResult(
     results: pointer<ArrayList>
 ) -> pointer<*> = results
 
+private fun opticalRuleResult(
+    results: pointer<ArrayList>
+) -> pointer<*>
+{
+    if results == null || results.length <= 0:
+        return null
+
+    val slot: pointer<pointer<ParserResult>> =
+        results.get(0) as pointer<pointer<ParserResult>>
+
+    if slot == null:
+        return null
+
+    val result: pointer<ParserResult> = slot.deref
+
+    return if result == null: null else: result.getValue()
+}
+
 private inline fun parserRuleIdentity(
     tokens: pointer<TokenList>, token: pointer<LinkedListNode>
 ) -> pointer<TokenList> = tokens
@@ -2224,20 +2219,20 @@ val BLOCK_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val IF_EXPRESSION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val IF_ELSE_EXPRESSION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val MODIFIER_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val MODIFIER_LIST_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val MODIFIER_LIST_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val PREPROCESS_SETTING_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val ANNOTATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val ANNOTATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val ANNOTATIONS_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val QUALIFIED_NAME_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val PACKAGE_DECLARATION_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val PACKAGE_DECLARATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val NAMESPACE_IMPORT_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORTED_SYMBOL_ALIAS_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val IMPORTED_SYMBOL_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val SELECTIVE_IMPORTS_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val IMPORT_DECLARATION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val IMPORT_DECLARATIONS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val IMPORT_DECLARATIONS_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val FUNCTION_PARAM_PARSER: pointer<Parser> = Parser.fromProcedural(null)
-val FUNCTION_PARAMS_MAYBE_PARSER: pointer<Parser> = Parser.fromProcedural(null)
+val FUNCTION_PARAMS_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val FIELD_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val FUNCTION_PARSER: pointer<Parser> = Parser.fromProcedural(null)
 val STRUCT_CONSTRUCTOR_PARSER: pointer<Parser> = Parser.fromProcedural(null)
@@ -2784,19 +2779,17 @@ private var MODIFIER_RULE_7: pointer<InputRule> = null
 private var MODIFIER_CRULE_7: pointer<ParserRule> = null
 private var MODIFIER_CRULE: pointer<RuleExpression> = null
 
-private val MODIFIER_LIST_MAYBE_RULE: pointer<InputRules> =
+private val MODIFIER_LIST_RULE: pointer<InputRules> =
     new InputRules(118)
 
-private val MODIFIER_LIST_MAYBE_PARSER_RULE: pointer<ParserRule> =
+private val MODIFIER_LIST_PARSER_RULE: pointer<ParserRule> =
     new ParserRule(
-        MODIFIER_LIST_MAYBE_RULE,
+        MODIFIER_LIST_RULE,
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
-private var MODIFIER_LIST_MAYBE_RULE_0: pointer<InputRule> = null
-private var MODIFIER_LIST_MAYBE_CRULE_0: pointer<ParserRule> = null
-private var MODIFIER_LIST_MAYBE_RULE_1: pointer<InputRule> = null
-private var MODIFIER_LIST_MAYBE_CRULE_1: pointer<ParserRule> = null
-private var MODIFIER_LIST_MAYBE_CRULE: pointer<RuleExpression> = null
+private var MODIFIER_LIST_RULE_0: pointer<InputRule> = null
+private var MODIFIER_LIST_CRULE_0: pointer<ParserRule> = null
+private var MODIFIER_LIST_CRULE: pointer<RuleExpression> = null
 
 private val PREPROCESS_SETTING_RULE: pointer<InputRules> =
     new InputRules(119)
@@ -2826,19 +2819,17 @@ private var ANNOTATION_RULE_1: pointer<InputRule> = null
 private var ANNOTATION_CRULE_1: pointer<ParserRule> = null
 private var ANNOTATION_CRULE: pointer<RuleExpression> = null
 
-private val ANNOTATIONS_MAYBE_RULE: pointer<InputRules> =
+private val ANNOTATIONS_RULE: pointer<InputRules> =
     new InputRules(121)
 
-private val ANNOTATIONS_MAYBE_PARSER_RULE: pointer<ParserRule> =
+private val ANNOTATIONS_PARSER_RULE: pointer<ParserRule> =
     new ParserRule(
-        ANNOTATIONS_MAYBE_RULE,
+        ANNOTATIONS_RULE,
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
-private var ANNOTATIONS_MAYBE_RULE_0: pointer<InputRule> = null
-private var ANNOTATIONS_MAYBE_CRULE_0: pointer<ParserRule> = null
-private var ANNOTATIONS_MAYBE_RULE_1: pointer<InputRule> = null
-private var ANNOTATIONS_MAYBE_CRULE_1: pointer<ParserRule> = null
-private var ANNOTATIONS_MAYBE_CRULE: pointer<RuleExpression> = null
+private var ANNOTATIONS_RULE_0: pointer<InputRule> = null
+private var ANNOTATIONS_CRULE_0: pointer<ParserRule> = null
+private var ANNOTATIONS_CRULE: pointer<RuleExpression> = null
 
 private val QUALIFIED_NAME_RULE: pointer<InputRules> =
     new InputRules(122)
@@ -2849,23 +2840,21 @@ private val QUALIFIED_NAME_PARSER_RULE: pointer<ParserRule> =
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
 private var QUALIFIED_NAME_RULE_0: pointer<InputRule> = null
-private var QUALIFIED_NAME_RULE_0_LOOP_1_PARSER_RULE: pointer<ParserRule> = null
+private var QUALIFIED_NAME_LOOP_TEMP_0: pointer<ParserRule> = null
 private var QUALIFIED_NAME_CRULE_0: pointer<ParserRule> = null
 private var QUALIFIED_NAME_CRULE: pointer<RuleExpression> = null
 
-private val PACKAGE_DECLARATION_MAYBE_RULE: pointer<InputRules> =
+private val PACKAGE_DECLARATION_RULE: pointer<InputRules> =
     new InputRules(123)
 
-private val PACKAGE_DECLARATION_MAYBE_PARSER_RULE: pointer<ParserRule> =
+private val PACKAGE_DECLARATION_PARSER_RULE: pointer<ParserRule> =
     new ParserRule(
-        PACKAGE_DECLARATION_MAYBE_RULE,
+        PACKAGE_DECLARATION_RULE,
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
-private var PACKAGE_DECLARATION_MAYBE_RULE_0: pointer<InputRule> = null
-private var PACKAGE_DECLARATION_MAYBE_CRULE_0: pointer<ParserRule> = null
-private var PACKAGE_DECLARATION_MAYBE_RULE_1: pointer<InputRule> = null
-private var PACKAGE_DECLARATION_MAYBE_CRULE_1: pointer<ParserRule> = null
-private var PACKAGE_DECLARATION_MAYBE_CRULE: pointer<RuleExpression> = null
+private var PACKAGE_DECLARATION_RULE_0: pointer<InputRule> = null
+private var PACKAGE_DECLARATION_CRULE_0: pointer<ParserRule> = null
+private var PACKAGE_DECLARATION_CRULE: pointer<RuleExpression> = null
 
 private val NAMESPACE_IMPORT_RULE: pointer<InputRules> =
     new InputRules(124)
@@ -2881,19 +2870,17 @@ private var NAMESPACE_IMPORT_RULE_1: pointer<InputRule> = null
 private var NAMESPACE_IMPORT_CRULE_1: pointer<ParserRule> = null
 private var NAMESPACE_IMPORT_CRULE: pointer<RuleExpression> = null
 
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_RULE: pointer<InputRules> =
+private val IMPORTED_SYMBOL_ALIAS_RULE: pointer<InputRules> =
     new InputRules(125)
 
-private val IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE: pointer<ParserRule> =
+private val IMPORTED_SYMBOL_ALIAS_PARSER_RULE: pointer<ParserRule> =
     new ParserRule(
-        IMPORTED_SYMBOL_ALIAS_MAYBE_RULE,
+        IMPORTED_SYMBOL_ALIAS_RULE,
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
-private var IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_0: pointer<InputRule> = null
-private var IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_0: pointer<ParserRule> = null
-private var IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_1: pointer<InputRule> = null
-private var IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_1: pointer<ParserRule> = null
-private var IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE: pointer<RuleExpression> = null
+private var IMPORTED_SYMBOL_ALIAS_RULE_0: pointer<InputRule> = null
+private var IMPORTED_SYMBOL_ALIAS_CRULE_0: pointer<ParserRule> = null
+private var IMPORTED_SYMBOL_ALIAS_CRULE: pointer<RuleExpression> = null
 
 private val IMPORTED_SYMBOL_RULE: pointer<InputRules> =
     new InputRules(126)
@@ -2905,8 +2892,10 @@ private val IMPORTED_SYMBOL_PARSER_RULE: pointer<ParserRule> =
 
 private var IMPORTED_SYMBOL_RULE_0: pointer<InputRule> = null
 private var IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE: pointer<ParserRule> = null
+private var IMPORTED_SYMBOL_OPTICAL_TEMP_0: pointer<ParserRule> = null
 private var IMPORTED_SYMBOL_CRULE_0: pointer<ParserRule> = null
 private var IMPORTED_SYMBOL_RULE_1: pointer<InputRule> = null
+private var IMPORTED_SYMBOL_OPTICAL_TEMP_1: pointer<ParserRule> = null
 private var IMPORTED_SYMBOL_CRULE_1: pointer<ParserRule> = null
 private var IMPORTED_SYMBOL_CRULE: pointer<RuleExpression> = null
 
@@ -2944,19 +2933,17 @@ private var IMPORT_DECLARATION_RULE_1: pointer<InputRule> = null
 private var IMPORT_DECLARATION_CRULE_1: pointer<ParserRule> = null
 private var IMPORT_DECLARATION_CRULE: pointer<RuleExpression> = null
 
-private val IMPORT_DECLARATIONS_MAYBE_RULE: pointer<InputRules> =
+private val IMPORT_DECLARATIONS_RULE: pointer<InputRules> =
     new InputRules(129)
 
-private val IMPORT_DECLARATIONS_MAYBE_PARSER_RULE: pointer<ParserRule> =
+private val IMPORT_DECLARATIONS_PARSER_RULE: pointer<ParserRule> =
     new ParserRule(
-        IMPORT_DECLARATIONS_MAYBE_RULE,
+        IMPORT_DECLARATIONS_RULE,
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
-private var IMPORT_DECLARATIONS_MAYBE_RULE_0: pointer<InputRule> = null
-private var IMPORT_DECLARATIONS_MAYBE_CRULE_0: pointer<ParserRule> = null
-private var IMPORT_DECLARATIONS_MAYBE_RULE_1: pointer<InputRule> = null
-private var IMPORT_DECLARATIONS_MAYBE_CRULE_1: pointer<ParserRule> = null
-private var IMPORT_DECLARATIONS_MAYBE_CRULE: pointer<RuleExpression> = null
+private var IMPORT_DECLARATIONS_RULE_0: pointer<InputRule> = null
+private var IMPORT_DECLARATIONS_CRULE_0: pointer<ParserRule> = null
+private var IMPORT_DECLARATIONS_CRULE: pointer<RuleExpression> = null
 
 private val FUNCTION_PARAM_RULE: pointer<InputRules> =
     new InputRules(130)
@@ -2972,20 +2959,18 @@ private var FUNCTION_PARAM_RULE_1: pointer<InputRule> = null
 private var FUNCTION_PARAM_CRULE_1: pointer<ParserRule> = null
 private var FUNCTION_PARAM_CRULE: pointer<RuleExpression> = null
 
-private val FUNCTION_PARAMS_MAYBE_RULE: pointer<InputRules> =
+private val FUNCTION_PARAMS_RULE: pointer<InputRules> =
     new InputRules(131)
 
-private val FUNCTION_PARAMS_MAYBE_PARSER_RULE: pointer<ParserRule> =
+private val FUNCTION_PARAMS_PARSER_RULE: pointer<ParserRule> =
     new ParserRule(
-        FUNCTION_PARAMS_MAYBE_RULE,
+        FUNCTION_PARAMS_RULE,
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
-private var FUNCTION_PARAMS_MAYBE_RULE_0: pointer<InputRule> = null
-private var FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE: pointer<ParserRule> = null
-private var FUNCTION_PARAMS_MAYBE_CRULE_0: pointer<ParserRule> = null
-private var FUNCTION_PARAMS_MAYBE_RULE_1: pointer<InputRule> = null
-private var FUNCTION_PARAMS_MAYBE_CRULE_1: pointer<ParserRule> = null
-private var FUNCTION_PARAMS_MAYBE_CRULE: pointer<RuleExpression> = null
+private var FUNCTION_PARAMS_RULE_0: pointer<InputRule> = null
+private var FUNCTION_PARAMS_RULE_0_SPLIT_0_PARSER_RULE: pointer<ParserRule> = null
+private var FUNCTION_PARAMS_CRULE_0: pointer<ParserRule> = null
+private var FUNCTION_PARAMS_CRULE: pointer<RuleExpression> = null
 
 private val FIELD_RULE: pointer<InputRules> =
     new InputRules(132)
@@ -2996,12 +2981,20 @@ private val FIELD_PARSER_RULE: pointer<ParserRule> =
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
 private var FIELD_RULE_0: pointer<InputRule> = null
+private var FIELD_OPTICAL_TEMP_0: pointer<ParserRule> = null
+private var FIELD_OPTICAL_TEMP_1: pointer<ParserRule> = null
 private var FIELD_CRULE_0: pointer<ParserRule> = null
 private var FIELD_RULE_1: pointer<InputRule> = null
+private var FIELD_OPTICAL_TEMP_2: pointer<ParserRule> = null
+private var FIELD_OPTICAL_TEMP_3: pointer<ParserRule> = null
 private var FIELD_CRULE_1: pointer<ParserRule> = null
 private var FIELD_RULE_2: pointer<InputRule> = null
+private var FIELD_OPTICAL_TEMP_4: pointer<ParserRule> = null
+private var FIELD_OPTICAL_TEMP_5: pointer<ParserRule> = null
 private var FIELD_CRULE_2: pointer<ParserRule> = null
 private var FIELD_RULE_3: pointer<InputRule> = null
+private var FIELD_OPTICAL_TEMP_6: pointer<ParserRule> = null
+private var FIELD_OPTICAL_TEMP_7: pointer<ParserRule> = null
 private var FIELD_CRULE_3: pointer<ParserRule> = null
 private var FIELD_CRULE: pointer<RuleExpression> = null
 
@@ -3014,18 +3007,32 @@ private val FUNCTION_PARSER_RULE: pointer<ParserRule> =
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
 private var FUNCTION_RULE_0: pointer<InputRule> = null
+private var FUNCTION_OPTICAL_TEMP_0: pointer<ParserRule> = null
+private var FUNCTION_OPTICAL_TEMP_1: pointer<ParserRule> = null
 private var FUNCTION_CRULE_0: pointer<ParserRule> = null
 private var FUNCTION_RULE_1: pointer<InputRule> = null
+private var FUNCTION_OPTICAL_TEMP_2: pointer<ParserRule> = null
+private var FUNCTION_OPTICAL_TEMP_3: pointer<ParserRule> = null
 private var FUNCTION_CRULE_1: pointer<ParserRule> = null
 private var FUNCTION_RULE_2: pointer<InputRule> = null
+private var FUNCTION_OPTICAL_TEMP_4: pointer<ParserRule> = null
+private var FUNCTION_OPTICAL_TEMP_5: pointer<ParserRule> = null
 private var FUNCTION_CRULE_2: pointer<ParserRule> = null
 private var FUNCTION_RULE_3: pointer<InputRule> = null
+private var FUNCTION_OPTICAL_TEMP_6: pointer<ParserRule> = null
+private var FUNCTION_OPTICAL_TEMP_7: pointer<ParserRule> = null
 private var FUNCTION_CRULE_3: pointer<ParserRule> = null
 private var FUNCTION_RULE_4: pointer<InputRule> = null
+private var FUNCTION_OPTICAL_TEMP_8: pointer<ParserRule> = null
+private var FUNCTION_OPTICAL_TEMP_9: pointer<ParserRule> = null
 private var FUNCTION_CRULE_4: pointer<ParserRule> = null
 private var FUNCTION_RULE_5: pointer<InputRule> = null
+private var FUNCTION_OPTICAL_TEMP_10: pointer<ParserRule> = null
+private var FUNCTION_OPTICAL_TEMP_11: pointer<ParserRule> = null
 private var FUNCTION_CRULE_5: pointer<ParserRule> = null
 private var FUNCTION_RULE_6: pointer<InputRule> = null
+private var FUNCTION_OPTICAL_TEMP_12: pointer<ParserRule> = null
+private var FUNCTION_OPTICAL_TEMP_13: pointer<ParserRule> = null
 private var FUNCTION_CRULE_6: pointer<ParserRule> = null
 private var FUNCTION_CRULE: pointer<RuleExpression> = null
 
@@ -3038,8 +3045,10 @@ private val STRUCT_CONSTRUCTOR_PARSER_RULE: pointer<ParserRule> =
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
 private var STRUCT_CONSTRUCTOR_RULE_0: pointer<InputRule> = null
+private var STRUCT_CONSTRUCTOR_OPTICAL_TEMP_0: pointer<ParserRule> = null
 private var STRUCT_CONSTRUCTOR_CRULE_0: pointer<ParserRule> = null
 private var STRUCT_CONSTRUCTOR_RULE_1: pointer<InputRule> = null
+private var STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1: pointer<ParserRule> = null
 private var STRUCT_CONSTRUCTOR_CRULE_1: pointer<ParserRule> = null
 private var STRUCT_CONSTRUCTOR_CRULE: pointer<RuleExpression> = null
 
@@ -3070,6 +3079,7 @@ private val STRUCT_PARSER_RULE: pointer<ParserRule> =
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
 private var STRUCT_RULE_0: pointer<InputRule> = null
+private var STRUCT_OPTICAL_TEMP_0: pointer<ParserRule> = null
 private var STRUCT_CRULE_0: pointer<ParserRule> = null
 private var STRUCT_CRULE: pointer<RuleExpression> = null
 
@@ -3082,6 +3092,8 @@ private val PROGRAM_PARSER_RULE: pointer<ParserRule> =
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
 private var PROGRAM_RULE_0: pointer<InputRule> = null
+private var PROGRAM_OPTICAL_TEMP_0: pointer<ParserRule> = null
+private var PROGRAM_OPTICAL_TEMP_1: pointer<ParserRule> = null
 private var PROGRAM_CRULE_0: pointer<ParserRule> = null
 private var PROGRAM_CRULE: pointer<RuleExpression> = null
 private fun initializeParserGraph() -> bool
@@ -3256,7 +3268,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
 
-    QUALIFIED_NAME_RULE_0_LOOP_1_PARSER_RULE =
+    QUALIFIED_NAME_LOOP_TEMP_0 =
         new ParserRule(
             new InputRules(122)
                 .push(
@@ -3278,6 +3290,26 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
 
+    IMPORTED_SYMBOL_OPTICAL_TEMP_0 =
+        new ParserRule(
+            new InputRules(126)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(IMPORTED_SYMBOL_ALIAS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_PARSER)))))
+
+    IMPORTED_SYMBOL_OPTICAL_TEMP_1 =
+        new ParserRule(
+            new InputRules(126)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(IMPORTED_SYMBOL_ALIAS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_PARSER)))))
+
     SELECTIVE_IMPORTS_RULE_1_SPLIT_4_PARSER_RULE =
         new ParserRule(
             new InputRules(127)
@@ -3298,7 +3330,7 @@ private fun initializeParserGraph() -> bool
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(SELECTIVE_IMPORTS_RULE, createCombinatorRegex(Tokenizer.COMMA, 2)))))
 
-    FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE =
+    FUNCTION_PARAMS_RULE_0_SPLIT_0_PARSER_RULE =
         new ParserRule(
             new InputRules(131)
                 .push(
@@ -3306,7 +3338,277 @@ private fun initializeParserGraph() -> bool
                         .push(RuleAtom.fromRegex(Tokenizer.COMMA))),
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_PARAMS_MAYBE_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+                    .push(new ParserRule(FUNCTION_PARAMS_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    FIELD_OPTICAL_TEMP_0 =
+        new ParserRule(
+            new InputRules(132)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FIELD_OPTICAL_TEMP_1 =
+        new ParserRule(
+            new InputRules(132)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FIELD_OPTICAL_TEMP_2 =
+        new ParserRule(
+            new InputRules(132)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FIELD_OPTICAL_TEMP_3 =
+        new ParserRule(
+            new InputRules(132)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FIELD_OPTICAL_TEMP_4 =
+        new ParserRule(
+            new InputRules(132)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FIELD_OPTICAL_TEMP_5 =
+        new ParserRule(
+            new InputRules(132)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FIELD_OPTICAL_TEMP_6 =
+        new ParserRule(
+            new InputRules(132)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FIELD_OPTICAL_TEMP_7 =
+        new ParserRule(
+            new InputRules(132)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_0 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_1 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_2 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_3 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_4 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_5 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_6 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_7 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_8 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_9 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_10 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_11 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_12 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(ANNOTATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_PARSER)))))
+
+    FUNCTION_OPTICAL_TEMP_13 =
+        new ParserRule(
+            new InputRules(133)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    STRUCT_CONSTRUCTOR_OPTICAL_TEMP_0 =
+        new ParserRule(
+            new InputRules(134)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1 =
+        new ParserRule(
+            new InputRules(134)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    STRUCT_OPTICAL_TEMP_0 =
+        new ParserRule(
+            new InputRules(136)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(MODIFIER_LIST_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(STRUCT_RULE, RuleExpression.createRef(MODIFIER_LIST_PARSER)))))
+
+    PROGRAM_OPTICAL_TEMP_0 =
+        new ParserRule(
+            new InputRules(137)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(PACKAGE_DECLARATION_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createRef(PACKAGE_DECLARATION_PARSER)))))
+
+    PROGRAM_OPTICAL_TEMP_1 =
+        new ParserRule(
+            new InputRules(137)
+                .push(
+                    new InputRule(opticalRuleResult)
+                        .push(RuleAtom.fromParserRef(IMPORT_DECLARATIONS_PARSER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createRef(IMPORT_DECLARATIONS_PARSER)))))
 
     TYPE_TEMP_RULE_0 =
         new InputRule(makeVoidPointerType)
@@ -4538,14 +4840,10 @@ private fun initializeParserGraph() -> bool
             .push(RuleAtom.fromRegex(Tokenizer.KW_INTRINSIC))
     MODIFIER_RULE.push(MODIFIER_RULE_7)
 
-    MODIFIER_LIST_MAYBE_RULE_0 =
-        new InputRule(makeModifierListMaybe)
+    MODIFIER_LIST_RULE_0 =
+        new InputRule(makeModifierList)
             .push(RuleAtom.createLoop(MODIFIER_PARSER, false))
-    MODIFIER_LIST_MAYBE_RULE.push(MODIFIER_LIST_MAYBE_RULE_0)
-
-    MODIFIER_LIST_MAYBE_RULE_1 =
-        new InputRule(makeEmptyModifierListMaybe)
-    MODIFIER_LIST_MAYBE_RULE.push(MODIFIER_LIST_MAYBE_RULE_1)
+    MODIFIER_LIST_RULE.push(MODIFIER_LIST_RULE_0)
 
     PREPROCESS_SETTING_RULE_0 =
         new InputRule(makePreprocessSetting)
@@ -4572,32 +4870,24 @@ private fun initializeParserGraph() -> bool
             .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
     ANNOTATION_RULE.push(ANNOTATION_RULE_1)
 
-    ANNOTATIONS_MAYBE_RULE_0 =
-        new InputRule(makeAnnotationsMaybe)
+    ANNOTATIONS_RULE_0 =
+        new InputRule(makeAnnotations)
             .push(RuleAtom.createLoop(ANNOTATION_PARSER, false))
             .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
-    ANNOTATIONS_MAYBE_RULE.push(ANNOTATIONS_MAYBE_RULE_0)
-
-    ANNOTATIONS_MAYBE_RULE_1 =
-        new InputRule(makeEmptyAnnotationsMaybe)
-    ANNOTATIONS_MAYBE_RULE.push(ANNOTATIONS_MAYBE_RULE_1)
+    ANNOTATIONS_RULE.push(ANNOTATIONS_RULE_0)
 
     QUALIFIED_NAME_RULE_0 =
         new InputRule(makeQualifiedName)
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
-            .push(RuleAtom.createLoop(Parser.createProcedural(QUALIFIED_NAME_RULE_0_LOOP_1_PARSER_RULE), false))
+            .push(RuleAtom.createLoop(Parser.createProcedural(QUALIFIED_NAME_LOOP_TEMP_0), false))
     QUALIFIED_NAME_RULE.push(QUALIFIED_NAME_RULE_0)
 
-    PACKAGE_DECLARATION_MAYBE_RULE_0 =
-        new InputRule(makePackageDeclarationMaybe)
+    PACKAGE_DECLARATION_RULE_0 =
+        new InputRule(makePackageDeclaration)
             .push(RuleAtom.fromRegex(Tokenizer.KW_PACKAGE))
             .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
-    PACKAGE_DECLARATION_MAYBE_RULE.push(PACKAGE_DECLARATION_MAYBE_RULE_0)
-
-    PACKAGE_DECLARATION_MAYBE_RULE_1 =
-        new InputRule(makeEmptyPackageDeclarationMaybe)
-    PACKAGE_DECLARATION_MAYBE_RULE.push(PACKAGE_DECLARATION_MAYBE_RULE_1)
+    PACKAGE_DECLARATION_RULE.push(PACKAGE_DECLARATION_RULE_0)
 
     NAMESPACE_IMPORT_RULE_0 =
         new InputRule(makeAllNamespaceImport)
@@ -4615,15 +4905,11 @@ private fun initializeParserGraph() -> bool
             .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
     NAMESPACE_IMPORT_RULE.push(NAMESPACE_IMPORT_RULE_1)
 
-    IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_0 =
-        new InputRule(makeImportedFunctionAliasMaybe)
+    IMPORTED_SYMBOL_ALIAS_RULE_0 =
+        new InputRule(makeImportedSymbolAlias)
             .push(RuleAtom.fromRegex(Tokenizer.KW_AS))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
-    IMPORTED_SYMBOL_ALIAS_MAYBE_RULE.push(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_0)
-
-    IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_1 =
-        new InputRule(makeEmptyImportedFunctionAliasMaybe)
-    IMPORTED_SYMBOL_ALIAS_MAYBE_RULE.push(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE_1)
+    IMPORTED_SYMBOL_ALIAS_RULE.push(IMPORTED_SYMBOL_ALIAS_RULE_0)
 
     IMPORTED_SYMBOL_RULE_0 =
         new InputRule(makeImportedFunction)
@@ -4631,13 +4917,13 @@ private fun initializeParserGraph() -> bool
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
             .push(RuleAtom.createLoop(TYPE_PARSER, Parser.createProcedural(IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE), false))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
-            .push(RuleAtom.fromParserRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(IMPORTED_SYMBOL_OPTICAL_TEMP_0)))
     IMPORTED_SYMBOL_RULE.push(IMPORTED_SYMBOL_RULE_0)
 
     IMPORTED_SYMBOL_RULE_1 =
         new InputRule(makeImportedVariable)
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
-            .push(RuleAtom.fromParserRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(IMPORTED_SYMBOL_OPTICAL_TEMP_1)))
     IMPORTED_SYMBOL_RULE.push(IMPORTED_SYMBOL_RULE_1)
 
     SELECTIVE_IMPORTS_RULE_0 =
@@ -4691,14 +4977,10 @@ private fun initializeParserGraph() -> bool
             .push(RuleAtom.fromParserRef(SELECTIVE_IMPORTS_PARSER))
     IMPORT_DECLARATION_RULE.push(IMPORT_DECLARATION_RULE_1)
 
-    IMPORT_DECLARATIONS_MAYBE_RULE_0 =
-        new InputRule(makeImportDeclarationsMaybe)
+    IMPORT_DECLARATIONS_RULE_0 =
+        new InputRule(makeImportDeclarations)
             .push(RuleAtom.createLoop(IMPORT_DECLARATION_PARSER, false))
-    IMPORT_DECLARATIONS_MAYBE_RULE.push(IMPORT_DECLARATIONS_MAYBE_RULE_0)
-
-    IMPORT_DECLARATIONS_MAYBE_RULE_1 =
-        new InputRule(makeEmptyImportDeclarationsMaybe)
-    IMPORT_DECLARATIONS_MAYBE_RULE.push(IMPORT_DECLARATIONS_MAYBE_RULE_1)
+    IMPORT_DECLARATIONS_RULE.push(IMPORT_DECLARATIONS_RULE_0)
 
     FUNCTION_PARAM_RULE_0 =
         new InputRule(makeFunctionParam)
@@ -4715,19 +4997,15 @@ private fun initializeParserGraph() -> bool
             .push(RuleAtom.fromParserRef(TYPE_PARSER))
     FUNCTION_PARAM_RULE.push(FUNCTION_PARAM_RULE_1)
 
-    FUNCTION_PARAMS_MAYBE_RULE_0 =
-        new InputRule(makeFunctionParamsMaybe)
-            .push(RuleAtom.createLoop(FUNCTION_PARAM_PARSER, Parser.createProcedural(FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE), false))
-    FUNCTION_PARAMS_MAYBE_RULE.push(FUNCTION_PARAMS_MAYBE_RULE_0)
-
-    FUNCTION_PARAMS_MAYBE_RULE_1 =
-        new InputRule(makeEmptyFunctionParamsMaybe)
-    FUNCTION_PARAMS_MAYBE_RULE.push(FUNCTION_PARAMS_MAYBE_RULE_1)
+    FUNCTION_PARAMS_RULE_0 =
+        new InputRule(makeFunctionParams)
+            .push(RuleAtom.createLoop(FUNCTION_PARAM_PARSER, Parser.createProcedural(FUNCTION_PARAMS_RULE_0_SPLIT_0_PARSER_RULE), false))
+    FUNCTION_PARAMS_RULE.push(FUNCTION_PARAMS_RULE_0)
 
     FIELD_RULE_0 =
         new InputRule(makeFieldWithInitialValue)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_0)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_1)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.COLON))
@@ -4739,8 +5017,8 @@ private fun initializeParserGraph() -> bool
 
     FIELD_RULE_1 =
         new InputRule(makeFieldWithInitialValue)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_2)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_3)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_VAL))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.COLON))
@@ -4752,8 +5030,8 @@ private fun initializeParserGraph() -> bool
 
     FIELD_RULE_2 =
         new InputRule(makeField)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_4)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_5)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_VAR))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.COLON))
@@ -4763,8 +5041,8 @@ private fun initializeParserGraph() -> bool
 
     FIELD_RULE_3 =
         new InputRule(makeField)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_6)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_7)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_VAL))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.COLON))
@@ -4774,12 +5052,12 @@ private fun initializeParserGraph() -> bool
 
     FUNCTION_RULE_0 =
         new InputRule(makeFunction)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_0)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_1)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromRegex(Tokenizer.ARROW))
             .push(RuleAtom.fromParserRef(TYPE_PARSER))
@@ -4790,12 +5068,12 @@ private fun initializeParserGraph() -> bool
 
     FUNCTION_RULE_1 =
         new InputRule(makeFunction)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_2)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_3)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromRegex(Tokenizer.ARROW))
             .push(RuleAtom.fromParserRef(TYPE_PARSER))
@@ -4806,12 +5084,12 @@ private fun initializeParserGraph() -> bool
 
     FUNCTION_RULE_2 =
         new InputRule(makeFunctionFromBlock)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_4)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_5)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromRegex(Tokenizer.ARROW))
             .push(RuleAtom.fromParserRef(TYPE_PARSER))
@@ -4821,12 +5099,12 @@ private fun initializeParserGraph() -> bool
 
     FUNCTION_RULE_3 =
         new InputRule(makeFunctionFromEmptyBlock)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_6)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_7)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromRegex(Tokenizer.ARROW))
             .push(RuleAtom.fromParserRef(TYPE_PARSER))
@@ -4835,12 +5113,12 @@ private fun initializeParserGraph() -> bool
 
     FUNCTION_RULE_4 =
         new InputRule(makeVoidFunction)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_8)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_9)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromRegex(Tokenizer.COLON))
             .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
@@ -4849,12 +5127,12 @@ private fun initializeParserGraph() -> bool
 
     FUNCTION_RULE_5 =
         new InputRule(makeVoidFunctionFromBlock)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_10)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_11)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromParserRef(BLOCK_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
@@ -4862,22 +5140,22 @@ private fun initializeParserGraph() -> bool
 
     FUNCTION_RULE_6 =
         new InputRule(makeVoidFunctionFromEmptyBlock)
-            .push(RuleAtom.fromParserRef(ANNOTATIONS_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_12)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_13)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_FUN))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
     FUNCTION_RULE.push(FUNCTION_RULE_6)
 
     STRUCT_CONSTRUCTOR_RULE_0 =
         new InputRule(makeStructConstructor)
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_0)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_CONSTRUCTOR))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromRegex(Tokenizer.COLON))
             .push(RuleAtom.fromParserRef(EXPRESSION_PARSER))
@@ -4886,10 +5164,10 @@ private fun initializeParserGraph() -> bool
 
     STRUCT_CONSTRUCTOR_RULE_1 =
         new InputRule(makeStructConstructorFromBlock)
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_CONSTRUCTOR))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_PAREN))
-            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_MAYBE_PARSER))
+            .push(RuleAtom.fromParserRef(FUNCTION_PARAMS_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.RIGHT_PAREN))
             .push(RuleAtom.fromParserRef(BLOCK_PARSER))
             .push(RuleAtom.fromRegex(Tokenizer.TK_LINE_TERMINATOR))
@@ -4917,7 +5195,7 @@ private fun initializeParserGraph() -> bool
 
     STRUCT_RULE_0 =
         new InputRule(makeStruct)
-            .push(RuleAtom.fromParserRef(MODIFIER_LIST_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(STRUCT_OPTICAL_TEMP_0)))
             .push(RuleAtom.fromRegex(Tokenizer.KW_STRUCT))
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
             .push(RuleAtom.fromRegex(Tokenizer.LEFT_BRACE))
@@ -4929,8 +5207,8 @@ private fun initializeParserGraph() -> bool
     PROGRAM_RULE_0 =
         new InputRule(makeProgram)
             .push(RuleAtom.createLoop(PREPROCESS_SETTING_PARSER, false))
-            .push(RuleAtom.fromParserRef(PACKAGE_DECLARATION_MAYBE_PARSER))
-            .push(RuleAtom.fromParserRef(IMPORT_DECLARATIONS_MAYBE_PARSER))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(PROGRAM_OPTICAL_TEMP_0)))
+            .push(RuleAtom.fromOptional(Parser.createProcedural(PROGRAM_OPTICAL_TEMP_1)))
             .push(RuleAtom.createLoop(MEMBER_PARSER, false))
     PROGRAM_RULE.push(PROGRAM_RULE_0)
 
@@ -6685,25 +6963,18 @@ private fun initializeParserGraph() -> bool
                 .push(MODIFIER_CRULE_7))
     MODIFIER_PARSER_RULE.setExpression(MODIFIER_CRULE)
 
-    MODIFIER_LIST_MAYBE_CRULE_0 =
+    MODIFIER_LIST_CRULE_0 =
         new ParserRule(
-            MODIFIER_LIST_MAYBE_RULE,
+            MODIFIER_LIST_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(MODIFIER_LIST_MAYBE_RULE, RuleExpression.createLoop(MODIFIER_PARSER, false))))).setResultIndex(0)
+                    .push(new ParserRule(MODIFIER_LIST_RULE, RuleExpression.createLoop(MODIFIER_PARSER, false))))).setResultIndex(0)
 
-    MODIFIER_LIST_MAYBE_CRULE_1 =
-        new ParserRule(
-            MODIFIER_LIST_MAYBE_RULE,
-            RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
-
-    MODIFIER_LIST_MAYBE_CRULE =
+    MODIFIER_LIST_CRULE =
         RuleExpression.createSelect(
             new ArrayList(sizeof(ParserRule))
-                .push(MODIFIER_LIST_MAYBE_CRULE_0)
-                .push(MODIFIER_LIST_MAYBE_CRULE_1))
-    MODIFIER_LIST_MAYBE_PARSER_RULE.setExpression(MODIFIER_LIST_MAYBE_CRULE)
+                .push(MODIFIER_LIST_CRULE_0))
+    MODIFIER_LIST_PARSER_RULE.setExpression(MODIFIER_LIST_CRULE)
 
     PREPROCESS_SETTING_CRULE_0 =
         new ParserRule(
@@ -6749,26 +7020,19 @@ private fun initializeParserGraph() -> bool
                 .push(ANNOTATION_CRULE_1))
     ANNOTATION_PARSER_RULE.setExpression(ANNOTATION_CRULE)
 
-    ANNOTATIONS_MAYBE_CRULE_0 =
+    ANNOTATIONS_CRULE_0 =
         new ParserRule(
-            ANNOTATIONS_MAYBE_RULE,
+            ANNOTATIONS_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(ANNOTATIONS_MAYBE_RULE, RuleExpression.createLoop(ANNOTATION_PARSER, false)))
-                    .push(new ParserRule(ANNOTATIONS_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
+                    .push(new ParserRule(ANNOTATIONS_RULE, RuleExpression.createLoop(ANNOTATION_PARSER, false)))
+                    .push(new ParserRule(ANNOTATIONS_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
-    ANNOTATIONS_MAYBE_CRULE_1 =
-        new ParserRule(
-            ANNOTATIONS_MAYBE_RULE,
-            RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
-
-    ANNOTATIONS_MAYBE_CRULE =
+    ANNOTATIONS_CRULE =
         RuleExpression.createSelect(
             new ArrayList(sizeof(ParserRule))
-                .push(ANNOTATIONS_MAYBE_CRULE_0)
-                .push(ANNOTATIONS_MAYBE_CRULE_1))
-    ANNOTATIONS_MAYBE_PARSER_RULE.setExpression(ANNOTATIONS_MAYBE_CRULE)
+                .push(ANNOTATIONS_CRULE_0))
+    ANNOTATIONS_PARSER_RULE.setExpression(ANNOTATIONS_CRULE)
 
     QUALIFIED_NAME_CRULE_0 =
         new ParserRule(
@@ -6776,7 +7040,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
-                    .push(new ParserRule(QUALIFIED_NAME_RULE, RuleExpression.createLoop(Parser.createProcedural(QUALIFIED_NAME_RULE_0_LOOP_1_PARSER_RULE), false))))).setResultIndex(0)
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, RuleExpression.createLoop(Parser.createProcedural(QUALIFIED_NAME_LOOP_TEMP_0), false))))).setResultIndex(0)
 
     QUALIFIED_NAME_CRULE =
         RuleExpression.createSelect(
@@ -6784,27 +7048,20 @@ private fun initializeParserGraph() -> bool
                 .push(QUALIFIED_NAME_CRULE_0))
     QUALIFIED_NAME_PARSER_RULE.setExpression(QUALIFIED_NAME_CRULE)
 
-    PACKAGE_DECLARATION_MAYBE_CRULE_0 =
+    PACKAGE_DECLARATION_CRULE_0 =
         new ParserRule(
-            PACKAGE_DECLARATION_MAYBE_RULE,
+            PACKAGE_DECLARATION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, createCombinatorRegex(Tokenizer.KW_PACKAGE, 0)))
-                    .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
-                    .push(new ParserRule(PACKAGE_DECLARATION_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
+                    .push(new ParserRule(PACKAGE_DECLARATION_RULE, createCombinatorRegex(Tokenizer.KW_PACKAGE, 0)))
+                    .push(new ParserRule(PACKAGE_DECLARATION_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER)))
+                    .push(new ParserRule(PACKAGE_DECLARATION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 0))))).setResultIndex(0)
 
-    PACKAGE_DECLARATION_MAYBE_CRULE_1 =
-        new ParserRule(
-            PACKAGE_DECLARATION_MAYBE_RULE,
-            RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
-
-    PACKAGE_DECLARATION_MAYBE_CRULE =
+    PACKAGE_DECLARATION_CRULE =
         RuleExpression.createSelect(
             new ArrayList(sizeof(ParserRule))
-                .push(PACKAGE_DECLARATION_MAYBE_CRULE_0)
-                .push(PACKAGE_DECLARATION_MAYBE_CRULE_1))
-    PACKAGE_DECLARATION_MAYBE_PARSER_RULE.setExpression(PACKAGE_DECLARATION_MAYBE_CRULE)
+                .push(PACKAGE_DECLARATION_CRULE_0))
+    PACKAGE_DECLARATION_PARSER_RULE.setExpression(PACKAGE_DECLARATION_CRULE)
 
     NAMESPACE_IMPORT_CRULE_0 =
         new ParserRule(
@@ -6833,26 +7090,19 @@ private fun initializeParserGraph() -> bool
                 .push(NAMESPACE_IMPORT_CRULE_1))
     NAMESPACE_IMPORT_PARSER_RULE.setExpression(NAMESPACE_IMPORT_CRULE)
 
-    IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_0 =
+    IMPORTED_SYMBOL_ALIAS_CRULE_0 =
         new ParserRule(
-            IMPORTED_SYMBOL_ALIAS_MAYBE_RULE,
+            IMPORTED_SYMBOL_ALIAS_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE, createCombinatorRegex(Tokenizer.KW_AS, 0)))
-                    .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_MAYBE_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0))))).setResultIndex(0)
+                    .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_RULE, createCombinatorRegex(Tokenizer.KW_AS, 0)))
+                    .push(new ParserRule(IMPORTED_SYMBOL_ALIAS_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0))))).setResultIndex(0)
 
-    IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_1 =
-        new ParserRule(
-            IMPORTED_SYMBOL_ALIAS_MAYBE_RULE,
-            RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
-
-    IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE =
+    IMPORTED_SYMBOL_ALIAS_CRULE =
         RuleExpression.createSelect(
             new ArrayList(sizeof(ParserRule))
-                .push(IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_0)
-                .push(IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE_1))
-    IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE.setExpression(IMPORTED_SYMBOL_ALIAS_MAYBE_CRULE)
+                .push(IMPORTED_SYMBOL_ALIAS_CRULE_0))
+    IMPORTED_SYMBOL_ALIAS_PARSER_RULE.setExpression(IMPORTED_SYMBOL_ALIAS_CRULE)
 
     IMPORTED_SYMBOL_CRULE_0 =
         new ParserRule(
@@ -6863,7 +7113,7 @@ private fun initializeParserGraph() -> bool
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createLoop(TYPE_PARSER, Parser.createProcedural(IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE), false)))
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
-                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER))))).setResultIndex(0)
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.fromOptional(Parser.createProcedural(IMPORTED_SYMBOL_OPTICAL_TEMP_0)))))).setResultIndex(0)
 
     IMPORTED_SYMBOL_CRULE_1 =
         new ParserRule(
@@ -6871,7 +7121,7 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(IMPORTED_SYMBOL_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
-                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.createRef(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER))))).setResultIndex(1)
+                    .push(new ParserRule(IMPORTED_SYMBOL_RULE, RuleExpression.fromOptional(Parser.createProcedural(IMPORTED_SYMBOL_OPTICAL_TEMP_1)))))).setResultIndex(1)
 
     IMPORTED_SYMBOL_CRULE =
         RuleExpression.createSelect(
@@ -6959,25 +7209,18 @@ private fun initializeParserGraph() -> bool
                 .push(IMPORT_DECLARATION_CRULE_1))
     IMPORT_DECLARATION_PARSER_RULE.setExpression(IMPORT_DECLARATION_CRULE)
 
-    IMPORT_DECLARATIONS_MAYBE_CRULE_0 =
+    IMPORT_DECLARATIONS_CRULE_0 =
         new ParserRule(
-            IMPORT_DECLARATIONS_MAYBE_RULE,
+            IMPORT_DECLARATIONS_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(IMPORT_DECLARATIONS_MAYBE_RULE, RuleExpression.createLoop(IMPORT_DECLARATION_PARSER, false))))).setResultIndex(0)
+                    .push(new ParserRule(IMPORT_DECLARATIONS_RULE, RuleExpression.createLoop(IMPORT_DECLARATION_PARSER, false))))).setResultIndex(0)
 
-    IMPORT_DECLARATIONS_MAYBE_CRULE_1 =
-        new ParserRule(
-            IMPORT_DECLARATIONS_MAYBE_RULE,
-            RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
-
-    IMPORT_DECLARATIONS_MAYBE_CRULE =
+    IMPORT_DECLARATIONS_CRULE =
         RuleExpression.createSelect(
             new ArrayList(sizeof(ParserRule))
-                .push(IMPORT_DECLARATIONS_MAYBE_CRULE_0)
-                .push(IMPORT_DECLARATIONS_MAYBE_CRULE_1))
-    IMPORT_DECLARATIONS_MAYBE_PARSER_RULE.setExpression(IMPORT_DECLARATIONS_MAYBE_CRULE)
+                .push(IMPORT_DECLARATIONS_CRULE_0))
+    IMPORT_DECLARATIONS_PARSER_RULE.setExpression(IMPORT_DECLARATIONS_CRULE)
 
     FUNCTION_PARAM_CRULE_0 =
         new ParserRule(
@@ -7005,33 +7248,26 @@ private fun initializeParserGraph() -> bool
                 .push(FUNCTION_PARAM_CRULE_1))
     FUNCTION_PARAM_PARSER_RULE.setExpression(FUNCTION_PARAM_CRULE)
 
-    FUNCTION_PARAMS_MAYBE_CRULE_0 =
+    FUNCTION_PARAMS_CRULE_0 =
         new ParserRule(
-            FUNCTION_PARAMS_MAYBE_RULE,
+            FUNCTION_PARAMS_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_PARAMS_MAYBE_RULE, RuleExpression.createLoop(FUNCTION_PARAM_PARSER, Parser.createProcedural(FUNCTION_PARAMS_MAYBE_RULE_0_SPLIT_0_PARSER_RULE), false))))).setResultIndex(0)
+                    .push(new ParserRule(FUNCTION_PARAMS_RULE, RuleExpression.createLoop(FUNCTION_PARAM_PARSER, Parser.createProcedural(FUNCTION_PARAMS_RULE_0_SPLIT_0_PARSER_RULE), false))))).setResultIndex(0)
 
-    FUNCTION_PARAMS_MAYBE_CRULE_1 =
-        new ParserRule(
-            FUNCTION_PARAMS_MAYBE_RULE,
-            RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule)))).setResultIndex(1)
-
-    FUNCTION_PARAMS_MAYBE_CRULE =
+    FUNCTION_PARAMS_CRULE =
         RuleExpression.createSelect(
             new ArrayList(sizeof(ParserRule))
-                .push(FUNCTION_PARAMS_MAYBE_CRULE_0)
-                .push(FUNCTION_PARAMS_MAYBE_CRULE_1))
-    FUNCTION_PARAMS_MAYBE_PARSER_RULE.setExpression(FUNCTION_PARAMS_MAYBE_CRULE)
+                .push(FUNCTION_PARAMS_CRULE_0))
+    FUNCTION_PARAMS_PARSER_RULE.setExpression(FUNCTION_PARAMS_CRULE)
 
     FIELD_CRULE_0 =
         new ParserRule(
             FIELD_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_0))))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_1))))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 0)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
@@ -7045,8 +7281,8 @@ private fun initializeParserGraph() -> bool
             FIELD_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_2))))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_3))))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.KW_VAL, 1)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 1)))
@@ -7060,8 +7296,8 @@ private fun initializeParserGraph() -> bool
             FIELD_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_4))))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_5))))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.KW_VAR, 2)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 2)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 2)))
@@ -7073,8 +7309,8 @@ private fun initializeParserGraph() -> bool
             FIELD_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FIELD_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_6))))
+                    .push(new ParserRule(FIELD_RULE, RuleExpression.fromOptional(Parser.createProcedural(FIELD_OPTICAL_TEMP_7))))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.KW_VAL, 3)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))
                     .push(new ParserRule(FIELD_RULE, createCombinatorRegex(Tokenizer.COLON, 3)))
@@ -7095,12 +7331,12 @@ private fun initializeParserGraph() -> bool
             FUNCTION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_0))))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_1))))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 0)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 0)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
@@ -7113,12 +7349,12 @@ private fun initializeParserGraph() -> bool
             FUNCTION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_2))))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_3))))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 1)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 1)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 1)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
@@ -7131,12 +7367,12 @@ private fun initializeParserGraph() -> bool
             FUNCTION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_4))))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_5))))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 2)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 2)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 2)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 2)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 2)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
@@ -7148,12 +7384,12 @@ private fun initializeParserGraph() -> bool
             FUNCTION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_6))))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_7))))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 3)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 3)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 3)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 3)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.ARROW, 3)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(TYPE_PARSER)))
@@ -7164,12 +7400,12 @@ private fun initializeParserGraph() -> bool
             FUNCTION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_8))))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_9))))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 4)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 4)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 4)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 4)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.COLON, 4)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
@@ -7180,12 +7416,12 @@ private fun initializeParserGraph() -> bool
             FUNCTION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_10))))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_11))))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 5)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 5)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 5)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 5)))
                     .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(BLOCK_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 5))))).setResultIndex(5)
@@ -7195,12 +7431,12 @@ private fun initializeParserGraph() -> bool
             FUNCTION_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(ANNOTATIONS_MAYBE_PARSER)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_12))))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.fromOptional(Parser.createProcedural(FUNCTION_OPTICAL_TEMP_13))))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.KW_FUN, 6)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 6)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 6)))
-                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(FUNCTION_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 6)))
                     .push(new ParserRule(FUNCTION_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 6))))).setResultIndex(6)
 
@@ -7221,10 +7457,10 @@ private fun initializeParserGraph() -> bool
             STRUCT_CONSTRUCTOR_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_0))))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.KW_CONSTRUCTOR, 0)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 0)))
-                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 0)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.COLON, 0)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(EXPRESSION_PARSER)))
@@ -7235,10 +7471,10 @@ private fun initializeParserGraph() -> bool
             STRUCT_CONSTRUCTOR_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.fromOptional(Parser.createProcedural(STRUCT_CONSTRUCTOR_OPTICAL_TEMP_1))))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.KW_CONSTRUCTOR, 1)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.LEFT_PAREN, 1)))
-                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(FUNCTION_PARAMS_PARSER)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.RIGHT_PAREN, 1)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, RuleExpression.createRef(BLOCK_PARSER)))
                     .push(new ParserRule(STRUCT_CONSTRUCTOR_RULE, createCombinatorRegex(Tokenizer.TK_LINE_TERMINATOR, 1))))).setResultIndex(1)
@@ -7292,7 +7528,7 @@ private fun initializeParserGraph() -> bool
             STRUCT_RULE,
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(STRUCT_RULE, RuleExpression.createRef(MODIFIER_LIST_MAYBE_PARSER)))
+                    .push(new ParserRule(STRUCT_RULE, RuleExpression.fromOptional(Parser.createProcedural(STRUCT_OPTICAL_TEMP_0))))
                     .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.KW_STRUCT, 0)))
                     .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
                     .push(new ParserRule(STRUCT_RULE, createCombinatorRegex(Tokenizer.LEFT_BRACE, 0)))
@@ -7312,8 +7548,8 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(PROGRAM_RULE, RuleExpression.createLoop(PREPROCESS_SETTING_PARSER, false)))
-                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createRef(PACKAGE_DECLARATION_MAYBE_PARSER)))
-                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.createRef(IMPORT_DECLARATIONS_MAYBE_PARSER)))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.fromOptional(Parser.createProcedural(PROGRAM_OPTICAL_TEMP_0))))
+                    .push(new ParserRule(PROGRAM_RULE, RuleExpression.fromOptional(Parser.createProcedural(PROGRAM_OPTICAL_TEMP_1))))
                     .push(new ParserRule(PROGRAM_RULE, RuleExpression.createLoop(MEMBER_PARSER, false))))).setResultIndex(0)
 
     PROGRAM_CRULE =
@@ -7367,21 +7603,21 @@ private fun initializeParserGraph() -> bool
 
     MODIFIER_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_PARSER_RULE))
 
-    MODIFIER_LIST_MAYBE_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_LIST_MAYBE_PARSER_RULE))
+    MODIFIER_LIST_PARSER.setProceduralHost(new ProceduralParser(MODIFIER_LIST_PARSER_RULE))
 
     PREPROCESS_SETTING_PARSER.setProceduralHost(new ProceduralParser(PREPROCESS_SETTING_PARSER_RULE))
 
     ANNOTATION_PARSER.setProceduralHost(new ProceduralParser(ANNOTATION_PARSER_RULE))
 
-    ANNOTATIONS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(ANNOTATIONS_MAYBE_PARSER_RULE))
+    ANNOTATIONS_PARSER.setProceduralHost(new ProceduralParser(ANNOTATIONS_PARSER_RULE))
 
     QUALIFIED_NAME_PARSER.setProceduralHost(new ProceduralParser(QUALIFIED_NAME_PARSER_RULE))
 
-    PACKAGE_DECLARATION_MAYBE_PARSER.setProceduralHost(new ProceduralParser(PACKAGE_DECLARATION_MAYBE_PARSER_RULE))
+    PACKAGE_DECLARATION_PARSER.setProceduralHost(new ProceduralParser(PACKAGE_DECLARATION_PARSER_RULE))
 
     NAMESPACE_IMPORT_PARSER.setProceduralHost(new ProceduralParser(NAMESPACE_IMPORT_PARSER_RULE))
 
-    IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_ALIAS_MAYBE_PARSER_RULE))
+    IMPORTED_SYMBOL_ALIAS_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_ALIAS_PARSER_RULE))
 
     IMPORTED_SYMBOL_PARSER.setProceduralHost(new ProceduralParser(IMPORTED_SYMBOL_PARSER_RULE))
 
@@ -7389,11 +7625,11 @@ private fun initializeParserGraph() -> bool
 
     IMPORT_DECLARATION_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATION_PARSER_RULE))
 
-    IMPORT_DECLARATIONS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATIONS_MAYBE_PARSER_RULE))
+    IMPORT_DECLARATIONS_PARSER.setProceduralHost(new ProceduralParser(IMPORT_DECLARATIONS_PARSER_RULE))
 
     FUNCTION_PARAM_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAM_PARSER_RULE))
 
-    FUNCTION_PARAMS_MAYBE_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAMS_MAYBE_PARSER_RULE))
+    FUNCTION_PARAMS_PARSER.setProceduralHost(new ProceduralParser(FUNCTION_PARAMS_PARSER_RULE))
 
     FIELD_PARSER.setProceduralHost(new ProceduralParser(FIELD_PARSER_RULE))
 

@@ -55,7 +55,6 @@ struct Member
      */
     static val FIELD_TYPE: int = 1
 
-
     /**
      * Identifies a member whose host object is a {@code Function}.
      *

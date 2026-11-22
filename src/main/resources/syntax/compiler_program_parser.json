@@ -11,26 +11,20 @@
         "xlang.compiler.parser.expression.Atom",
         "xlang.compiler.parser.expression.Expression",
         "xlang.compiler.parser.program.Annotation",
-        "xlang.compiler.parser.program.AnnotationsMaybe",
         "xlang.compiler.parser.program.Field",
         "xlang.compiler.parser.program.Function",
         "xlang.compiler.parser.program.FunctionParam",
         "xlang.compiler.parser.program.FunctionParams",
-        "xlang.compiler.parser.program.FunctionParamsMaybe",
         "xlang.compiler.parser.program.Member",
         "xlang.compiler.parser.program.Struct",
         "xlang.compiler.parser.program.StructConstructor",
         "xlang.compiler.parser.program.PreprocessSetting",
         "xlang.compiler.parser.program.Program",
         "xlang.compiler.parser.program.ImportDeclaration",
-        "xlang.compiler.parser.program.ImportDeclarationsMaybe",
         "xlang.compiler.parser.program.ImportedSymbol",
-        "xlang.compiler.parser.program.ImportedSymbolAliasMaybe",
         "xlang.compiler.parser.program.NamespaceImport",
         "xlang.compiler.parser.program.Modifier",
-        "xlang.compiler.parser.program.ModifierListMaybe",
         "xlang.compiler.parser.program.PackageDeclaration",
-        "xlang.compiler.parser.program.PackageDeclarationMaybe",
         "xlang.compiler.parser.program.QualifiedName",
         "xlang.compiler.parser.program.SelectiveImports",
         "xlang.compiler.parser.stmtexpr.Block",
@@ -63,11 +57,10 @@
             ]
         },
         {
-            "class": "ModifierListMaybe",
+            "class": "ModifierList",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "[$Modifier]" }], "action": "makeModifierListMaybe" },
-                { "patterns": [], "action": "makeEmptyModifierListMaybe" }
+                { "patterns": [{ "kind": "[$Modifier]" }], "action": "makeModifierList" }
             ]
         },
         {
@@ -86,11 +79,10 @@
             ]
         },
         {
-            "class": "AnnotationsMaybe",
+            "class": "Annotations",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "[$Annotation]" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeAnnotationsMaybe" },
-                { "patterns": [], "action": "makeEmptyAnnotationsMaybe" }
+                { "patterns": [{ "kind": "[$Annotation]" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeAnnotations" }
             ]
         },
         {
@@ -99,11 +91,10 @@
             "sub_rules": [{"patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, {"loop": [{ "kind": "Tokenizer.DOT" }, { "kind": "Tokenizer.TK_IDENTIFIER" }]}], "action": "makeQualifiedName" }]
         },
         {
-            "class": "PackageDeclarationMaybe",
+            "class": "PackageDeclaration",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "Tokenizer.KW_PACKAGE" }, { "kind": "$QualifiedName" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makePackageDeclarationMaybe" },
-                { "patterns": [], "action": "makeEmptyPackageDeclarationMaybe" }
+                { "patterns": [{ "kind": "Tokenizer.KW_PACKAGE" }, { "kind": "$QualifiedName" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makePackageDeclaration" }
             ]
         },
         {
@@ -115,19 +106,18 @@
             ]
         },
         {
-            "class": "ImportedSymbolAliasMaybe",
+            "class": "ImportedSymbolAlias",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "Tokenizer.KW_AS" }, { "kind": "Tokenizer.TK_IDENTIFIER" }], "action": "makeImportedFunctionAliasMaybe" },
-                { "patterns": [], "action": "makeEmptyImportedFunctionAliasMaybe" }
+                { "patterns": [{ "kind": "Tokenizer.KW_AS" }, { "kind": "Tokenizer.TK_IDENTIFIER" }], "action": "makeImportedSymbolAlias" }
             ]
         },
         {
             "class": "ImportedSymbol",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "[$Type]", "split_by": { "kind": "Tokenizer.COMMA" } }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$ImportedSymbolAliasMaybe" }], "action": "makeImportedFunction" },
-                { "patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "$ImportedSymbolAliasMaybe" }], "action": "makeImportedVariable" }
+                { "patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "[$Type]", "split_by": { "kind": "Tokenizer.COMMA" } }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "maybe_kind": "$ImportedSymbolAlias" }], "action": "makeImportedFunction" },
+                { "patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, { "maybe_kind": "$ImportedSymbolAlias" }], "action": "makeImportedVariable" }
             ]
         },
         {
@@ -149,11 +139,10 @@
             ]
         },
         {
-            "class": "ImportDeclarationsMaybe",
+            "class": "ImportDeclarations",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "[$ImportDeclaration]" }], "action": "makeImportDeclarationsMaybe" },
-                { "patterns": [], "action": "makeEmptyImportDeclarationsMaybe" }
+                { "patterns": [{ "kind": "[$ImportDeclaration]" }], "action": "makeImportDeclarations" }
             ]
         },
         {
@@ -165,43 +154,42 @@
             ]
         },
         {
-            "class": "FunctionParamsMaybe",
+            "class": "FunctionParams",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "[$FunctionParam]", "split_by": { "kind": "Tokenizer.COMMA" }}], "action": "makeFunctionParamsMaybe" },
-                { "patterns": [], "action": "makeEmptyFunctionParamsMaybe" }
+                { "patterns": [{ "kind": "[$FunctionParam]", "split_by": { "kind": "Tokenizer.COMMA" }}], "action": "makeFunctionParams" }
             ]
         },
         {
             "class": "Field",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_VAR" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFieldWithInitialValue" },
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_VAL" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFieldWithInitialValue" },
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_VAR" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeField" },
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_VAL" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeField" }
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAR" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFieldWithInitialValue" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAL" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFieldWithInitialValue" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAR" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeField" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_VAL" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeField" }
             ]
         },
         {
             "class": "Function",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunction" },
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunction" },
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunctionFromBlock" },
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunctionFromEmptyBlock" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.EQUAL" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunction" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunction" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunctionFromBlock" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.ARROW" }, { "kind": "$Type" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeFunctionFromEmptyBlock" },
 
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunction" },
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunctionFromBlock" },
-                { "patterns": [{ "kind": "$AnnotationsMaybe" }, { "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunctionFromEmptyBlock" }
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunction" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunctionFromBlock" },
+                { "patterns": [{ "optical_kind": "$Annotations" }, { "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_FUN" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeVoidFunctionFromEmptyBlock" }
             ]
         },
         {
             "class": "StructConstructor",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_CONSTRUCTOR" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStructConstructor" },
-                { "patterns": [{ "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_CONSTRUCTOR" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParamsMaybe" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStructConstructorFromBlock" }
+                { "patterns": [{ "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_CONSTRUCTOR" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "Tokenizer.COLON" }, { "kind": "$Expression" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStructConstructor" },
+                { "patterns": [{ "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_CONSTRUCTOR" }, { "kind": "Tokenizer.LEFT_PAREN" }, { "kind": "$FunctionParams" }, { "kind": "Tokenizer.RIGHT_PAREN" }, { "kind": "$Block" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStructConstructorFromBlock" }
             ]
         },
         {
@@ -218,14 +206,14 @@
             "class": "Struct",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "$ModifierListMaybe" }, { "kind": "Tokenizer.KW_STRUCT" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_BRACE" }, { "kind": "[$Member]" }, { "kind": "Tokenizer.RIGHT_BRACE" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStruct" }
+                { "patterns": [{ "maybe_kind": "$ModifierList" }, { "kind": "Tokenizer.KW_STRUCT" }, { "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.LEFT_BRACE" }, { "kind": "[$Member]" }, { "kind": "Tokenizer.RIGHT_BRACE" }, { "kind": "Tokenizer.TK_LINE_TERMINATOR" }], "action": "makeStruct" }
             ]
         },
         {
             "class": "Program",
             "parser": "recursively-down",
             "sub_rules": [
-                { "patterns": [{ "kind": "[$PreprocessSetting]" }, { "kind": "$PackageDeclarationMaybe" }, { "kind": "$ImportDeclarationsMaybe" }, { "kind": "[$Member]" }], "action": "makeProgram" }
+                { "patterns": [{ "kind": "[$PreprocessSetting]" }, { "optical_kind": "$PackageDeclaration" }, { "optical_kind": "$ImportDeclarations" }, { "kind": "[$Member]" }], "action": "makeProgram" }
             ]
         }
     ],
@@ -237,7 +225,7 @@
             "}" ],
 
 
-        [   "private inline fun makeModifierListMaybe(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private inline fun makeModifierList(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val parsedModifiers: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
             "    val modifiers: pointer<HashSet> = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)",
@@ -245,11 +233,8 @@
             "    for (var i = 0; i < parsedModifiers.length; i++):",
             "        modifiers.add(getContainerValue(parsedModifiers, i) as pointer<Modifier>)",
             "",
-            "    return new ModifierListMaybe(modifiers)",
+            "    return modifiers",
             "}" ],
-
-        
-        [   "private inline fun makeEmptyModifierListMaybe(results: pointer<ArrayList>) -> pointer<*> = new ModifierListMaybe()" ],
 
 
         [   "private inline fun makePreprocessSetting(results: pointer<ArrayList>) -> pointer<*>",
@@ -291,7 +276,7 @@
             "}" ],
 
 
-        [   "private inline fun makeAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private inline fun makeAnnotations(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val parsedAnnotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
             "    val annotations: pointer<ArrayList> = new ArrayList(sizeof(Annotation))",
@@ -299,11 +284,8 @@
             "    for (var i = 0; i < parsedAnnotations.length; i++):",
             "        annotations.push(getContainerValue(parsedAnnotations, i) as pointer<Annotation>)",
             "",
-            "    return new AnnotationsMaybe(annotations)",
+            "    return annotations",
             "}" ],
-
-
-        [   "private inline fun makeEmptyAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<*> = new AnnotationsMaybe()" ],
 
 
         [   "private fun makeQualifiedName(results: pointer<ArrayList>) -> pointer<*>",
@@ -335,17 +317,13 @@
 
 
 
-        [   "private inline fun makePackageDeclarationMaybe(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private inline fun makePackageDeclaration(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val packageToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>",
             "    val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 1) as pointer<QualifiedName>",
             "",
-            "    val packageDeclaration: pointer<PackageDeclaration> = qualifiedName.toPackageDecl().addExtraToken(packageToken)",
-            "    return new PackageDeclarationMaybe(packageDeclaration)",
+            "    return qualifiedName.toPackageDecl().addExtraToken(packageToken)",
             "}" ],
-
-
-        [   "private inline fun makeEmptyPackageDeclarationMaybe(results: pointer<ArrayList>) -> pointer<*> = new PackageDeclarationMaybe()" ],
 
 
         [   "private inline fun makeNamespaceImport(results: pointer<ArrayList>) -> pointer<*>",
@@ -383,36 +361,30 @@
             "{",
             "    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>",
             "    val parsedTypes: pointer<ArrayList> = getContainerValue(results, 2) as pointer<ArrayList>",
-            "    val alias: pointer<ImportedSymbolAliasMaybe> =",
-            "        getContainerValue(results, 4) as pointer<ImportedSymbolAliasMaybe>",
+            "    val aliasName: pointer<char> = getContainerValue(results, 4) as pointer<char>",
             "    val parameterTypes: pointer<ArrayList> = new ArrayList(sizeof(Type))",
             "",
             "    for (var i = 0; i < parsedTypes.length; i++):",
             "        parameterTypes.push(getContainerValue(parsedTypes, i) as pointer<Type>)",
             "",
-            "    return ImportedSymbol.fromFunction(nameToken.text, parameterTypes, alias.getAliasName())",
+            "    return ImportedSymbol.fromFunction(nameToken.text, parameterTypes, aliasName)",
             "}" ],
 
 
         [   "private inline fun makeImportedVariable(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>",
-            "    val alias: pointer<ImportedSymbolAliasMaybe> =",
-            "        getContainerValue(results, 1) as pointer<ImportedSymbolAliasMaybe>",
+            "    val aliasName: pointer<char> = getContainerValue(results, 1) as pointer<char>",
             "",
-            "    return ImportedSymbol.fromVariable(nameToken.text, alias.getAliasName())",
+            "    return ImportedSymbol.fromVariable(nameToken.text, aliasName)",
             "}" ],
 
 
-        [   "private inline fun makeImportedFunctionAliasMaybe(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private inline fun makeImportedSymbolAlias(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val aliasToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
-            "    return new ImportedSymbolAliasMaybe(aliasToken.text)",
+            "    return aliasToken.text",
             "}" ],
-
-
-        [   "private inline fun makeEmptyImportedFunctionAliasMaybe(results: pointer<ArrayList>) -> pointer<*> =",
-            "    new ImportedSymbolAliasMaybe()" ],
 
 
         [   "private inline fun makeAllSelectiveImport(results: pointer<ArrayList>) -> pointer<*>",
@@ -447,7 +419,7 @@
             "}" ],
 
 
-        [   "private inline fun makeImportDeclarationsMaybe(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private inline fun makeImportDeclarations(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val parsedImports: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
             "    val imports: pointer<ArrayList> = new ArrayList(sizeof(ImportDeclaration))",
@@ -455,12 +427,8 @@
             "    for (var i = 0; i < parsedImports.length; i++):",
             "        imports.push(getContainerValue(parsedImports, i) as pointer<ImportDeclaration>)",
             "",
-            "    return new ImportDeclarationsMaybe(imports)",
+            "    return imports",
             "}" ],
-
-
-        [   "private inline fun makeEmptyImportDeclarationsMaybe(results: pointer<ArrayList>) -> pointer<*> =",
-            "    new ImportDeclarationsMaybe()" ],
 
 
         [   "private inline fun makeFunctionParam(results: pointer<ArrayList>) -> pointer<*>",
@@ -492,7 +460,7 @@
             "}" ],
 
 
-        [   "private inline fun makeFunctionParamsMaybe(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private inline fun makeFunctionParams(results: pointer<ArrayList>) -> pointer<*>",
             "{",
             "    val parsedParams: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
             "    val params: pointer<FunctionParams> = new FunctionParams()",
@@ -508,17 +476,14 @@
             "    for (var i: int = 0; i < separatorTokens.length; i++):",
             "        params.addExtraToken(separatorTokens.get(i) as pointer<Token>)",
             "",
-            "    return new FunctionParamsMaybe(params)",
+            "    return params",
             "}" ],
-
-
-        [   "private inline fun makeEmptyFunctionParamsMaybe(results: pointer<ArrayList>) -> pointer<*> = new FunctionParamsMaybe(null)" ],
 
 
         [   "private inline fun buildField(results: pointer<ArrayList>) -> pointer<Field>",
             "{",
-            "    val annotations: pointer<AnnotationsMaybe> = getContainerValue(results, 0) as pointer<AnnotationsMaybe>",
-            "    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 1) as pointer<ModifierListMaybe>",
+            "    val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
+            "    val modifiers: pointer<HashSet> = getContainerValue(results, 1) as pointer<HashSet>",
             "    val varToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>",
             "    val nameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>",
             "    val colonToken: pointer<Token> = getContainerValue(results, 4) as pointer<Token>",
@@ -530,8 +495,8 @@
             "        new Field(nameToken.text, fieldType).markAsMut()",
             "",
             "    return result",
-            "        .setAnnotations(annotations.toAnnotations())",
-            "        .setModifiers(modifiers.toModifierSet())",
+            "        .setAnnotations(annotations)",
+            "        .setModifiers(modifiers)",
             "        .addExtraToken(varToken)",
             "        .addExtraToken(nameToken)",
             "        .addExtraToken(colonToken)",
@@ -556,14 +521,14 @@
 
         [   "private inline fun buildFunction(results: pointer<ArrayList>, returnType: pointer<Type>, bodyExpr: pointer<Expression>) -> pointer<Function>",
             "{",
-            "    val annotations: pointer<AnnotationsMaybe> = getContainerValue(results, 0) as pointer<AnnotationsMaybe>",
-            "    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 1) as pointer<ModifierListMaybe>",
+            "    val annotations: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
+            "    val modifiers: pointer<HashSet> = getContainerValue(results, 1) as pointer<HashSet>",
             "    val functionNameToken: pointer<Token> = getContainerValue(results, 3) as pointer<Token>",
-            "    val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 5) as pointer<FunctionParamsMaybe>",
+            "    val params: pointer<FunctionParams> = getContainerValue(results, 5) as pointer<FunctionParams>",
             "",
-            "    return new Function(functionNameToken.text, params.toFunctionParams(), bodyExpr)",
-            "        .setAnnotations(annotations.toAnnotations())",
-            "        .setModifiers(modifiers.toModifierSet())",
+            "    return new Function(functionNameToken.text, params, bodyExpr)",
+            "        .setAnnotations(annotations)",
+            "        .setModifiers(modifiers)",
             "        .setReturnType(returnType)",
             "}" ],
 
@@ -643,16 +608,16 @@
 
         [   "private inline fun makeStructConstructor(results: pointer<ArrayList>) -> pointer<*>",
             "{",
-            "    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>",
+            "    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>",
             "    val constructorToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
             "    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>",
-            "    val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 3) as pointer<FunctionParamsMaybe>",
+            "    val params: pointer<FunctionParams> = getContainerValue(results, 3) as pointer<FunctionParams>",
             "    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>",
             "    val colonToken: pointer<Token> = getContainerValue(results, 5) as pointer<Token>",
             "    val bodyExpr: pointer<Expression> = getContainerValue(results, 6) as pointer<Expression>",
             "",
-            "    return new StructConstructor(params.toFunctionParams(), bodyExpr)",
-            "        .setModifiers(modifiers.toModifierSet())",
+            "    return new StructConstructor(params, bodyExpr)",
+            "        .setModifiers(modifiers)",
             "        .addExtraToken(constructorToken)",
             "        .addExtraToken(leftParen)",
             "        .addExtraToken(rightParen)",
@@ -662,16 +627,16 @@
 
         [   "private inline fun makeStructConstructorFromBlock(results: pointer<ArrayList>) -> pointer<*>",
             "{",
-            "    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>",
+            "    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>",
             "    val constructorToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
             "    val leftParen: pointer<Token> = getContainerValue(results, 2) as pointer<Token>",
-            "    val params: pointer<FunctionParamsMaybe> = getContainerValue(results, 3) as pointer<FunctionParamsMaybe>",
+            "    val params: pointer<FunctionParams> = getContainerValue(results, 3) as pointer<FunctionParams>",
             "    val rightParen: pointer<Token> = getContainerValue(results, 4) as pointer<Token>",
             "    val block: pointer<Block> = getContainerValue(results, 5) as pointer<Block>",
             "    val bodyExpr: pointer<Expression> = Expression.fromBlockExpr(block)",
             "",
-            "    return new StructConstructor(params.toFunctionParams(), bodyExpr)",
-            "        .setModifiers(modifiers.toModifierSet())",
+            "    return new StructConstructor(params, bodyExpr)",
+            "        .setModifiers(modifiers)",
             "        .addExtraToken(constructorToken)",
             "        .addExtraToken(leftParen)",
             "        .addExtraToken(rightParen)",
@@ -708,7 +673,7 @@
 
         [   "private inline fun makeStruct(results: pointer<ArrayList>) -> pointer<*>",
             "{",
-            "    val modifiers: pointer<ModifierListMaybe> = getContainerValue(results, 0) as pointer<ModifierListMaybe>",
+            "    val modifiers: pointer<HashSet> = getContainerValue(results, 0) as pointer<HashSet>",
             "    val structToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
             "    val nameToken: pointer<Token> = getContainerValue(results, 2) as pointer<Token>",
             "    val leftBrace: pointer<Token> = getContainerValue(results, 3) as pointer<Token>",
@@ -720,7 +685,7 @@
             "        members.push(getContainerValue(parsedMembers, i) as pointer<Member>)",
             "",
             "    return new Struct(nameToken.text, members)",
-            "        .setModifiers(modifiers.toModifierSet())",
+            "        .setModifiers(modifiers)",
             "        .addExtraToken(structToken)",
             "        .addExtraToken(nameToken)",
             "        .addExtraToken(leftBrace)",
@@ -732,8 +697,8 @@
             "{",
             "    val parsedSettings: pointer<ArrayList> = getContainerValue(results, 0) as pointer<ArrayList>",
             "    val settings: pointer<ArrayList> = new ArrayList(sizeof(PreprocessSetting))",
-            "    val packageDeclaration: pointer<PackageDeclarationMaybe> = getContainerValue(results, 1) as pointer<PackageDeclarationMaybe>",
-            "    val imports: pointer<ImportDeclarationsMaybe> = getContainerValue(results, 2) as pointer<ImportDeclarationsMaybe>",
+            "    val packageDeclaration: pointer<PackageDeclaration> = getContainerValue(results, 1) as pointer<PackageDeclaration>",
+            "    val imports: pointer<ArrayList> = getContainerValue(results, 2) as pointer<ArrayList>",
             "    val members: pointer<ArrayList> = getContainerValue(results, 3) as pointer<ArrayList>",
             "",
             "    for (var i = 0; i < parsedSettings.length; i++):",
@@ -741,8 +706,8 @@
             "",
             "    return new Program(members)",
             "        .setPreprocessSettings(settings)",
-            "        .setPackageDeclaration(packageDeclaration.toPackageDeclaration())",
-            "        .setImportDeclarations(imports.toImportDeclarations())",
+            "        .setPackageDeclaration(packageDeclaration)",
+            "        .setImportDeclarations(imports)",
             "}" ],
 
 

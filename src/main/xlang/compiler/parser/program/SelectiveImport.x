@@ -242,67 +242,6 @@ struct ImportedSymbol
 
 
 /**
- * Represents an optional alias for an imported function.
- *
- * <p>{@code ImportedSymbolAliasMaybe} is intended for parser productions in
- * which an imported-function alias may be omitted.
- *
- * <p>Unlike wrappers that normalize an absent value to an empty object, this
- * structure preserves the absence of an alias using a {@code null} pointer.
- */
-struct ImportedSymbolAliasMaybe
-{
-    /**
-     * The optional alias name represented by this wrapper.
-     *
-     * <p>A {@code null} value indicates that no explicit imported-function alias
-     * was present.
-     */
-    private var aliasName: pointer<char>
-
-
-    /**
-     * Creates an empty imported-function alias wrapper.
-     *
-     * <p>The internal alias pointer is initialized to {@code null}, explicitly
-     * representing the absence of an alias.
-     */
-    constructor():
-        this.aliasName = null
-
-
-    /**
-     * Creates an imported-function alias wrapper around the specified alias.
-     *
-     * <p>The supplied character pointer is stored directly and is not duplicated
-     * or copied.
-     *
-     * <p>If {@code aliasName} is {@code null}, the resulting wrapper represents
-     * the absence of an alias.
-     *
-     * @param aliasName         a pointer to the null-terminated alias name, or
-     *                          {@code null} if no alias is present
-     */
-    constructor(aliasName: pointer<char>):
-        this.aliasName = aliasName
-
-
-    /**
-     * Returns the optional imported-function alias represented by this wrapper.
-     *
-     * <p>The returned pointer refers directly to the internally stored character
-     * sequence and is not duplicated.
-     *
-     * <p>The result is {@code null} when no alias was supplied.
-     *
-     * @return                  a pointer to the stored alias name, or
-     *                          {@code null} if no alias is present
-     */
-    fun getAliasName() -> pointer<char> = this.aliasName
-}
-
-
-/**
  * Represents a selective import declaration.
  *
  * <p>A {@code SelectiveImports} associates a qualified namespace or declaration

@@ -200,12 +200,12 @@ private fun ruleAtomEqualsTest() -> int
     if refAtom.equals(otherRefAtom):
         return 6
 
-    val optionalAtom: pointer<RuleAtom> = RuleAtom.createOptional(rule)
-    val sameOptionalAtom: pointer<RuleAtom> = RuleAtom.createOptional(rule)
-    val otherOptionalAtom: pointer<RuleAtom> = RuleAtom.createOptional(
-        new ParserRule(
+    val optionalAtom: pointer<RuleAtom> = RuleAtom.fromOptional(parser)
+    val sameOptionalAtom: pointer<RuleAtom> = RuleAtom.fromOptional(parser)
+    val otherOptionalAtom: pointer<RuleAtom> = RuleAtom.fromOptional(
+        Parser.createProcedural(new ParserRule(
             inputs,
-            RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE)))
+            RuleExpression.fromRegexAtom(Tokenizer.KW_FALSE))))
 
     if !optionalAtom.equals(sameOptionalAtom):
         return 7

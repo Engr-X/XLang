@@ -517,6 +517,27 @@ struct Field
     }
 
 
+    /**
+     * Returns the textual representation of this field declaration.
+     *
+     * <p>Annotations are emitted first, each followed by a newline.
+     * Modifiers are then appended in their original order, separated
+     * by spaces.
+     *
+     * <p>The declaration uses {@code var} for mutable fields and
+     * {@code val} for immutable fields, followed by the field name,
+     * optional type annotation, and optional initializer expression.
+     *
+     * <p>Null annotations and modifiers are ignored. The field type
+     * and initializer are included only when available.
+     *
+     * @return                  a pointer to a newly created {@code StringBuilder} containing
+     *                          the textual representation of this field declaration.
+     *
+     * @note                    The generated representation preserves the order of
+     *                          annotations and modifiers but does not necessarily
+     *                          reproduce the original source formatting.
+     */
     fun toString() -> pointer<StringBuilder>
     {
         val sb: pointer<StringBuilder> = new StringBuilder()

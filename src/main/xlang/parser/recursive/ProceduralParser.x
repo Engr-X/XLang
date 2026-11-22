@@ -34,7 +34,6 @@ import xlang.parser.ParserUtil
 import xlang.parser.rule.InputRule
 import xlang.parser.rule.InputRules
 import xlang.parser.rule.RegexAtomRule
-import xlang.parser.rule.OptionalAtomRule
 import xlang.parser.rule.LoopAtomRule
 import xlang.parser.rule.ParserRule
 import xlang.parser.rule.RuleAtom
@@ -91,10 +90,9 @@ struct ProceduralParser
 
             if rule.isOptical():
             {
-                val opticalRule: pointer<OptionalAtomRule> = rule.getOpticalRule()
+                val opticalParser: pointer<Parser> = rule.getOpticalParser()
                 return Parsing.parseOpticalAtom(
-                    Parser.fromProcedural(this.clone()),
-                    opticalRule,
+                    opticalParser,
                     tokens,
                     fromToken)
             }

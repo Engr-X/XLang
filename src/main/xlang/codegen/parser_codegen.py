@@ -239,9 +239,120 @@ def getSplitParserRuleName(rule: JsonObject, sub_rule_index: int, pattern_index:
 
 
 def getLoopParserRuleName(rule: JsonObject, sub_rule_index: int, pattern_index: int) -> str:
-    return (
-        f"{getInputRuleName(rule, sub_rule_index)}_"
-        f"LOOP_{pattern_index}_PARSER_RULE"
+    temporary_index = 0
+
+    for current_sub_rule_index, sub_rule in enumerate(getSubRules(rule)):
+        for current_pattern_index, pattern in enumerate(validateSubRulePatterns(sub_rule)):
+            if (
+                current_sub_rule_index == sub_rule_index
+                and current_pattern_index == pattern_index
+            ):
+                return f"{upperSnake(getRuleClass(rule))}_LOOP_TEMP_{temporary_index}"
+
+            if getLoopPatterns(pattern) is not None:
+                temporary_index += 1
+
+    raise IndexError(
+        f"loop pattern index is out of range: {sub_rule_index}, {pattern_index}"
+    )
+
+
+def getOpticalPatterns(pattern: object) -> list[object] | None:
+    if not isinstance(pattern, dict):
+        return None
+
+    has_optical_kind = "optical_kind" in pattern
+    has_maybe_kind = "maybe_kind" in pattern
+
+    if has_optical_kind and has_maybe_kind:
+        raise ValueError(
+            f"pattern cannot contain both optical_kind and maybe_kind: {pattern!r}"
+        )
+
+    if has_optical_kind or has_maybe_kind:
+        key = "optical_kind" if has_optical_kind else "maybe_kind"
+        unexpected = set(pattern) - {key}
+
+        if unexpected:
+            raise ValueError(
+                f"{key} contains unsupported fields "
+                f"{sorted(unexpected)!r}: {pattern!r}"
+            )
+
+        kind = pattern[key]
+
+        if not isinstance(kind, str) or not kind:
+            raise TypeError(f"{key} must be a non-empty string: {pattern!r}")
+
+        return [{"kind": kind}]
+
+    if "inner_patterns" not in pattern:
+        if "maybe" in pattern:
+            raise ValueError(
+                f"use optical_kind or maybe_kind instead of kind with maybe: {pattern!r}"
+            )
+
+        return None
+
+    unexpected = set(pattern) - {"inner_patterns", "maybe"}
+
+    if unexpected:
+        raise ValueError(
+            "optical inner_patterns contains unsupported fields "
+            f"{sorted(unexpected)!r}: {pattern!r}"
+        )
+
+    maybe = pattern.get("maybe", False)
+
+    if not isinstance(maybe, bool):
+        raise TypeError(f"maybe must be bool: {pattern!r}")
+
+    if not maybe:
+        raise ValueError(f"inner_patterns requires maybe=true: {pattern!r}")
+
+    inner_patterns = pattern["inner_patterns"]
+
+    if not isinstance(inner_patterns, list):
+        raise TypeError(f"inner_patterns must be a list: {pattern!r}")
+
+    if not inner_patterns:
+        raise ValueError(f"inner_patterns must not be empty: {pattern!r}")
+
+    return inner_patterns
+
+
+def getOpticalResultAction(pattern: object) -> str:
+    if isinstance(pattern, dict) and (
+        "optical_kind" in pattern or "maybe_kind" in pattern
+    ):
+        return "opticalRuleResult"
+
+    return "parserRuleResult"
+
+
+def getOpticalParserRuleName(
+    rule: JsonObject,
+    sub_rule_index: int,
+    pattern_index: int,
+) -> str:
+    temporary_index = 0
+
+    for current_sub_rule_index, sub_rule in enumerate(getSubRules(rule)):
+        for current_pattern_index, pattern in enumerate(validateSubRulePatterns(sub_rule)):
+            if (
+                current_sub_rule_index == sub_rule_index
+                and current_pattern_index == pattern_index
+            ):
+                return (
+                    f"{upperSnake(getRuleClass(rule))}_"
+                    f"OPTICAL_TEMP_{temporary_index}"
+                )
+
+            if getOpticalPatterns(pattern) is not None:
+                temporary_index += 1
+
+    raise IndexError(
+        f"optical pattern index is out of range: {sub_rule_index}, {pattern_index}"
     )
 
 
@@ -705,6 +816,12 @@ def genRuleAtomExpr(
     if "pattern" in pattern or "regx" in pattern:
         raise ValueError(f"use regex instead of pattern/regx: {pattern!r}")
 
+    if getOpticalPatterns(pattern) is not None:
+        return (
+            "RuleAtom.fromOptional(Parser.createProcedural("
+            f"{getOpticalParserRuleName(rule, sub_rule_index, pattern_index)}))"
+        )
+
     loop_patterns = getLoopPatterns(pattern)
 
     if loop_patterns is not None:
@@ -861,6 +978,12 @@ def genCombinatorAtomExpr(
     if "pattern" in pattern or "regx" in pattern:
         raise ValueError(f"use regex instead of pattern/regx: {pattern!r}")
 
+    if getOpticalPatterns(pattern) is not None:
+        return (
+            "RuleExpression.fromOptional(Parser.createProcedural("
+            f"{getOpticalParserRuleName(rule, sub_rule_index, pattern_index)}))"
+        )
+
     loop_patterns = getLoopPatterns(pattern)
 
     if loop_patterns is not None:
@@ -970,6 +1093,7 @@ def genSequenceParserRuleDecl(
     sub_rule_index: int,
     patterns: list[object],
     tabs: int,
+    source_pattern_indices: list[int] | None = None,
 ) -> list[str]:
     indent = " " * (tabs * 4)
     input_rules_name = getInputRulesName(rule)
@@ -981,7 +1105,12 @@ def genSequenceParserRuleDecl(
         f"{indent}            new ArrayList(sizeof(ParserRule))",
     ]
 
-    for pattern_index, pattern in enumerate(patterns):
+    for local_pattern_index, pattern in enumerate(patterns):
+        pattern_index = (
+            local_pattern_index
+            if source_pattern_indices is None
+            else source_pattern_indices[local_pattern_index]
+        )
         atom_expr = genCombinatorAtomExpr(
             rule,
             sub_rule_index,
@@ -1045,16 +1174,30 @@ def genCombinatorRuleDecls(rules: list[JsonObject], tabs: int) -> str:
 
                 split_patterns = getSplitPatterns(pattern)
 
-                if split_patterns is None:
-                    continue
+                if split_patterns is not None:
+                    lines.extend(genSequenceParserRuleDecl(
+                        getSplitParserRuleName(rule, sub_rule_index, pattern_index),
+                        rule,
+                        sub_rule_index,
+                        split_patterns,
+                        tabs,
+                    ))
 
-                lines.extend(genSequenceParserRuleDecl(
-                    getSplitParserRuleName(rule, sub_rule_index, pattern_index),
-                    rule,
-                    sub_rule_index,
-                    split_patterns,
-                    tabs,
-                ))
+                optical_patterns = getOpticalPatterns(pattern)
+
+                if optical_patterns is not None:
+                    lines.extend(genSequenceParserRuleDecl(
+                        getOpticalParserRuleName(
+                            rule,
+                            sub_rule_index,
+                            pattern_index,
+                        ),
+                        rule,
+                        sub_rule_index,
+                        optical_patterns,
+                        tabs,
+                        [pattern_index] * len(optical_patterns),
+                    ))
 
             lines.extend(genSequenceParserRuleDecl(
                 getCombinatorAlternativeName(rule, sub_rule_index),
@@ -1214,6 +1357,13 @@ def genParserGraphDecls(rules: list[JsonObject], tabs: int) -> str:
             )
 
             for pattern_index, pattern in enumerate(validateSubRulePatterns(sub_rule)):
+                if getOpticalPatterns(pattern) is not None:
+                    lines.append(
+                        f"{indent}private var "
+                        f"{getOpticalParserRuleName(rule, sub_rule_index, pattern_index)}: "
+                        f"pointer<ParserRule> = null"
+                    )
+
                 if getLoopPatterns(pattern) is not None:
                     lines.append(
                         f"{indent}private var "
@@ -1288,6 +1438,8 @@ def genProceduralSequenceParserRuleAssignment(
     sub_rule_index: int,
     patterns: list[object],
     tabs: int,
+    source_pattern_indices: list[int] | None = None,
+    result_action: str = "parserRuleResult",
 ) -> list[str]:
     indent = " " * (tabs * 4)
     input_rules_name = getInputRulesName(rule)
@@ -1296,10 +1448,15 @@ def genProceduralSequenceParserRuleAssignment(
         f"{indent}    new ParserRule(",
         f"{indent}        new InputRules({getRuleId(rule, rule_index)})",
         f"{indent}            .push(",
-        f"{indent}                new InputRule(parserRuleResult)",
+        f"{indent}                new InputRule({result_action})",
     ]
 
-    for pattern_index, pattern in enumerate(patterns):
+    for local_pattern_index, pattern in enumerate(patterns):
+        pattern_index = (
+            local_pattern_index
+            if source_pattern_indices is None
+            else source_pattern_indices[local_pattern_index]
+        )
         atom_expr = genRuleAtomExpr(
             rule,
             sub_rule_index,
@@ -1315,7 +1472,12 @@ def genProceduralSequenceParserRuleAssignment(
         f"{indent}            new ArrayList(sizeof(ParserRule))",
     ])
 
-    for pattern_index, pattern in enumerate(patterns):
+    for local_pattern_index, pattern in enumerate(patterns):
+        pattern_index = (
+            local_pattern_index
+            if source_pattern_indices is None
+            else source_pattern_indices[local_pattern_index]
+        )
         atom_expr = genCombinatorAtomExpr(
             rule,
             sub_rule_index,
@@ -1360,17 +1522,36 @@ def genParserGraphInitialization(rules: list[JsonObject], tabs: int) -> str:
                 split_patterns = getSplitPatterns(pattern)
 
                 if split_patterns is None:
-                    continue
+                    pass
+                else:
+                    lines.extend(genProceduralSequenceParserRuleAssignment(
+                        getSplitParserRuleName(rule, sub_rule_index, pattern_index),
+                        rule,
+                        rule_index,
+                        sub_rule_index,
+                        split_patterns,
+                        tabs + 1,
+                    ))
+                    lines.append("")
 
-                lines.extend(genProceduralSequenceParserRuleAssignment(
-                    getSplitParserRuleName(rule, sub_rule_index, pattern_index),
-                    rule,
-                    rule_index,
-                    sub_rule_index,
-                    split_patterns,
-                    tabs + 1,
-                ))
-                lines.append("")
+                optical_patterns = getOpticalPatterns(pattern)
+
+                if optical_patterns is not None:
+                    lines.extend(genProceduralSequenceParserRuleAssignment(
+                        getOpticalParserRuleName(
+                            rule,
+                            sub_rule_index,
+                            pattern_index,
+                        ),
+                        rule,
+                        rule_index,
+                        sub_rule_index,
+                        optical_patterns,
+                        tabs + 1,
+                        [pattern_index] * len(optical_patterns),
+                        getOpticalResultAction(pattern),
+                    ))
+                    lines.append("")
 
     for rule in rules:
         input_rules_name = getInputRulesName(rule)
@@ -1465,6 +1646,24 @@ def genParserGraphHelpers(tabs: int) -> str:
         f"{indent}private inline fun parserRuleResult(",
         f"{indent}    results: pointer<ArrayList>",
         f"{indent}) -> pointer<*> = results",
+        "",
+        f"{indent}private fun opticalRuleResult(",
+        f"{indent}    results: pointer<ArrayList>",
+        f"{indent}) -> pointer<*>",
+        f"{indent}{{",
+        f"{indent}    if results == null || results.length <= 0:",
+        f"{indent}        return null",
+        "",
+        f"{indent}    val slot: pointer<pointer<ParserResult>> =",
+        f"{indent}        results.get(0) as pointer<pointer<ParserResult>>",
+        "",
+        f"{indent}    if slot == null:",
+        f"{indent}        return null",
+        "",
+        f"{indent}    val result: pointer<ParserResult> = slot.deref",
+        "",
+        f"{indent}    return if result == null: null else: result.getValue()",
+        f"{indent}}}",
         "",
         f"{indent}private inline fun parserRuleIdentity(",
         f"{indent}    tokens: pointer<TokenList>, token: pointer<LinkedListNode>",

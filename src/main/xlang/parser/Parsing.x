@@ -30,7 +30,6 @@ import xlang.lexer.Token
 import xlang.parser.Parser
 import xlang.parser.ParserResult
 import xlang.parser.rule.LoopAtomRule
-import xlang.parser.rule.OptionalAtomRule
 import xlang.parser.rule.RegexAtomRule
 import xlang.util.ArrayList
 import xlang.util.LinkedListNode
@@ -99,16 +98,14 @@ fun parseLoopAtom(
 
 fun parseOpticalAtom(
     parser: pointer<Parser>,
-    rule: pointer<OptionalAtomRule>,
     tokens: pointer<TokenList>,
     fromToken: pointer<LinkedListNode>
 ) -> pointer<ParserResult>
 {
-    if parser == null || rule == null:
+    if parser == null:
         return ParserResult.fromEmpty(fromToken)
 
-    val cloneParser: pointer<Parser> = parser.clone()
-    val result: pointer<ParserResult> = cloneParser.parse(tokens, fromToken)
+    val result: pointer<ParserResult> = parser.parse(tokens, fromToken)
 
     return if result == null || result.hasError():
         ParserResult.fromEmpty(fromToken)
