@@ -238,6 +238,13 @@ def getSplitParserRuleName(rule: JsonObject, sub_rule_index: int, pattern_index:
     )
 
 
+def getLoopParserRuleName(rule: JsonObject, sub_rule_index: int, pattern_index: int) -> str:
+    return (
+        f"{getInputRuleName(rule, sub_rule_index)}_"
+        f"LOOP_{pattern_index}_PARSER_RULE"
+    )
+
+
 def getParserName(class_name: str) -> str:
     return f"{upperSnake(class_name)}_PARSER"
 
@@ -327,6 +334,25 @@ def expandNamedPatternList(
             continue
 
         pattern = original_pattern
+
+        if isinstance(pattern, dict) and "loop" in pattern:
+            loop_value = pattern["loop"]
+            loop_patterns = loop_value if isinstance(loop_value, list) else [loop_value]
+
+            pattern = dict(pattern)
+            pattern["loop"] = expandNamedPatternList(loop_patterns, definitions, stack)
+
+            if "spliter" in pattern:
+                spliter_value = pattern["spliter"]
+                spliter_patterns = (
+                    spliter_value if isinstance(spliter_value, list) else [spliter_value]
+                )
+
+                pattern["spliter"] = expandNamedPatternList(
+                    spliter_patterns,
+                    definitions,
+                    stack,
+                )
 
         if isinstance(pattern, dict) and "split_by" in pattern:
             split_by = pattern["split_by"]
@@ -618,6 +644,52 @@ def genOperationDecls(rules: list[JsonObject], tabs: int) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def getLoopPatterns(pattern: object) -> list[object] | None:
+    if not isinstance(pattern, dict) or "loop" not in pattern:
+        return None
+
+    loop_value = pattern["loop"]
+    loop_patterns = loop_value if isinstance(loop_value, list) else [loop_value]
+
+    if not loop_patterns:
+        raise ValueError(f"loop must not be empty: {pattern!r}")
+
+    return loop_patterns
+
+
+def getLoopSpliterPatterns(pattern: object) -> list[object] | None:
+    if not isinstance(pattern, dict) or "spliter" not in pattern:
+        return None
+
+    if "loop" not in pattern:
+        raise ValueError(f"spliter requires loop: {pattern!r}")
+
+    spliter_value = pattern["spliter"]
+    spliter_patterns = (
+        spliter_value if isinstance(spliter_value, list) else [spliter_value]
+    )
+
+    if not spliter_patterns:
+        raise ValueError(f"spliter must not be empty: {pattern!r}")
+
+    return spliter_patterns
+
+
+def getLoopAllowTrailling(pattern: object) -> bool:
+    if not isinstance(pattern, dict):
+        return False
+
+    allow_trailling = pattern.get("allowTrailling", False)
+
+    if not isinstance(allow_trailling, bool):
+        raise TypeError(f"allowTrailling must be bool: {pattern!r}")
+
+    if "allowTrailling" in pattern and "loop" not in pattern:
+        raise ValueError(f"allowTrailling requires loop: {pattern!r}")
+
+    return allow_trailling
+
+
 def genRuleAtomExpr(
     rule: JsonObject,
     sub_rule_index: int,
@@ -632,6 +704,34 @@ def genRuleAtomExpr(
 
     if "pattern" in pattern or "regx" in pattern:
         raise ValueError(f"use regex instead of pattern/regx: {pattern!r}")
+
+    loop_patterns = getLoopPatterns(pattern)
+
+    if loop_patterns is not None:
+        unexpected = set(pattern) - {"loop", "spliter", "allowTrailling"}
+
+        if unexpected:
+            raise ValueError(
+                f"loop pattern contains unsupported fields {sorted(unexpected)!r}: {pattern!r}"
+            )
+
+        loop_parser = (
+            "Parser.createProcedural("
+            f"{getLoopParserRuleName(rule, sub_rule_index, pattern_index)})"
+        )
+        trailing_expr = "true" if getLoopAllowTrailling(pattern) else "false"
+        spliter_patterns = getLoopSpliterPatterns(pattern)
+
+        if spliter_patterns is None:
+            return f"RuleAtom.createLoop({loop_parser}, {trailing_expr})"
+
+        spliter_parser = (
+            "Parser.createProcedural("
+            f"{getSplitParserRuleName(rule, sub_rule_index, pattern_index)})"
+        )
+        return (
+            f"RuleAtom.createLoop({loop_parser}, {spliter_parser}, {trailing_expr})"
+        )
 
     kind = pattern.get("kind", None)
     regex = pattern.get("regex", None)
@@ -761,6 +861,35 @@ def genCombinatorAtomExpr(
     if "pattern" in pattern or "regx" in pattern:
         raise ValueError(f"use regex instead of pattern/regx: {pattern!r}")
 
+    loop_patterns = getLoopPatterns(pattern)
+
+    if loop_patterns is not None:
+        unexpected = set(pattern) - {"loop", "spliter", "allowTrailling"}
+
+        if unexpected:
+            raise ValueError(
+                f"loop pattern contains unsupported fields {sorted(unexpected)!r}: {pattern!r}"
+            )
+
+        loop_parser = (
+            "Parser.createProcedural("
+            f"{getLoopParserRuleName(rule, sub_rule_index, pattern_index)})"
+        )
+        trailing_expr = "true" if getLoopAllowTrailling(pattern) else "false"
+        spliter_patterns = getLoopSpliterPatterns(pattern)
+
+        if spliter_patterns is None:
+            return f"RuleExpression.createLoop({loop_parser}, {trailing_expr})"
+
+        spliter_parser = (
+            "Parser.createProcedural("
+            f"{getSplitParserRuleName(rule, sub_rule_index, pattern_index)})"
+        )
+        return (
+            "RuleExpression.createLoop("
+            f"{loop_parser}, {spliter_parser}, {trailing_expr})"
+        )
+
     kind = pattern.get("kind", None)
     regex = pattern.get("regex", None)
 
@@ -818,6 +947,11 @@ def genCombinatorAtomExpr(
 
 
 def getSplitPatterns(pattern: object) -> list[object] | None:
+    loop_spliter = getLoopSpliterPatterns(pattern)
+
+    if loop_spliter is not None:
+        return loop_spliter
+
     if not isinstance(pattern, dict) or "split_by" not in pattern:
         return None
 
@@ -898,6 +1032,17 @@ def genCombinatorRuleDecls(rules: list[JsonObject], tabs: int) -> str:
             patterns = validateSubRulePatterns(sub_rule)
 
             for pattern_index, pattern in enumerate(patterns):
+                loop_patterns = getLoopPatterns(pattern)
+
+                if loop_patterns is not None:
+                    lines.extend(genSequenceParserRuleDecl(
+                        getLoopParserRuleName(rule, sub_rule_index, pattern_index),
+                        rule,
+                        sub_rule_index,
+                        loop_patterns,
+                        tabs,
+                    ))
+
                 split_patterns = getSplitPatterns(pattern)
 
                 if split_patterns is None:
@@ -1069,6 +1214,13 @@ def genParserGraphDecls(rules: list[JsonObject], tabs: int) -> str:
             )
 
             for pattern_index, pattern in enumerate(validateSubRulePatterns(sub_rule)):
+                if getLoopPatterns(pattern) is not None:
+                    lines.append(
+                        f"{indent}private var "
+                        f"{getLoopParserRuleName(rule, sub_rule_index, pattern_index)}: "
+                        f"pointer<ParserRule> = null"
+                    )
+
                 if getSplitPatterns(pattern) is not None:
                     lines.append(
                         f"{indent}private var "
@@ -1192,6 +1344,19 @@ def genParserGraphInitialization(rules: list[JsonObject], tabs: int) -> str:
     for rule_index, rule in enumerate(rules):
         for sub_rule_index, sub_rule in enumerate(getSubRules(rule)):
             for pattern_index, pattern in enumerate(validateSubRulePatterns(sub_rule)):
+                loop_patterns = getLoopPatterns(pattern)
+
+                if loop_patterns is not None:
+                    lines.extend(genProceduralSequenceParserRuleAssignment(
+                        getLoopParserRuleName(rule, sub_rule_index, pattern_index),
+                        rule,
+                        rule_index,
+                        sub_rule_index,
+                        loop_patterns,
+                        tabs + 1,
+                    ))
+                    lines.append("")
+
                 split_patterns = getSplitPatterns(pattern)
 
                 if split_patterns is None:

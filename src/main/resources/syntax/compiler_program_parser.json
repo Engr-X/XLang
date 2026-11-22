@@ -96,10 +96,7 @@
         {
             "class": "QualifiedName",
             "parser": "recursively-down",
-            "sub_rules": [
-                { "patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, { "kind": "Tokenizer.DOT" }, { "kind": "$QualifiedName" }], "action": "makeQualifiedNameIt" },
-                { "patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }], "action": "makeQualifiedName" }
-            ]
+            "sub_rules": [{"patterns": [{ "kind": "Tokenizer.TK_IDENTIFIER" }, {"loop": [{ "kind": "Tokenizer.DOT" }, { "kind": "Tokenizer.TK_IDENTIFIER" }]}], "action": "makeQualifiedName" }]
         },
         {
             "class": "PackageDeclarationMaybe",
@@ -309,23 +306,31 @@
         [   "private inline fun makeEmptyAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<*> = new AnnotationsMaybe()" ],
 
 
-        [   "private inline fun makeQualifiedNameIt(results: pointer<ArrayList>) -> pointer<*>",
+        [   "private fun makeQualifiedName(results: pointer<ArrayList>) -> pointer<*>",
             "{",
-            "    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>",
-            "    val dotToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>",
-            "    val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 2) as pointer<QualifiedName>",
+            "    val firstNameToken: pointer<Token> =",
+            "        getContainerValue(results, 0) as pointer<Token>",
+            "    val parsedSuffixes: pointer<ArrayList> =",
+            "        getContainerValue(results, 1) as pointer<ArrayList>",
+            "    val qualifiedName: pointer<QualifiedName> =",
+            "        new QualifiedName(firstNameToken.text)",
+            "            .addExtraToken(firstNameToken)",
             "",
-            "    return qualifiedName.pushFront(nameToken.text)",
-            "        .addExtraToken(nameToken)",
-            "        .addExtraToken(dotToken)",
-            "}" ],
-
-
-        [   "private inline fun makeQualifiedName(results: pointer<ArrayList>) -> pointer<*>",
-            "{",
-            "    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>",
+            "    for (var i: int = 0; i < parsedSuffixes.length; i++):",
+            "    {",
+            "        val suffix: pointer<ArrayList> =",
+            "            getContainerValue(parsedSuffixes, i) as pointer<ArrayList>",
+            "        val dotToken: pointer<Token> =",
+            "            getContainerValue(suffix, 0) as pointer<Token>",
+            "        val nameToken: pointer<Token> =",
+            "            getContainerValue(suffix, 1) as pointer<Token>",
             "",
-            "    return new QualifiedName(nameToken.text).addExtraToken(nameToken)",
+            "        qualifiedName.addExtraToken(dotToken)",
+            "            .push(nameToken.text)",
+            "            .addExtraToken(nameToken)",
+            "    }",
+            "",
+            "    return qualifiedName",
             "}" ],
 
 

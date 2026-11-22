@@ -1727,22 +1727,31 @@ private inline fun makeAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<
 
 private inline fun makeEmptyAnnotationsMaybe(results: pointer<ArrayList>) -> pointer<*> = new AnnotationsMaybe()
 
-private inline fun makeQualifiedNameIt(results: pointer<ArrayList>) -> pointer<*>
+private fun makeQualifiedName(results: pointer<ArrayList>) -> pointer<*>
 {
-    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
-    val dotToken: pointer<Token> = getContainerValue(results, 1) as pointer<Token>
-    val qualifiedName: pointer<QualifiedName> = getContainerValue(results, 2) as pointer<QualifiedName>
+    val firstNameToken: pointer<Token> =
+        getContainerValue(results, 0) as pointer<Token>
+    val parsedSuffixes: pointer<ArrayList> =
+        getContainerValue(results, 1) as pointer<ArrayList>
+    val qualifiedName: pointer<QualifiedName> =
+        new QualifiedName(firstNameToken.text)
+            .addExtraToken(firstNameToken)
 
-    return qualifiedName.pushFront(nameToken.text)
-        .addExtraToken(nameToken)
-        .addExtraToken(dotToken)
-}
+    for (var i: int = 0; i < parsedSuffixes.length; i++):
+    {
+        val suffix: pointer<ArrayList> =
+            getContainerValue(parsedSuffixes, i) as pointer<ArrayList>
+        val dotToken: pointer<Token> =
+            getContainerValue(suffix, 0) as pointer<Token>
+        val nameToken: pointer<Token> =
+            getContainerValue(suffix, 1) as pointer<Token>
 
-private inline fun makeQualifiedName(results: pointer<ArrayList>) -> pointer<*>
-{
-    val nameToken: pointer<Token> = getContainerValue(results, 0) as pointer<Token>
+        qualifiedName.addExtraToken(dotToken)
+            .push(nameToken.text)
+            .addExtraToken(nameToken)
+    }
 
-    return new QualifiedName(nameToken.text).addExtraToken(nameToken)
+    return qualifiedName
 }
 
 private inline fun makePackageDeclarationMaybe(results: pointer<ArrayList>) -> pointer<*>
@@ -2840,9 +2849,8 @@ private val QUALIFIED_NAME_PARSER_RULE: pointer<ParserRule> =
         RuleExpression.createSelect(new ArrayList(sizeof(ParserRule))))
 
 private var QUALIFIED_NAME_RULE_0: pointer<InputRule> = null
+private var QUALIFIED_NAME_RULE_0_LOOP_1_PARSER_RULE: pointer<ParserRule> = null
 private var QUALIFIED_NAME_CRULE_0: pointer<ParserRule> = null
-private var QUALIFIED_NAME_RULE_1: pointer<InputRule> = null
-private var QUALIFIED_NAME_CRULE_1: pointer<ParserRule> = null
 private var QUALIFIED_NAME_CRULE: pointer<RuleExpression> = null
 
 private val PACKAGE_DECLARATION_MAYBE_RULE: pointer<InputRules> =
@@ -3247,6 +3255,18 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(ANNOTATION_RULE, createCombinatorRegex(Tokenizer.COMMA, 0)))))
+
+    QUALIFIED_NAME_RULE_0_LOOP_1_PARSER_RULE =
+        new ParserRule(
+            new InputRules(122)
+                .push(
+                    new InputRule(parserRuleResult)
+                        .push(RuleAtom.fromRegex(Tokenizer.DOT))
+                        .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))),
+            RuleExpression.createSequence(
+                new ArrayList(sizeof(ParserRule))
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.DOT, 0)))
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))))
 
     IMPORTED_SYMBOL_RULE_0_SPLIT_2_PARSER_RULE =
         new ParserRule(
@@ -4563,16 +4583,10 @@ private fun initializeParserGraph() -> bool
     ANNOTATIONS_MAYBE_RULE.push(ANNOTATIONS_MAYBE_RULE_1)
 
     QUALIFIED_NAME_RULE_0 =
-        new InputRule(makeQualifiedNameIt)
-            .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
-            .push(RuleAtom.fromRegex(Tokenizer.DOT))
-            .push(RuleAtom.fromParserRef(QUALIFIED_NAME_PARSER))
-    QUALIFIED_NAME_RULE.push(QUALIFIED_NAME_RULE_0)
-
-    QUALIFIED_NAME_RULE_1 =
         new InputRule(makeQualifiedName)
             .push(RuleAtom.fromRegex(Tokenizer.TK_IDENTIFIER))
-    QUALIFIED_NAME_RULE.push(QUALIFIED_NAME_RULE_1)
+            .push(RuleAtom.createLoop(Parser.createProcedural(QUALIFIED_NAME_RULE_0_LOOP_1_PARSER_RULE), false))
+    QUALIFIED_NAME_RULE.push(QUALIFIED_NAME_RULE_0)
 
     PACKAGE_DECLARATION_MAYBE_RULE_0 =
         new InputRule(makePackageDeclarationMaybe)
@@ -6762,21 +6776,12 @@ private fun initializeParserGraph() -> bool
             RuleExpression.createSequence(
                 new ArrayList(sizeof(ParserRule))
                     .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 0)))
-                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.DOT, 0)))
-                    .push(new ParserRule(QUALIFIED_NAME_RULE, RuleExpression.createRef(QUALIFIED_NAME_PARSER))))).setResultIndex(0)
-
-    QUALIFIED_NAME_CRULE_1 =
-        new ParserRule(
-            QUALIFIED_NAME_RULE,
-            RuleExpression.createSequence(
-                new ArrayList(sizeof(ParserRule))
-                    .push(new ParserRule(QUALIFIED_NAME_RULE, createCombinatorRegex(Tokenizer.TK_IDENTIFIER, 1))))).setResultIndex(1)
+                    .push(new ParserRule(QUALIFIED_NAME_RULE, RuleExpression.createLoop(Parser.createProcedural(QUALIFIED_NAME_RULE_0_LOOP_1_PARSER_RULE), false))))).setResultIndex(0)
 
     QUALIFIED_NAME_CRULE =
         RuleExpression.createSelect(
             new ArrayList(sizeof(ParserRule))
-                .push(QUALIFIED_NAME_CRULE_0)
-                .push(QUALIFIED_NAME_CRULE_1))
+                .push(QUALIFIED_NAME_CRULE_0))
     QUALIFIED_NAME_PARSER_RULE.setExpression(QUALIFIED_NAME_CRULE)
 
     PACKAGE_DECLARATION_MAYBE_CRULE_0 =
