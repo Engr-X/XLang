@@ -104,6 +104,29 @@ fun main()
         }
     }
 
+    val fullTokenizeRepetitions: int = 3
+    var fullTokens: pointer<TokenList> = null
+    val fullTokenizeStart: long = nowMs()
+
+    for (var i: int = 0; i < fullTokenizeRepetitions; i++):
+        fullTokens = Tokenizer.tokenize(source, new Diagnostics())
+
+    val fullTokenizeElapsed: int = (nowMs() - fullTokenizeStart) as int
+
+    if fullTokens == null:
+    {
+        IO.println("full tokenize failed")
+        return
+    }
+
+    val fullTokenizeAverage: int =
+        fullTokenizeElapsed / fullTokenizeRepetitions
+    val fullTokenizePerTenThousandTokens: int =
+        if fullTokens.length() <= 0:
+            0
+        else:
+            fullTokenizeAverage * 10000 / fullTokens.length()
+
     val tokenArray: pointer<ArrayList> = tokens.toArray()
     val linked: pointer<LinkedList> = new LinkedList()
     val linkedBuildStart: long = nowMs()
@@ -142,19 +165,20 @@ fun main()
 
     val linkedScanElapsed: int = (nowMs() - linkedScanStart) as int
 
-    IO.println("source: src/main/xlang/compiler/parser/Parser.x")
-    printNumber("raw token count: ", rawTokenCount)
-    printNumber("normalized token count: ", tokens.length())
-    printMilliseconds("pure tokenize 3 runs: ", pureTokenizeElapsed)
-    printMilliseconds(
-        "pure tokenize average: ",
-        pureTokenizeElapsed / tokenizeRepetitions)
-    printMilliseconds("normalize 3 runs: ", normalizeElapsed)
-    printMilliseconds(
-        "normalize average: ",
-        normalizeElapsed / normalizeRepetitions)
     printMilliseconds("linked-list build: ", linkedBuildElapsed)
     printMilliseconds("array indexed scan 100 runs: ", arrayScanElapsed)
     printMilliseconds("linked node scan 100 runs: ", linkedScanElapsed)
-    printNumber("checksum: ", checksum)
+    IO.println("source: src/main/xlang/compiler/parser/Parser.x")
+    printNumber("raw token count: ", rawTokenCount)
+    printNumber("normalized token count: ", tokens.length())
+    printMilliseconds(
+        "pure tokenize average: ",
+        pureTokenizeElapsed / tokenizeRepetitions)
+    printMilliseconds(
+        "normalize average: ",
+        normalizeElapsed / normalizeRepetitions)
+    printMilliseconds("full tokenizer average: ", fullTokenizeAverage)
+    printMilliseconds(
+        "full tokenizer per 10,000 tokens: ",
+        fullTokenizePerTenThousandTokens)
 }
