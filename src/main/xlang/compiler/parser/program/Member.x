@@ -420,55 +420,11 @@ struct Member
  * compiler.</p>
  *
  * <p>The registry does not modify the declarations themselves. Operations
- * such as {@link #filtrate(int, int)} create a new registry containing only
+ * such as {@code filtrate()} create a new registry containing only
  * the members that satisfy the requested conditions.</p>
  */
 struct MemberRegistry
 {
-    /**
-     * Filter value that accepts every value in the corresponding dimension.
-     */
-    static val ALL: int = 0
-
-    /**
-     * Internal identifier for members declared with the {@code private}
-     * access modifier.
-     */
-    static val PRIVATE_MODIFIER: int = 1
-
-    /**
-     * Internal identifier for members declared with the {@code protected}
-     * access modifier.
-     *
-     * @deprecated This constant appears to contain a spelling error.
-     *             Use {@code PROTECTED_MODIFIER} instead.
-     */
-    static val PROTEXTED_MODIFIER: int = 2
-
-    /**
-     * Internal identifier for members declared with the {@code protected}
-     * access modifier.
-     */
-    static val PROTECTED_MODIFIER: int = 2
-
-    /**
-     * Internal identifier for members with public accessibility.
-     *
-     * <p>Members without an explicit {@code private} or {@code protected}
-     * modifier are currently treated as public.</p>
-     */
-    static val PUBLIC_MODIFIER: int = 3
-
-    /**
-     * Filter value for members declared with the {@code static} modifier.
-     */
-    static val STATIC_MODIFIER: int = 1
-
-    /**
-     * Filter value for members without the {@code static} modifier.
-     */
-    static val NON_STATIC_MODIFIER: int = 2
-
     /**
      * Members currently contained in this registry.
      */
@@ -560,40 +516,10 @@ struct MemberRegistry
     private fun hasModifier(member: pointer<Member>, modifier: pointer<Modifier>) -> bool
     {
         val modifiers: pointer<HashSet> = this.getModifiers(member)
-
         return modifiers != null && modifiers.contains(modifier)
     }
 
 
-    /**
-     * Resolves the effective access level of the specified member.
-     *
-     * <p>Access modifiers are checked in the following order:</p>
-     *
-     * <ol>
-     *     <li>{@code private}</li>
-     *     <li>{@code protected}</li>
-     *     <li>{@code public}</li>
-     * </ol>
-     *
-     * <p>If neither {@code private} nor {@code protected} is explicitly
-     * present, the member is treated as public.</p>
-     *
-     * @param member the member whose access level should be resolved
-     *
-     * @return {@link #PRIVATE_MODIFIER} if the member is private,
-     *         {@link #PROTECTED_MODIFIER} if it is protected, or
-     *         {@link #PUBLIC_MODIFIER} otherwise
-     */
-    private fun getAccessModifier(member: pointer<Member>) -> int =
-        if this.hasModifier(member, Modifier.fromPrivate()):
-            PRIVATE_MODIFIER
-        elif this.hasModifier(member, Modifier.fromProtected()):
-            PROTEXTED_MODIFIER
-        else:
-            PUBLIC_MODIFIER
-    
-    
     /**
      * Returns the underlying list of members contained in this registry.
      *
@@ -606,28 +532,27 @@ struct MemberRegistry
 
 
     /**
-     * Creates a new registry containing members that match the specified
-     * access level and static-state filter.
+     * Creates a new registry containing members that match up to two
+     * declaration modifiers.
      *
-     * <p>If either filter is {@link #ALL}, that dimension accepts every
-     * value.</p>
+     * <p>A null modifier disables the corresponding condition. When both
+     * modifiers are non-null, a member must contain both modifiers.</p>
      *
      * <p>Null member entries are ignored. The current registry is not modified;
      * instead, a new {@code MemberRegistry} containing the matching members is
      * returned.</p>
      *
-     * @param accessModifier the required access modifier, normally
-     *                       {@link #ALL} or one of
-     *                       {@link #PRIVATE_MODIFIER},
-     *                       {@link #PROTECTED_MODIFIER}, or
-     *                       {@link #PUBLIC_MODIFIER}
-     * @param staticModifier the required static state, normally
-     *                       {@link #ALL}, {@link #STATIC_MODIFIER}, or
-     *                       {@link #NON_STATIC_MODIFIER}
+     * @param firstModifier     the first required modifier, or {@code null}
+     *                          to ignore this condition
+     * @param secondModifier    the second required modifier, or {@code null}
+     *                          to ignore this condition
      *
      * @return a new registry containing only members matching both filters
      */
-    fun filtrate(accessModifier: int, staticModifier: int) -> pointer<MemberRegistry>
+    fun filtrate(
+        firstModifier: pointer<Modifier>,
+        secondModifier: pointer<Modifier>
+    ) -> pointer<MemberRegistry>
     {
         val result: pointer<ArrayList> = new ArrayList(sizeof(Member))
 
@@ -638,15 +563,10 @@ struct MemberRegistry
             if member == null:
                 continue
 
-            if accessModifier != ALL && this.getAccessModifier(member) != accessModifier:
+            if firstModifier != null && !this.hasModifier(member, firstModifier):
                 continue
 
-            val memberStaticModifier: int = if this.hasModifier(member, Modifier.fromStatic()):
-                    STATIC_MODIFIER
-                else:
-                    NON_STATIC_MODIFIER
-
-            if staticModifier != ALL && memberStaticModifier != staticModifier:
+            if secondModifier != null && !this.hasModifier(member, secondModifier):
                 continue
 
             result.push(member)

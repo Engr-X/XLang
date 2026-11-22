@@ -51,6 +51,82 @@ import xlang.util.string.StringBuilder
 struct Modifier
 {
     /**
+     * Determines whether a modifier collection represents public access.
+     *
+     * <p>A declaration is public when its modifier collection contains neither
+     * {@code private} nor {@code protected}. A null collection therefore also
+     * represents public access.
+     *
+     * @param modifiers         the modifier collection to inspect
+     *
+     * @return                  {@code true} when the declaration is public;
+     *                          {@code false} otherwise
+     */
+    static fun isPublic(modifiers: pointer<HashSet>) -> bool
+        = !Modifier.isPrivate(modifiers) && !Modifier.isProtected(modifiers)
+
+
+    /**
+     * Determines whether a modifier collection declares private access.
+     *
+     * @param modifiers         the modifier collection to inspect
+     *
+     * @return                  {@code true} when the collection contains
+     *                          {@code private}; {@code false} otherwise
+     */
+    static fun isPrivate(modifiers: pointer<HashSet>) -> bool =
+        modifiers != null && modifiers.contains(Modifier.fromPrivate())
+
+
+    /**
+     * Determines whether a modifier collection declares protected access.
+     *
+     * @param modifiers         the modifier collection to inspect
+     *
+     * @return                  {@code true} when the collection contains
+     *                          {@code protected}; {@code false} otherwise
+     */
+    static fun isProtected(modifiers: pointer<HashSet>) -> bool =
+        modifiers != null && modifiers.contains(Modifier.fromProtected())
+
+
+    /**
+     * Determines whether a modifier collection declares static membership.
+     *
+     * @param modifiers         the modifier collection to inspect
+     *
+     * @return                  {@code true} when the collection contains
+     *                          {@code static}; {@code false} otherwise
+     */
+    static fun isStatic(modifiers: pointer<HashSet>) -> bool =
+        modifiers != null && modifiers.contains(Modifier.fromStatic())
+
+
+    /**
+     * Determines whether a modifier collection declares final membership.
+     *
+     * @param modifiers         the modifier collection to inspect
+     *
+     * @return                  {@code true} when the collection contains
+     *                          {@code final}; {@code false} otherwise
+     */
+    static fun isFinal(modifiers: pointer<HashSet>) -> bool =
+        modifiers != null && modifiers.contains(Modifier.fromFinal())
+
+
+    /**
+     * Determines whether a modifier collection declares inline membership.
+     *
+     * @param modifiers         the modifier collection to inspect
+     *
+     * @return                  {@code true} when the collection contains
+     *                          {@code inline}; {@code false} otherwise
+     */
+    static fun isInline(modifiers: pointer<HashSet>) -> bool =
+        modifiers != null && modifiers.contains(Modifier.fromInline())
+
+
+    /**
      * Compares two modifier values for equality by keyword.
      *
      * <p>This equality function is used by modifier sets so that duplicate
