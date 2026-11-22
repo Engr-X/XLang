@@ -624,6 +624,63 @@ struct FunctionParams
 
 
 /**
+ * Represents an optional function-parameter collection.
+ *
+ * <p>{@code FunctionParamsMaybe} provides a small normalization wrapper for
+ * parser productions in which a parameter collection may be absent.
+ *
+ * <p>A missing parameter collection is represented internally by an empty
+ * {@code FunctionParams} instance rather than by a {@code null} pointer. This
+ * allows later parser and AST stages to work with a parameter object without
+ * repeatedly checking whether the collection itself exists.
+ */
+struct FunctionParamsMaybe
+{
+    /**
+     * The normalized function-parameter collection.
+     *
+     * <p>This field always receives either the supplied parameter collection or
+     * a newly allocated empty {@code FunctionParams} instance.
+     */
+    private var params: pointer<FunctionParams>
+
+
+    /**
+     * Creates an optional parameter wrapper from the supplied collection.
+     *
+     * <p>If {@code params} is {@code null}, a new empty
+     * {@code FunctionParams} instance is allocated. Otherwise, the supplied
+     * object is stored directly and is not cloned.
+     *
+     * @param params			a pointer to the function-parameter collection, or
+     * 					        {@code null} to represent an empty collection
+     */
+    constructor(params: pointer<FunctionParams>):
+        this.params =
+            if params == null:
+                new FunctionParams()
+            else:
+                params
+
+
+    /**
+     * Returns the normalized function-parameter collection.
+     *
+     * <p>The returned pointer refers directly to the object stored internally
+     * and is not copied or cloned.
+     *
+     * <p>Because the constructor converts a {@code null} input into an empty
+     * {@code FunctionParams}, this method normally returns a valid parameter
+     * collection even when no parameters were present in the parsed source.
+     *
+     * @return				    a pointer to the internally stored function-parameter
+     * 					        collection
+     */
+    fun toFunctionParams() -> pointer<FunctionParams> = this.params
+}
+
+
+/**
  * Represents a function declaration in the program abstract syntax tree.
  *
  * <p>A {@code Function} stores its annotations, declaration modifiers, function

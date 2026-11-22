@@ -61,7 +61,6 @@ struct StructConstructor
      */
     private var modifiers: pointer<HashSet>
 
-
     /**
      * The parameter collection declared by this constructor.
      *
@@ -69,7 +68,6 @@ struct StructConstructor
      * {@code FunctionParams} instance.
      */
     private var params: pointer<FunctionParams>
-
 
     /**
      * The optional expression forming the body of this constructor.
@@ -79,7 +77,6 @@ struct StructConstructor
      */
     private var bodyExpr: pointer<Expression>
 
-
     /**
      * Additional syntax tokens associated with this constructor declaration.
      *
@@ -88,7 +85,7 @@ struct StructConstructor
      * parameter list or body expression.
      */
     private var extraTokens: pointer<ArrayList>
-
+    
 
     /**
      * Creates a structure constructor with the specified parameter collection

@@ -80,17 +80,17 @@ struct Field
     /**
      * The ordered collection of annotations attached to this field.
      *
-     * <p>The collection is initialized to an empty list when the field is
-     * created and may later be replaced using {@code setAnnotations()}.
+     * <p>The collection is initialized lazily and remains {@code null} until
+     * annotations are assigned using {@code setAnnotations()}.
      */
     private var annotations: pointer<ArrayList>
-
 
     /**
      * The set of declaration modifiers attached to this field.
      *
      * <p>These modifiers are separate from the internal mutability flag used to
-     * select between {@code val} and {@code var}.
+     * select between {@code val} and {@code var}. The set is allocated lazily
+     * when the first modifier is added or assigned.
      */
     private var modifiers: pointer<HashSet>
 
@@ -159,9 +159,9 @@ struct Field
      * <p>The field is initialized as immutable by setting its internal modifier
      * to {@code CONST_MODIFIER}.
      *
-     * <p>New empty annotation and declaration-modifier collections are
-     * allocated. The initial value is set to {@code null}, meaning that the
-     * field does not initially contain an initializer expression.
+     * <p>The annotation collection and initial value are initialized to
+     * {@code null}. The declaration-modifier collection is also initialized to
+     * {@code null} and allocated only when needed.
      *
      * <p>The supplied field name and type are stored by reference and are not
      * copied or cloned by the constructor.
@@ -175,8 +175,8 @@ struct Field
     constructor(fieldName: pointer<char>, fieldType: pointer<Type>)
     {
         this.modifier = CONST_MODIFIER
-        this.annotations = new ArrayList(sizeof(Annotation))
-        this.modifiers = new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
+        this.annotations = null
+        this.modifiers = null
         this.fieldName = fieldName
         this.fieldType = fieldType
         this.initialValue = null
@@ -185,41 +185,20 @@ struct Field
 
 
     /**
-     * Returns the annotation collection associated with this field.
-     *
-     * <p>The returned pointer refers directly to the internally stored
-     * {@code ArrayList}. The collection is not copied or cloned.
-     *
-     * <p>Modifications performed through the returned list therefore affect the
-     * same annotation collection referenced by this {@code Field}.
-     *
-     * @return				    a pointer to the internally stored annotation
-     * 					        collection
-     */
-    fun getAnnotations() -> pointer<ArrayList> = this.annotations
-
-
-    /**
      * Replaces the annotation collection associated with this field.
      *
-     * <p>If {@code annotations} is {@code null}, a new empty annotation list is
-     * allocated. Otherwise, the supplied list is stored directly and is not
-     * copied or cloned.
-     *
-     * <p>This normalization ensures that the internal annotation collection is
-     * represented by a valid list after this method returns.
+     * <p>The supplied list is stored directly and is not copied or cloned. A
+     * {@code null} value clears the annotations without allocating an empty
+     * collection.
      *
      * @param annotations		a pointer to the annotation collection, or
-     * 					        {@code null} to replace it with an empty list
+     * 					        {@code null} to clear the annotations
      *
      * @return				    this {@code Field} instance
      */
     fun setAnnotations(annotations: pointer<ArrayList>) -> pointer<Field>
     {
-        this.annotations = if annotations == null:
-                new ArrayList(sizeof(Annotation))
-            else:
-                annotations
+        this.annotations = annotations
 
         return this
     }
@@ -242,48 +221,64 @@ struct Field
 
 
     /**
-     * Adds a declaration modifier to this field.
+     * Replaces the declaration modifiers associated with this field.
      *
-     * <p>The specified modifier is added directly to the internally stored
-     * modifier set. Duplicate modifier keywords are ignored by the set.
+     * <p>A null or empty list clears the modifiers without allocating an
+     * internal set. Otherwise, a new set is allocated and populated with each
+     * non-null modifier. Duplicate modifiers are ignored by the set.
      *
-     * <p>This operation modifies the current field instance and returns the
-     * same instance, allowing method chaining.
+     * @param modifiers         the modifier collection to assign
      *
-     * @param modifier          a pointer point to modifier to add
-     * @return                  a pointer to this field
+     * @return                  this {@code Field} instance
      */
-    fun addModifier(modifier: pointer<Modifier>) -> pointer<Field>
+    fun setModifiers(modifiers: pointer<ArrayList>) -> pointer<Field>
     {
-        if modifier != null:
-            this.modifiers.add(modifier)
+        this.modifiers = null
+
+        if modifiers == null || modifiers.length <= 0:
+            return this
+
+        this.modifiers = new HashSet(
+            sizeof(Modifier),
+            Modifier.equalModifier,
+            Modifier.hashcode)
+
+        for (var i: int = 0; i < modifiers.length; i++):
+        {
+            val modifier: pointer<Modifier> =
+                modifiers.get(i) as pointer<Modifier>
+
+            if modifier != null:
+                this.modifiers.add(modifier)
+        }
 
         return this
     }
 
 
     /**
-     * Replaces the declaration-modifier collection associated with this field.
+     * Adds one declaration modifier to this field.
      *
-     * <p>If {@code modifiers} is {@code null}, a new empty modifier set is
-     * allocated. Otherwise, the supplied collection is stored directly and is
-     * not copied or cloned.
+     * <p>A null modifier is ignored. The internal set is allocated lazily when
+     * the first valid modifier is added. Duplicate modifiers are ignored by the
+     * set.
      *
-     * <p>The field mutability state represented by {@code modifier} is not
-     * changed by this method.
+     * @param modifier          the modifier to add
      *
-     * @param modifiers			a pointer to the declaration-modifier
-     * 					        collection, or {@code null} to use an empty list
-     *
-     * @return				    this {@code Field} instance
+     * @return                  this {@code Field} instance
      */
-    fun setModifiers(modifiers: pointer<HashSet>) -> pointer<Field>
+    fun addModifier(modifier: pointer<Modifier>) -> pointer<Field>
     {
-        this.modifiers = if modifiers == null:
-                new HashSet(sizeof(Modifier), Modifier.equalModifier, Modifier.hashcode)
-            else:
-                modifiers
+        if modifier == null:
+            return this
 
+        if this.modifiers == null:
+            this.modifiers = new HashSet(
+                sizeof(Modifier),
+                Modifier.equalModifier,
+                Modifier.hashcode)
+
+        this.modifiers.add(modifier)
         return this
     }
 
