@@ -55,6 +55,13 @@ endfunction()
 
 add_subdirectory(main)
 
+set(XLANG_BENCHMARK_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/benchmark")
+collect_xlang_sources(XLANG_BENCHMARK_SOURCES "${XLANG_BENCHMARK_SOURCE_DIR}")
+
+if (XLANG_BENCHMARK_SOURCES)
+    add_subdirectory(benchmark)
+endif()
+
 set(XLANG_TEST_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/test")
 collect_xlang_sources(XLANG_TEST_SOURCES "${XLANG_TEST_SOURCE_DIR}")
 
