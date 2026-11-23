@@ -468,7 +468,27 @@ fun splitRightAngleToken(token: pointer<Token>) -> pointer<TokenList>
 }
 
 
-
+/**
+ * Creates an empty parser result representing an internal parsing failure.
+ *
+ * The returned ParserResult uses EMPTY_KIND and retains the specified
+ * end token node as its parsing boundary.
+ *
+ * An internal error diagnostic with CANNOT_PARSE as its diagnostic code
+ * is added to the result, using an empty source location list and the
+ * predefined CANNOT_PARSE_MSG message.
+ *
+ * @param endToken              the token node marking the end of the parsing range.
+ *
+ * @return                      a newly allocated empty parser result containing
+ *                              an internal parsing error diagnostic.
+ *
+ * @note                        The returned result is considered empty by isEmpty,
+ *                              but contains an error that can be detected by hasError.
+ *
+ * @note                        No specific source location is associated with
+ *                              the generated diagnostic.
+ */
 fun internalErrorParseResult(
     endToken: pointer<LinkedListNode>
 ) -> pointer<ParserResult>

@@ -36,6 +36,42 @@ import xlang.util.LinkedListNode
 import xlang.util.string.StringBuilder
 
 
+/**
+ * Parses a single token using the specified regular-expression atom rule.
+ *
+ * The token at the starting node is retrieved and checked against the
+ * matching conditions defined by RegexAtomRule.
+ *
+ * If the token matches, a parser result containing the matched token
+ * is returned, with the parsing position advanced to the next node.
+ *
+ * If matching fails, an empty parser result is created with an
+ * UNEXPECTED_TOKEN error diagnostic.
+ *
+ * When no token is available, the EOF marker is included in the
+ * diagnostic message without associating a specific source location.
+ * Otherwise, the diagnostic includes the unexpected token's text
+ * and source position.
+ *
+ * @param rule                  the regular-expression atom rule used for matching.
+ * @param tokens                the token collection being parsed.
+ * @param fromToken             the token node at which matching begins,
+ *                              or null if no token is available.
+ *
+ * @return                      a parser result containing the matched token,
+ *                              or an empty result with an error diagnostic
+ *                              if matching fails.
+ *
+ * @note                        A successful match consumes exactly one token
+ *                              and advances the result to fromToken.next.
+ *
+ * @note                        The tokens parameter is not directly accessed
+ *                              by this implementation.
+ *
+ * @warning                     The caller must provide a valid rule pointer.
+ *                              A non-null token must have valid text and
+ *                              source position information.
+ */
 fun parseRegAtom(
     rule: pointer<RegexAtomRule>,
     tokens: pointer<TokenList>,
@@ -79,6 +115,32 @@ fun parseRegAtom(
 }
 
 
+/**
+ * Parses a repeated sequence using the specified loop atom rule.
+ *
+ * The loop parser, separator parser, and trailing-separator setting
+ * are retrieved from LoopAtomRule and passed to parseLoop.
+ *
+ * The loop parser determines how individual elements are parsed,
+ * while the separator parser defines the optional delimiters
+ * between consecutive elements.
+ *
+ * The trailing-separator setting controls whether a separator
+ * is permitted after the final element.
+ *
+ * @param rule                  the loop atom rule defining the repetition.
+ * @param tokens                the token collection being parsed.
+ * @param fromToken             the token node at which parsing begins.
+ *
+ * @return                      the parser result produced by parseLoop.
+ *
+ * @note                        Token consumption, error handling, and result
+ *                              construction are delegated to parseLoop.
+ *
+ * @warning                     The caller must provide a valid rule pointer.
+ *                              This method does not validate the retrieved
+ *                              parser references before forwarding them.
+ */
 fun parseLoopAtom(
     rule: pointer<LoopAtomRule>,
     tokens: pointer<TokenList>,
@@ -96,7 +158,41 @@ fun parseLoopAtom(
 }
 
 
-fun parseOpticalAtom(
+/**
+ * Attempts to parse an optional atom using the specified parser.
+ *
+ * If the parser is null, an empty parser result is returned
+ * without consuming any tokens.
+ *
+ * Otherwise, the underlying parser is invoked at the specified
+ * starting node.
+ *
+ * If parsing succeeds without errors, the resulting ParserResult
+ * is returned directly.
+ *
+ * If parsing returns null or produces an error, the result is
+ * discarded and replaced with an empty parser result positioned
+ * at the original starting node.
+ *
+ * @param parser            the parser used to match the optional atom,
+ *                          or null if no parser is available.
+ * @param tokens            the token collection being parsed.
+ * @param fromToken         the token node at which parsing begins.
+ *
+ * @return                  the successful parser result, or an empty
+ *                          result if parsing fails or no parser is provided.
+ *
+ * @note                    Failed optional matches do not propagate
+ *                          diagnostics from the underlying parser.
+ *
+ * @note                    An empty result retains the original starting
+ *                          node, indicating that no tokens were consumed
+ *                          by the optional match.
+ *
+ * @warning                 This method does not reset the underlying
+ *                          parser after an unsuccessful parse attempt.
+ */
+fun parseOptionalAtom(
     parser: pointer<Parser>,
     tokens: pointer<TokenList>,
     fromToken: pointer<LinkedListNode>

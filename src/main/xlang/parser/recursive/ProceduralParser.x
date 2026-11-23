@@ -91,7 +91,7 @@ struct ProceduralParser
             if rule.isOptical():
             {
                 val opticalParser: pointer<Parser> = rule.getOpticalParser()
-                return Parsing.parseOpticalAtom(
+                return Parsing.parseOptionalAtom(
                     opticalParser,
                     tokens,
                     fromToken)
