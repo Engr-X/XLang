@@ -169,6 +169,9 @@ struct Diagnostic
 
     // Diagnostic code for a token sequence that cannot start a type.
     static val CANNOT_PARSE_TYPE: int = 18
+
+    // Diagnostic code for a source file that cannot be read.
+    static val CANNOT_READ_FILE: int = 19
     
 
     // Message for an invalid token.
@@ -225,6 +228,9 @@ struct Diagnostic
 
     // Message for a token sequence that cannot be parsed as a type.
     static val CANNOT_PARSE_TYPE_MSG: pointer<char> = "cannot parse type"
+
+    // Message for a source file that cannot be read.
+    static val CANNOT_READ_FILE_MSG: pointer<char> = "cannot read file: "
 
 
     /**

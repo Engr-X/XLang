@@ -32,11 +32,89 @@
 #include <windows.h>
 #else
 #include <dirent.h>
+#include <errno.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 #include "xlang/xtypedef.h"
+#include "xlang/runtime/memory/memory.h"
 #include "util.h"
+
+
+x_char* get_current_dir(void)
+{
+    char* narrow_path = NULL;
+
+#ifdef _WIN32
+    {
+        const DWORD capacity = GetCurrentDirectoryA(0, NULL);
+
+        if (capacity == 0)
+            return NULL;
+
+        narrow_path = xlang_malloc((x_i64)capacity);
+
+        if (narrow_path == NULL)
+            return NULL;
+
+        const DWORD length = GetCurrentDirectoryA(capacity, narrow_path);
+
+        if (length == 0 || length >= capacity)
+        {
+            xlang_mfree(narrow_path);
+            return NULL;
+        }
+    }
+#else
+    {
+        size_t capacity = 256;
+        narrow_path = xlang_malloc((x_i64)capacity);
+
+        if (narrow_path == NULL)
+            return NULL;
+
+        while (true)
+        {
+            if (getcwd(narrow_path, capacity) != NULL)
+                break;
+
+            if (errno != ERANGE || capacity > (SIZE_MAX / 2))
+            {
+                xlang_mfree(narrow_path);
+                return NULL;
+            }
+
+            capacity *= 2;
+            char* const resized = xlang_realloc(narrow_path, (x_i64)capacity);
+
+            if (resized == NULL)
+            {
+                xlang_mfree(narrow_path);
+                return NULL;
+            }
+
+            narrow_path = resized;
+        }
+    }
+#endif
+
+    const size_t length = strlen(narrow_path);
+    x_char* const result = xlang_malloc((x_i64)((length + 1) * sizeof(x_char)));
+
+    if (result == NULL)
+    {
+        xlang_mfree(narrow_path);
+        return NULL;
+    }
+
+    for (size_t i = 0; i < length; i++)
+        result[i] = (unsigned char)narrow_path[i];
+
+    result[length] = XLANG_NULL_CHAR;
+    xlang_mfree(narrow_path);
+    return result;
+}
 
 
 int filesize(const x_char* const path)

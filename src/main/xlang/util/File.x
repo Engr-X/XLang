@@ -41,6 +41,65 @@ import xlang.util.string.StringBuilder
 struct File
 {
     /**
+     * Joins two path strings into a single path.
+     *
+     * The paths are concatenated using a forward slash as a separator
+     * when the first path does not already end with a slash or backslash.
+     *
+     * If either path is null or empty, a duplicate of the other path
+     * is returned without adding a separator.
+     *
+     * The resulting path is not normalized or validated. Existing
+     * separators, relative path components, and absolute paths in
+     * the second argument are preserved.
+     *
+     * @param path1             the first null-terminated path string.
+     * @param path2             the second null-terminated path string.
+     *
+     * @return                  a pointer to the newly constructed path string.
+     *
+     * @note                    A separator is added only when the first path does
+     *                          not end with '/' or '\\'. The second path is
+     *                          appended without removing leading separators.
+     *
+     * @warning                 Both path arguments must not be null simultaneously,
+     *                          since String.strdup may receive a null pointer.
+     *
+     * @warning                 The caller is responsible for managing the lifetime
+     *                          of the returned string.
+     */
+    static fun pathJoin(
+        path1: pointer<char>,
+        path2: pointer<char>
+    ) -> pointer<*>
+    {
+        if path1 == null:
+            return String.strdup(path2)
+
+        if path2 == null:
+            return String.strdup(path1)
+
+        val path1Length: int = String.strlen(path1)
+        val path2Length: int = String.strlen(path2)
+
+        if path1Length <= 0:
+            return String.strdup(path2)
+
+        if path2Length <= 0:
+            return String.strdup(path1)
+
+        val result: pointer<StringBuilder> = new StringBuilder(path1)
+        val last: char = path1[path1Length - 1]
+
+        if last != '/' && last != '\\':
+            result.append('/')
+
+        result.append(path2)
+        return result.getText()
+    }
+
+
+    /**
      * The duplicated path of the file.
      */
     private var path: pointer<char>

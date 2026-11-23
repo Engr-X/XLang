@@ -2109,7 +2109,7 @@ private inline fun makeProgram(results: pointer<ArrayList>) -> pointer<*>
         .setImportDeclarations(imports)
 }
 
-private inline fun parse(input: pointer<TokenList>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
+fun parse(input: pointer<TokenList>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
 {
     val result: pointer<ParserResult> = PROGRAM_PARSER.parse(input, 0)
 
@@ -2142,7 +2142,7 @@ fun parse(input: pointer<TokenizedFile>, diagnostics: pointer<Diagnostics>) -> p
     return new ASTFile(input.getPath(), result.getValue())
 }
 
-private inline fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
+fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
 {
     val tokens: pointer<TokenList> = Tokenizer.tokenize(input, diagnostics)
 
@@ -2152,7 +2152,7 @@ private inline fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnosti
     return parse(tokens, diagnostics)
 }
 
-private inline fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
+fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
 {
     val tokenFile: pointer<TokenizedFile> = Tokenizer.tokenize(file, diagnostics)
 

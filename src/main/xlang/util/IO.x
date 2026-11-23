@@ -103,6 +103,26 @@ native inline fun subFiles(path: pointer<char>, dest: pointer<char>) -> int;
 
 
 /**
+ * Retrieves the current working directory of the running process.
+ *
+ * The directory path is obtained through the native get_current_dir
+ * function and returned as a null-terminated string.
+ *
+ * @return                  a pointer to the current working directory path,
+ *                          or null if the operation fails.
+ *
+ * @note                    The returned path represents the process's current
+ *                          working directory, which may differ from the
+ *                          executable's directory.
+ *
+ * @warning                 The ownership and lifetime of the returned string
+ *                          depend on the native implementation.
+ */
+@Native("get_current_dir")
+native inline fun getCurrentDir() -> pointer<char>;
+
+
+/**
  * Checks whether a path exists and refers to a directory.
  *
  * This is a thin native helper. It performs the platform-specific filesystem
