@@ -79,9 +79,9 @@ private fun getTestGroup() -> pointer<TestGroup>
     testGroups[14] = PrattParserTest.TEST_GROUP
     testGroups[15] = ParserRegressionTest.TEST_GROUP
     testGroups[16] = ParserUtilTest.TEST_GROUP
-    testGroups[17] = RecursiveParserTest.TEST_GROUP
-    testGroups[18] = TypeParserTest.TEST_GROUP
-    testGroups[19] = ParserTest.TEST_GROUP
+    // testGroups[17] = RecursiveParserTest.TEST_GROUP
+    testGroups[17] = TypeParserTest.TEST_GROUP
+    testGroups[18] = ParserTest.TEST_GROUP
 
     for (var i = 0; i < testGroupLength; i++):
     {

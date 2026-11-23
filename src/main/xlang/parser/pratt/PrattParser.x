@@ -29,6 +29,7 @@ import xlang.SourceLocation
 import xlang.lexer.TokenList
 import xlang.parser.Parser
 import xlang.parser.ParserResult
+import xlang.parser.Parsing
 import xlang.parser.rule.InputRule
 import xlang.parser.rule.InputRules
 import xlang.parser.rule.ParserRule
@@ -300,7 +301,7 @@ struct PrattParser
                     }
                     else:
                     {
-                        result = parser.parseAtom(
+                        result = Parsing.parseAtom(
                             atom,
                             tokens,
                             cursorNode.value as pointer<LinkedListNode>)

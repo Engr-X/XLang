@@ -116,6 +116,41 @@ fun parseRegAtom(
 
 
 /**
+ * Parses a repeated rule beginning at the specified token node.
+ *
+ * When splitParser is null, elements are parsed consecutively. Otherwise the
+ * first element is parsed directly and every following element must be preceded
+ * by splitParser. The allowTrailing flag is used only for the separated form.
+ *
+ * The returned result retains the total consumed-token count for the public
+ * index-based interface and stores the first unconsumed token node as its end
+ * token.
+ *
+ * @param loopParser           the parser applied to every repeated element
+ * @param splitParser          the parser applied between elements, or null for
+ *                             an unseparated repetition
+ * @param allowTrailing        whether the separated form may consume one final
+ *                             separator without a following element
+ * @param tokens               the token list that owns the parsed nodes
+ * @param fromToken            the first token node at which repetition begins
+ *
+ * @return                     an array-list parser result containing the parsed
+ *                             elements, total consumed count, and first
+ *                             unconsumed token node
+ */
+private fun parseLoop(
+    loopParser: pointer<Parser>,
+    splitParser: pointer<Parser>,
+    allowTrailing: bool,
+    tokens: pointer<TokenList>,
+    fromToken: pointer<LinkedListNode>
+) -> pointer<ParserResult> = if splitParser == null:
+        parseWithoutSplit(loopParser, tokens, fromToken)
+    else:
+        parseWithSplit(loopParser, splitParser, allowTrailing, tokens, fromToken)
+
+
+/**
  * Parses a repeated sequence using the specified loop atom rule.
  *
  * The loop parser, separator parser, and trailing-separator setting
@@ -211,6 +246,70 @@ fun parseOptionalAtom(
 
 
 /**
+ * Parses a single rule atom using the appropriate parsing strategy.
+ *
+ * The atom kind determines whether parsing is delegated to a token
+ * matcher, a referenced parser, an optional parser, or a loop parser.
+ *
+ * If the rule is null, an empty parser result containing an
+ * INVALID_PATTERN_ATOM diagnostic is returned.
+ *
+ * If the rule has an unrecognized atom kind, null is returned.
+ *
+ * @param rule              the rule atom to parse.
+ * @param tokens            the token collection being parsed.
+ * @param fromToken         the token node at which parsing begins.
+ *
+ * @return                  the parser result produced by the selected
+ *                          parsing strategy, an empty result containing
+ *                          an error diagnostic for a null rule, or null
+ *                          if the atom kind is not recognized.
+ *
+ * @note                    Token consumption and error handling depend on
+ *                          the selected parsing strategy.
+ *
+ * @note                    Optional parsing failures may be converted into
+ *                          empty results without propagating diagnostics.
+ *
+ * @warning                 Referenced parsers and atom-specific rules are
+ *                          not validated before being used.
+ */
+fun parseAtom(
+    rule: pointer<RuleAtom>,
+    tokens: pointer<TokenList>,
+    fromToken: pointer<LinkedListNode>
+) -> pointer<ParserResult>
+{
+    if rule != null:
+    {
+        if rule.isToken():
+            return parseRegAtom(rule.getTokenRule(), tokens, fromToken)
+        elif rule.isRef():
+            return rule.getRefParser().parse(tokens, fromToken)
+        elif rule.isOptical():
+        {
+            val opticalParser: pointer<Parser> = rule.getOpticalParser()
+            return parseOptionalAtom(
+                opticalParser,
+                tokens,
+                fromToken)
+        }
+        elif rule.isLoop():
+            return parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
+        else:
+            return null
+    }
+
+    val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
+    result.pushDiagnostic(Diagnostic.makeError(
+        Diagnostic.INVALID_PATTERN_ATOM,
+        new ArrayList(sizeof(SourceLocation)),
+        Diagnostic.INVALID_PATTERN_ATOM_MSG))
+    return result
+}
+
+
+/**
  * Parses consecutive repetitions without a separator rule.
  *
  * <p>Beginning at {@code fromToken}, {@code loopParser} is repeatedly applied
@@ -287,7 +386,7 @@ private fun parseWithoutSplit(
  *                              element results, the total consumed count including all
  *                              accepted separators, and the first unconsumed token node
  */
-fun parseWithSplit(
+private fun parseWithSplit(
     loopParser: pointer<Parser>,
     splitParser: pointer<Parser>,
     allowTrailing: bool,
@@ -399,40 +498,3 @@ fun parseWithSplit(
     return ParserResult.fromList(consumed, currentToken, results)
         .pushTokens(parsedTokens)
 }
-
-
-
-/**
- * Parses a repeated rule beginning at the specified token node.
- *
- * When splitParser is null, elements are parsed consecutively. Otherwise the
- * first element is parsed directly and every following element must be preceded
- * by splitParser. The allowTrailing flag is used only for the separated form.
- *
- * The returned result retains the total consumed-token count for the public
- * index-based interface and stores the first unconsumed token node as its end
- * token.
- *
- * @param loopParser           the parser applied to every repeated element
- * @param splitParser          the parser applied between elements, or null for
- *                             an unseparated repetition
- * @param allowTrailing        whether the separated form may consume one final
- *                             separator without a following element
- * @param tokens               the token list that owns the parsed nodes
- * @param fromToken            the first token node at which repetition begins
- *
- * @return                     an array-list parser result containing the parsed
- *                             elements, total consumed count, and first
- *                             unconsumed token node
- */
-fun parseLoop(
-    loopParser: pointer<Parser>,
-    splitParser: pointer<Parser>,
-    allowTrailing: bool,
-    tokens: pointer<TokenList>,
-    fromToken: pointer<LinkedListNode>
-) -> pointer<ParserResult>
-    = if splitParser == null:
-        parseWithoutSplit(loopParser, tokens, fromToken)
-    else:
-        parseWithSplit(loopParser, splitParser, allowTrailing, tokens, fromToken)

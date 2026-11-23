@@ -74,42 +74,6 @@ struct ProceduralParser
     fun getId() -> int = this.rule.getId()
 
 
-    fun parseAtom(
-        rule: pointer<RuleAtom>,
-        tokens: pointer<TokenList>,
-        fromToken: pointer<LinkedListNode>
-    ) -> pointer<ParserResult>
-    {
-        if rule != null:
-        {
-            if rule.isToken():
-                return Parsing.parseRegAtom(rule.getTokenRule(), tokens, fromToken)
-
-            if rule.isRef():
-                return rule.getRefParser().parse(tokens, fromToken)
-
-            if rule.isOptical():
-            {
-                val opticalParser: pointer<Parser> = rule.getOpticalParser()
-                return Parsing.parseOptionalAtom(
-                    opticalParser,
-                    tokens,
-                    fromToken)
-            }
-
-            if rule.isLoop():
-                return Parsing.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
-        }
-
-        val result: pointer<ParserResult> = ParserResult.fromEmpty(fromToken)
-        result.pushDiagnostic(Diagnostic.makeError(
-            Diagnostic.INVALID_PATTERN_ATOM,
-            new ArrayList(sizeof(SourceLocation)),
-            Diagnostic.INVALID_PATTERN_ATOM_MSG))
-        return result
-    }
-
-
     private fun reusePrefix(
         resultAccumulate: pointer<ArrayList>,
         ruleIndex: int,
@@ -227,8 +191,7 @@ struct ProceduralParser
         for (var i = atomIndex; i < rule.length(); i++):
         {
             val atom: pointer<RuleAtom> = rule.getAtom(i)
-            val result: pointer<ParserResult> =
-                this.parseAtom(atom, tokens, currentToken)
+            val result: pointer<ParserResult> = Parsing.parseAtom(atom, tokens, currentToken)
             
             if result == null:
                 return result

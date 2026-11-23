@@ -31,6 +31,7 @@ import xlang.parser.Parser
 import xlang.parser.Parsing
 import xlang.parser.ParserResult
 import xlang.parser.ParserUtil
+import xlang.parser.Parsing
 import xlang.parser.rule.InputRules
 import xlang.parser.rule.RegexAtomRule
 import xlang.parser.rule.LoopAtomRule
@@ -103,46 +104,6 @@ struct RecursiveParser
 
         val ruleId: pointer<int> = ruleIds.get(0) as pointer<int>
         return if ruleId == null: -1 else: ruleId.deref
-    }
-
-
-    private fun parseAtom(
-        rule: pointer<RuleAtom>,
-        tokens: pointer<TokenList>,
-        fromToken: pointer<LinkedListNode>
-    ) -> pointer<ParserResult>
-    {
-        if rule != null:
-        {
-            // record path
-            this.atoms.push(rule)
-
-            if rule.isToken():
-                return Parsing.parseRegAtom(rule.getTokenRule(), tokens, fromToken)
-
-            if rule.isRef():
-                return rule.getRefParser().parse(tokens, fromToken)
-
-            if rule.isOptical():
-            {
-                val opticalParser: pointer<Parser> = rule.getOpticalParser()
-                return Parsing.parseOptionalAtom(
-                    opticalParser,
-                    tokens,
-                    fromToken)
-            }
-
-            if rule.isLoop():
-                return Parsing.parseLoopAtom(rule.getLoopRule(), tokens, fromToken)
-        }
-
-        val result: pointer<ParserResult> =
-            ParserResult.fromEmpty(fromToken)
-        result.pushDiagnostic(Diagnostic.makeError(
-            Diagnostic.INVALID_PATTERN_ATOM,
-            new ArrayList(sizeof(SourceLocation)),
-            Diagnostic.INVALID_PATTERN_ATOM_MSG))
-        return result
     }
 
 
@@ -288,7 +249,7 @@ struct RecursiveParser
 
         var result: pointer<ParserResult> =
             if expression.isAtom():
-                this.parseAtom(expression.getAtomRule(), parseTokens, fromToken)
+                Parsing.parseAtom(expression.getAtomRule(), parseTokens, fromToken)
             elif expression.isSelect():
                 this.parseSelect(expression.getSelectRule(), parseTokens, fromToken)
             elif expression.isSequence():
