@@ -35,6 +35,27 @@ import xlang.util.ArrayList
 import xlang.util.LinkedListNode
 import xlang.util.string.StringBuilder
 
+/**
+ * Provides fundamental parsing utilities for the XLang parser framework.
+ *
+ * This module implements reusable parsing operations for individual
+ * rule atoms, including token matching, parser references, optional
+ * expressions, and repeated sequences.
+ *
+ * Rule atoms are dispatched to their corresponding parsing strategies,
+ * allowing different parser implementations to share common parsing logic.
+ *
+ * Repeated sequences may be parsed with or without separators, with
+ * optional support for trailing separators and safeguards against
+ * non-progressing parser matches.
+ *
+ * Parsing operations produce ParserResult instances that track consumed
+ * tokens, parsing boundaries, and associated diagnostic information.
+ *
+ * These utilities serve as common building blocks for procedural,
+ * recursive, and Pratt-based parsing.
+ */
+
 
 /**
  * Parses a single token using the specified regular-expression atom rule.
@@ -236,7 +257,8 @@ fun parseOptionalAtom(
     if parser == null:
         return ParserResult.fromEmpty(fromToken)
 
-    val result: pointer<ParserResult> = parser.parse(tokens, fromToken)
+    val cloneParser: pointer<Parser> = parser.clone()
+    val result: pointer<ParserResult> = cloneParser.parse(tokens, fromToken)
 
     return if result == null || result.hasError():
         ParserResult.fromEmpty(fromToken)

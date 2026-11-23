@@ -43,21 +43,91 @@ import xlang.util.LinkedList
 import xlang.util.LinkedListNode
 
 
+/**
+ * Implements a Pratt parser for precedence-based expression parsing.
+ *
+ * The parser uses separate starter and continuation rules to recognize
+ * prefix, infix, postfix, and other expression constructs.
+ *
+ * Starter rules establish the initial expression, while continuation
+ * rules extend an existing left operand according to operator priority
+ * and associativity.
+ *
+ * ProceduralParser instances are used to match individual rule
+ * sequences, while recursive Pratt parsing handles nested expressions
+ * and operator precedence.
+ *
+ * Matching results may be reused during continuation parsing to
+ * reduce redundant parsing operations.
+ */
 struct PrattParser
 {
+   /**
+     * Defines the minimum priority accepted during expression parsing.
+     *
+     * This value is the minimum representable 32-bit signed integer,
+     * allowing all configured operator priorities to be considered.
+     */
     private static val MIN_PRIORITY: int = -2147483647 - 1
 
+    // Stores the identifier associated with this Pratt parser.
     private var id: int
 
+    /**
+     * Stores the parser rules used to recognize initial expressions.
+     *
+     * These rules may include atomic expressions and prefix operators.
+     */
     private var starterRules: pointer<ParserRule>
 
+    /**
+     * Stores the parser rules used to extend existing expressions.
+     *
+     * These rules may include infix and postfix operators, with
+     * priorities controlling their application order.
+     */
     private var continuationRules: pointer<ParserRule>
 
+    /**
+     * Stores the procedural parser used to match starter rules.
+     *
+     * This parser handles rule sequences that establish the initial
+     * expression before continuation processing begins.
+     */
     private var proceduralSParser: pointer<ProceduralParser>
 
+    /**
+     * Stores the procedural parser used to match continuation rules.
+     *
+     * This parser handles rule sequences that extend an existing
+     * left operand during Pratt expression parsing.
+     */
     private var proceduralCParser: pointer<ProceduralParser>
 
 
+    /**
+     * Creates a Pratt parser with the specified identifier and parser rules.
+     *
+     * The starter and continuation rules are stored directly without
+     * being copied or cloned.
+     *
+     * The input rules of both collections are sorted before constructing
+     * their corresponding ProceduralParser instances.
+     *
+     * These procedural parsers are used to perform rule matching during
+     * starter and continuation parsing.
+     *
+     * @param id                the identifier assigned to this Pratt parser.
+     * @param starterRules      the rules used to recognize initial expressions.
+     * @param continuationRules the rules used to extend existing expressions.
+     *
+     * @note                    The supplied input rule collections are sorted
+     *                          directly, which may modify their original order.
+     *
+     * @warning                 The caller must provide valid parser rules.
+     *                          This constructor does not validate them before
+     *                          accessing their input rule collections.
+     */
     constructor(
         id: int,
         starterRules: pointer<ParserRule>,
@@ -76,6 +146,26 @@ struct PrattParser
     }
 
 
+    /**
+     * Initializes a Pratt parser using another parser's internal state.
+     *
+     * The parser identifier, starter rules, continuation rules, and
+     * procedural parser instances are copied by reference.
+     *
+     * No underlying parser rules or procedural parser instances are
+     * cloned during construction.
+     *
+     * @param other             the Pratt parser whose state is reused.
+     * @param sorted            the reserved flag for rule sorting behavior.
+     *
+     * @note                    The sorted parameter is currently unused.
+     *
+     * @note                    The resulting parser shares its underlying rules
+     *                          and procedural parser instances with the original.
+     *
+     * @warning                 The supplied parser must remain valid while
+     *                          its referenced objects are being accessed.
+     */
     private constructor(
         other: pointer<PrattParser>,
         sorted: bool
@@ -176,6 +266,26 @@ struct PrattParser
     }
 
 
+    /**
+     * Parses the initial expression at the specified token node.
+     *
+     * Prefix starter rules are attempted first using parsePrefixStart.
+     *
+     * If no matching prefix starter rule is found, parsing is delegated
+     * to the procedural starter parser.
+     *
+     * If prefix parsing produces a non-null result, that result is
+     * returned directly without attempting procedural fallback.
+     *
+     * @param tokens            the token collection being parsed.
+     * @param fromToken         the token node at which parsing begins.
+     *
+     * @return                  the result produced by prefix parsing or
+     *                          the procedural starter parser.
+     *
+     * @note                    A non-null prefix result is returned even
+     *                          if it contains parsing errors.
+     */
     private fun parseStart(
         tokens: pointer<TokenList>,
         fromToken: pointer<LinkedListNode>
@@ -190,7 +300,22 @@ struct PrattParser
             prefix
     }
 
-
+    /**
+     * Reports an ambiguity between matching parser rules.
+     *
+     * An internal error diagnostic with AMBIGUOUS_PARSER_RULE as its
+     * diagnostic code is added to the specified parser result.
+     *
+     * The diagnostic uses the predefined AMBIGUOUS_PARSER_RULE_MSG
+     * message and an empty source location list.
+     *
+     * @param result            the parser result receiving the diagnostic.
+     *
+     * @note                    The diagnostic is added directly to the
+     *                          supplied result without creating a copy.
+     *
+     * @warning                 The caller must provide a valid parser result.
+     */
     private fun reportAmbiguousRule(result: pointer<ParserResult>)
     {
         result.pushDiagnostic(Diagnostic.makeInternalError(
@@ -568,7 +693,23 @@ struct PrattParser
     }
 
 
-
+    /**
+     * Parses a continuation using the minimum supported priority.
+     *
+     * Delegates to the priority-aware parseContinuation method with
+     * MIN_PRIORITY, allowing continuation rules of any configured
+     * priority to be considered.
+     *
+     * @param left              the previously parsed left operand.
+     * @param tokens            the token collection being parsed.
+     * @param fromToken         the first token node after the left operand.
+     *
+     * @return                  the continuation result, an error result,
+     *                          or null if no continuation matches.
+     *
+     * @note                    The parsing behavior is determined by the
+     *                          priority-aware parseContinuation implementation.
+     */
     private fun parseContinuation(
         left: pointer<ParserResult>,
         tokens: pointer<TokenList>,
@@ -627,6 +768,24 @@ struct PrattParser
     }
 
 
+    /**
+     * Parses an expression beginning at the specified token node.
+     *
+     * Delegates to the priority-aware parse method using MIN_PRIORITY
+     * as the minimum accepted operator priority.
+     *
+     * This allows the parser to recognize a complete expression
+     * without imposing an additional precedence restriction.
+     *
+     * @param tokens            the token collection being parsed.
+     * @param fromToken         the token node at which parsing begins.
+     *
+     * @return                  the parsed expression result, or an error
+     *                          result if parsing fails.
+     *
+     * @note                    The returned result may be null if the
+     *                          underlying parser produces no result.
+     */
     fun parse(
         tokens: pointer<TokenList>,
         fromToken: pointer<LinkedListNode>
@@ -634,11 +793,45 @@ struct PrattParser
         this.parse(tokens, fromToken, MIN_PRIORITY)
 
 
+    /**
+     * Retrieves the identifier associated with this Pratt parser.
+     *
+     * @return                  the identifier assigned during construction.
+     */
     fun getId() -> int = this.id
 
 
+    /**
+     * Resets this Pratt parser.
+     *
+     * The current implementation performs no state modifications
+     * and returns the existing parser instance directly.
+     *
+     * @return                  this PrattParser instance for method chaining.
+     *
+     * @note                    The underlying procedural parsers and rule
+     *                          collections are not reset by this method.
+     */
     fun reset() -> pointer<PrattParser> = this
 
 
+    /**
+     * Creates a shallow copy of this Pratt parser.
+     *
+     * A new PrattParser instance is constructed using the current
+     * parser's identifier, rules, and procedural parser references.
+     *
+     * The underlying rule collections and procedural parser instances
+     * are shared with the original parser rather than being cloned.
+     *
+     * @return                  a newly allocated PrattParser containing
+     *                          the same internal references.
+     *
+     * @note                    The returned parser is a distinct object,
+     *                          but its underlying parsing components are shared.
+     *
+     * @warning                 Modifications to shared parser components may
+     *                          affect both the original and cloned instances.
+     */
     fun clone() -> pointer<PrattParser> = new PrattParser(this, true)
 }

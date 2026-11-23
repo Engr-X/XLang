@@ -35,7 +35,6 @@ import xlang.lexer.TokenPosition
 import xlang.util.ArrayList
 import xlang.util.LinkedListNode
 
-
 /**
  * Shared parser utilities.
  *
