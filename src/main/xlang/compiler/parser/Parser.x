@@ -2152,7 +2152,7 @@ fun lexparse(input: pointer<char>, diagnostics: pointer<Diagnostics>) -> pointer
     return parse(tokens, diagnostics)
 }
 
-fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<Program>
+fun lexparse(file: pointer<File>, diagnostics: pointer<Diagnostics>) -> pointer<ASTFile>
 {
     val tokenFile: pointer<TokenizedFile> = Tokenizer.tokenize(file, diagnostics)
 

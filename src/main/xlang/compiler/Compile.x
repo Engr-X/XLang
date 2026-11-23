@@ -30,7 +30,7 @@ import xlang.Diagnostic
 import xlang.Diagnostics
 import xlang.SourceLocation
 import xlang.compiler.parser.Parser
-import xlang.compiler.parser.program.Program
+import xlang.parser.ASTFile
 import xlang.util.ArrayList
 import xlang.util.File
 import xlang.util.string.StringBuilder
@@ -234,7 +234,7 @@ fun compile(filePaths: pointer<ArrayList>, config: pointer<CompileConfig>)
     }
 
     // step 2: tokennizer + normalize + parse all the source
-    val programs: pointer<ArrayList> = new ArrayList(sizeof(Program))
+    val astFiles: pointer<ArrayList> = new ArrayList(sizeof(ASTFile))
 
     for (var i: int = 0; i < allFiles.length; i++):
     {
@@ -242,10 +242,10 @@ fun compile(filePaths: pointer<ArrayList>, config: pointer<CompileConfig>)
         put("compile: ")
         putln(file.getPath())
 
-        val program: pointer<Program> = Parser.lexparse(file, diagnostics)
+        val astFile: pointer<ASTFile> = Parser.lexparse(file, diagnostics)
 
-        if program != null:
-            programs.push(program)
+        if astFile != null:
+            astFiles.push(astFile)
     }
 
     if diagnostics.hasError():
