@@ -3,6 +3,7 @@ package xlang.compiler.semantic
 import xlang.Diagnostic
 import xlang.Diagnostics
 import xlang.SourceLocation
+import xlang.compiler.parser.program.QualifiedName
 import xlang.compiler.semantic.classifier.Classifier
 import xlang.util.ArrayList
 import xlang.util.HashMap
@@ -127,7 +128,13 @@ struct PackageNode
     }
 
 
+    fun isSubProgram() -> bool = this.type == SUB_PROGRAM_TYPE
+
+
     fun isProgram() -> bool = this.type == PROGRAM_TYPE
+
+
+    fun isSubProgram() -> bool = this.type == SUB_PROGRAM_TYPE
 
 
     fun isPackage() -> bool = this.type == PACKAGE_TYPE
@@ -496,5 +503,29 @@ struct PackageTree
     }
 
 
-    // fun get()
+    fun get(qname: pointer<QualifiedName>) -> pointer<PackageNode>
+    {
+        if qname == null:
+            return null
+
+        var current: pointer<PackageNode> = this.root
+
+        for (var i: int = 0; i < qname.size(); i++):
+        {
+            val part: pointer<char> = qname.getPart(i)
+
+            if part == null:
+                return null
+
+            current = current.getChild(part)
+
+            if current == null:
+                return null
+        }
+
+        return if current.isProgram() || current.isSubProgram():
+                current
+            else:
+                null
+    }
 }

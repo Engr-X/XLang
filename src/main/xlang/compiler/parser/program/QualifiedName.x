@@ -224,6 +224,14 @@ struct QualifiedName
 
 
     /**
+     * Returns the number of components in this qualified name.
+     *
+     * @return                  the number of stored name components
+     */
+    fun size() -> int = this.parts.length
+
+
+    /**
      * Adds an additional syntax token to this qualified name.
      *
      * <p>If {@code token} is {@code null}, no modification is performed.

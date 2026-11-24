@@ -122,6 +122,24 @@ private fun registerProgramsTest() -> int
     if semantic.getChild("Inner") != null || semantic.getChild("Nested") != null:
         return 6
 
+    val qualifiedInner: pointer<PackageNode> = tree.get(
+        new QualifiedName("example")
+            .push("semantic")
+            .push("Outer")
+            .push("Inner"))
+
+    if qualifiedInner != inner:
+        return 7
+
+    if tree.get(new QualifiedName("missing")) != null:
+        return 8
+
+    if tree.get(new QualifiedName("example").push("semantic")) != null:
+        return 9
+
+    if tree.get(new QualifiedName()) != null:
+        return 10
+
     return 0
 }
 
