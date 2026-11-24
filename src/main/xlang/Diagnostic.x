@@ -172,6 +172,9 @@ struct Diagnostic
 
     // Diagnostic code for a source file that cannot be read.
     static val CANNOT_READ_FILE: int = 19
+
+    // Diagnostic code for declarations that expand to the same type path.
+    static val DUPLICATE_EXPANDED_TYPE_PATH: int = 20
     
 
     // Message for an invalid token.
@@ -228,6 +231,10 @@ struct Diagnostic
 
     // Message for a token sequence that cannot be parsed as a type.
     static val CANNOT_PARSE_TYPE_MSG: pointer<char> = "cannot parse type"
+
+    // Message prefix for declarations that expand to the same type path.
+    static val DUPLICATE_EXPANDED_TYPE_PATH_MSG: pointer<char> =
+        "duplicate expanded type path: "
 
     // Message for a source file that cannot be read.
     static val CANNOT_READ_FILE_MSG: pointer<char> = "cannot read file: "

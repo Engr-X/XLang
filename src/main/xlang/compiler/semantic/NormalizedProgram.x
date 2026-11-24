@@ -22,12 +22,14 @@
 
 package xlang.compiler.semantic
 
+import xlang.SourceLocation
 import xlang.compiler.parser.program.ImportDeclaration
 import xlang.compiler.parser.program.Member
 import xlang.compiler.parser.program.MemberRegistry
 import xlang.compiler.parser.program.PackageDeclaration
 import xlang.compiler.parser.program.PreprocessSetting
 import xlang.compiler.parser.program.Struct
+import xlang.lexer.Token
 import xlang.util.ArrayList
 import xlang.util.HashMap
 import xlang.util.MapEntry
@@ -463,7 +465,7 @@ struct NormalizedProgram
      * @param name              the child body name
      * @return                  true when the child exists
      */
-    fun containChild(name: pointer<char>) -> bool =
+    fun hasChild(name: pointer<char>) -> bool =
         name != null && this.children != null && this.children.containsKey(name)
 
 
@@ -567,6 +569,42 @@ struct NormalizedProgram
      *                          if no body is associated with this program
      */
     fun getHost() -> pointer<*> = this.host
+
+
+    /**
+     * Returns the source range occupied by this program's declaration name.
+     *
+     * <p>The current implementation locates the name token stored by the
+     * original structure declaration. The returned range therefore points at
+     * the declared type name rather than at the complete declaration.</p>
+     *
+     * @return                  the declaration-name location, or null when the
+     *                          original declaration does not expose one
+     */
+    fun getSourceLocation() -> pointer<SourceLocation>
+    {
+        if this.bodyType != STRUCT_TYPE || this.host == null || this.bodyName == null:
+            return null
+
+        val body: pointer<Struct> = this.host as pointer<Struct>
+        val tokens: pointer<ArrayList> = body.getExtraTokens()
+
+        for (var i: int = 0; i < tokens.length; i++):
+        {
+            val token: pointer<Token> = tokens.get(i) as pointer<Token>
+
+            if token != null && token.pos != null &&
+                String.streq(token.text, this.bodyName):
+                return new SourceLocation(
+                    null,
+                    token.pos.offset,
+                    token.pos.line,
+                    token.pos.column,
+                    token.pos.length)
+        }
+
+        return null
+    }
 
 
     /**
