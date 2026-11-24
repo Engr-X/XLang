@@ -20,7 +20,7 @@
  *
  */
 
-package xlang.compiler.semantic.normalizer
+package xlang.compiler.semantic
 
 import xlang.compiler.parser.program.ImportDeclaration
 import xlang.compiler.parser.program.Member

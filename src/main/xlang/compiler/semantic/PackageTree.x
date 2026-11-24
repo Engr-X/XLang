@@ -1,7 +1,6 @@
 package xlang.compiler.semantic
 
 import xlang.compiler.semantic.classifier.Classifier
-import xlang.compiler.semantic.normalizer.NormalizedProgram
 import xlang.util.ArrayList
 import xlang.util.HashMap
 import xlang.util.HashSet

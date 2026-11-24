@@ -1,7 +1,7 @@
 #file.outerClass("Classifier")
 package xlang.compiler.semantic.classifier
 
-import xlang.compiler.semantic.normalizer.NormalizedProgram
+import xlang.compiler.semantic.NormalizedProgram
 import xlang.util.ArrayList
 import xlang.util.HashMap
 import xlang.util.string.String

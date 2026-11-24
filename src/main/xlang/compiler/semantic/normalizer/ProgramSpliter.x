@@ -36,6 +36,7 @@ import xlang.compiler.parser.program.QualifiedName
 import xlang.compiler.parser.program.SelectiveImports
 import xlang.compiler.parser.program.Struct
 import xlang.compiler.parser.program.StructConstructor
+import xlang.compiler.semantic.NormalizedProgram
 import xlang.compiler.setting.CompilerSettings
 import xlang.lexer.Token
 import xlang.util.ArrayList
