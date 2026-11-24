@@ -25,22 +25,14 @@
 #file.outerClass("TokenizerTest")
 package xlang.compiler.lexer
 
-import xlang.Files
 import xlang.Diagnostics
 import xlang.compiler.lexer.Tokenizer
 import xlang.lexer.Token
 import xlang.lexer.TokenList
-import xlang.lexer.TokenizedFile
 import xlang.test.TestCase
 import xlang.test.TestGroup
 import xlang.test.TestUnion
-import xlang.util.ArrayList
-import xlang.util.File
-import xlang.util.Memory
 import xlang.util.string.String
-
-
-private var sourceTokenIndex: int = 0
 
 
 val TEST_GROUP: pointer<TestGroup> = genTest()
@@ -51,142 +43,11 @@ fun genTest() -> pointer<TestGroup>
     val result: pointer<TestGroup> = new TestGroup("xlang.compiler.Tokenizer")
     val pureTokenizeTC: pointer<TestCase> = new TestCase("pureTokenize", pureTokenizeTest)
     val tokenizeTC: pointer<TestCase> = new TestCase("tokenize", tokenizeTest)
-    val allSourceFilesTG: pointer<TestGroup> = genAllSourceFilesTestGroup()
     val pureTokenizeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, pureTokenizeTC, null)
     val tokenizeUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, tokenizeTC, null)
-    val allSourceFilesUnion: pointer<TestUnion> = new TestUnion(TestGroup.TYPE, null, allSourceFilesTG)
 
     result.addTestUnion(pureTokenizeUnion)
     result.addTestUnion(tokenizeUnion)
-    result.addTestUnion(allSourceFilesUnion)
-
-    return result
-}
-
-
-private fun hasXExtension(path: pointer<char>) -> bool
-{
-    val length: int = String.strlen(path)
-
-    return length >= 2 && path[length - 2] == '.' && path[length - 1] == 'x'
-}
-
-
-private fun sourceTokenTestName(path: pointer<char>) -> pointer<char>
-{
-    if path == null:
-        return String.strdup("<null>")
-
-    val pathLength: int = String.strlen(path)
-    var start: int = 0
-
-    for (var i = 0; i + 5 < pathLength; i++):
-    {
-        val before: bool = i == 0 || path[i - 1] == '/' || path[i - 1] == '\\'
-        val after: bool = path[i + 5] == '/' || path[i + 5] == '\\'
-
-        if before && after && path[i] == 'x' && path[i + 1] == 'l' && path[i + 2] == 'a' && path[i + 3] == 'n' && path[i + 4] == 'g':
-            start = i
-    }
-
-    var end: int = pathLength
-
-    if end - start >= 2 && path[end - 2] == '.' && path[end - 1] == 'x':
-        end -= 2
-
-    val nameLength: int = end - start
-    val result: pointer<char> = Memory.allocMemory((nameLength + 1) * sizeof(char)) as pointer<char>
-
-    for (var i = 0; i < nameLength; i++):
-    {
-        val current: char = path[start + i]
-
-        if current == '/' || current == '\\':
-            result[i] = '.'
-        else:
-            result[i] = current
-    }
-
-    result[nameLength] = String.NULL_CHAR
-    return result
-}
-
-
-private fun sourceTokenTest() -> int
-{
-    val files: pointer<ArrayList> = Files.ALL_FILES
-    val contents: pointer<ArrayList> = Files.ALL_FILE_CONTENT
-    val tokenCache: pointer<ArrayList> = Files.ALL_FILE_TOKENS
-
-    if files == null || contents == null || tokenCache == null ||
-        files.length != contents.length || files.length != tokenCache.length:
-        return -1
-
-    while sourceTokenIndex < files.length:
-    {
-        val index: int = sourceTokenIndex
-        val path: pointer<char> = (files.get(index) as pointer<pointer<char>>).deref
-        sourceTokenIndex = index + 1
-
-        if !hasXExtension(path):
-            continue
-
-        val contentSlot: pointer<pointer<char>> = contents.get(index) as pointer<pointer<char>>
-        val source: pointer<char> = if contentSlot == null:
-                null
-            else:
-                contentSlot.deref
-
-        if source == null:
-            return 1
-
-        val file: pointer<File> = new File(path)
-        val diagnostics: pointer<Diagnostics> = new Diagnostics()
-        val tokenizedFile: pointer<TokenizedFile> = Tokenizer.tokenize(file, diagnostics)
-        val tokens: pointer<TokenList> = if tokenizedFile == null:
-                null
-            else:
-                tokenizedFile.getTokens()
-
-        if tokens == null || diagnostics.hasError():
-            return 2
-
-        for (var i = 0; i < tokens.length(); i++):
-        {
-            val token: pointer<Token> = tokens.get(i)
-
-            if token == null || token.kind < 0:
-                return 3
-        }
-
-        tokenCache.set(index, tokens.ref)
-
-        return 0
-    }
-
-    return -1
-}
-
-
-private fun genAllSourceFilesTestGroup() -> pointer<TestGroup>
-{
-    val result: pointer<TestGroup> = new TestGroup("allSourceFiles")
-    val files: pointer<ArrayList> = Files.ALL_FILES
-
-    sourceTokenIndex = 0
-
-    for (var i = 0; i < files.length; i++):
-    {
-        val path: pointer<char> = (files.get(i) as pointer<pointer<char>>).deref
-
-        if !hasXExtension(path):
-            continue
-
-        val testCase: pointer<TestCase> = new TestCase(sourceTokenTestName(path), sourceTokenTest)
-        val testUnion: pointer<TestUnion> = new TestUnion(TestCase.TYPE, testCase, null)
-
-        result.addTestUnion(testUnion)
-    }
 
     return result
 }

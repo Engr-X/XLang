@@ -33,11 +33,12 @@ import xlang.test.TestUnion
 import xlang.lexer.NormalizeFSMTest
 import xlang.lexer.TokenTest
 import xlang.lexer.TokenizeFSMTest
+import xlang.compiler.lexer.AllFileTokenizeTest
 import xlang.compiler.lexer.TokenizerTest
 import xlang.compiler.lexer.TokenNormalizerTest
-import xlang.compiler.parser.Parser
-import xlang.compiler.parser.ParserTest
-import xlang.compiler.parser.ParserRegressionTest
+import xlang.compiler.parser.AllFileParseTest
+import xlang.compiler.parser.PrattTest
+import xlang.compiler.parser.RecursiveTest
 import xlang.parser.ParserUtilTest
 import xlang.parser.PrattParserTest
 import xlang.parser.RecursiveParserTest
@@ -58,7 +59,7 @@ private fun getTestGroup() -> pointer<TestGroup>
 {
     val result: pointer<TestGroup> = new TestGroup("xlang")
     val testGroupSpace: blob[sizeof(pointer<TestGroup>) * 100]
-    val testGroupLength: int = 19
+    val testGroupLength: int = 22
     val testGroups: pointer<pointer<TestGroup>> = testGroupSpace as pointer<pointer<TestGroup>>
 
     testGroups[0] = StringTest.TEST_GROUP
@@ -70,18 +71,22 @@ private fun getTestGroup() -> pointer<TestGroup>
     testGroups[6] = TypeConvertTest.TEST_GROUP
     testGroups[7] = FileTest.TEST_GROUP
     testGroups[8] = IOTest.TEST_GROUP
+
+
     testGroups[9] = TokenTest.TEST_GROUP
     testGroups[10] = TokenizeFSMTest.TEST_GROUP
     testGroups[11] = NormalizeFSMTest.TEST_GROUP
     testGroups[12] = TokenizerTest.TEST_GROUP
     testGroups[13] = TokenNormalizerTest.TEST_GROUP
-    // testGroups[14] = NormalTypeTest.TEST_GROUP
-    testGroups[14] = PrattParserTest.TEST_GROUP
-    testGroups[15] = ParserRegressionTest.TEST_GROUP
-    testGroups[16] = ParserUtilTest.TEST_GROUP
-    // testGroups[17] = RecursiveParserTest.TEST_GROUP
-    testGroups[17] = TypeParserTest.TEST_GROUP
-    testGroups[18] = ParserTest.TEST_GROUP
+    testGroups[14] = AllFileTokenizeTest.TEST_GROUP
+
+    testGroups[15] = PrattParserTest.TEST_GROUP
+    testGroups[16] = RecursiveParserTest.TEST_GROUP
+    testGroups[17] = ParserUtilTest.TEST_GROUP
+    testGroups[18] = TypeParserTest.TEST_GROUP
+    testGroups[19] = PrattTest.TEST_GROUP
+    testGroups[20] = RecursiveTest.TEST_GROUP
+    testGroups[21] = AllFileParseTest.TEST_GROUP
 
     for (var i = 0; i < testGroupLength; i++):
     {
