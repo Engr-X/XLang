@@ -624,6 +624,22 @@ struct Struct
     }
 
 
+    fun addModifier(modifier: pointer<Modifier>) -> pointer<Struct>
+    {
+        if modifier == null:
+            return this
+
+        if this.modifiers == null:
+            this.modifiers = new HashSet(
+                sizeof(Modifier),
+                Modifier.equalModifier,
+                Modifier.hashcode)
+
+        this.modifiers.add(modifier)
+        return this
+    }
+
+
     /**
      * Returns the name of this structure.
      *

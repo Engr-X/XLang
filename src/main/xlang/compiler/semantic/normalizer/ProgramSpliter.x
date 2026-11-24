@@ -131,22 +131,100 @@ struct SplitterMembers
 }
 
 
+private fun splitTypeDecl(
+    outer: pointer<NormalizedProgram>,
+    dest: pointer<ArrayList>
+) -> pointer<NormalizedProgram>
+{
+    if outer == null:
+        return null
+
+    if outer.getBodyType() != NormalizedProgram.STRUCT_TYPE || outer.getHost() == null:
+    {
+        if dest != null:
+            dest.push(outer)
+
+        return outer
+    }
+
+    val source: pointer<Struct> = outer.getHost() as pointer<Struct>
+    val sourceMembers: pointer<ArrayList> = source.getMembers()
+    val members: pointer<ArrayList> = new ArrayList(sizeof(Member))
+    val nestedStructs: pointer<ArrayList> = new ArrayList(sizeof(Struct))
+
+    for (var i: int = 0; i < sourceMembers.length; i++):
+    {
+        val member: pointer<Member> = sourceMembers.get(i) as pointer<Member>
+
+        if member == null:
+            continue
+
+        if member.isStruct():
+        {
+            val nestedStruct: pointer<Struct> = member.getHost() as pointer<Struct>
+
+            if nestedStruct != null:
+                nestedStructs.push(nestedStruct)
+        }
+        else:
+            members.push(member)
+    }
+
+    val rebuiltStruct: pointer<Struct> = new Struct(source.getStructName(), members)
+    rebuiltStruct.setAnnotations(source.getAnnotations())
+
+    if source.getModifiers() != null:
+        rebuiltStruct.setModifiers(source.getModifiers().toArray())
+
+    val extraTokens: pointer<ArrayList> = source.getExtraTokens()
+
+    for (var i: int = 0; i < extraTokens.length; i++):
+        rebuiltStruct.addExtraToken(extraTokens.get(i) as pointer<Token>)
+
+    val result: pointer<NormalizedProgram> = NormalizedProgram.fromStruct(
+        outer.getPreprocessSettings(),
+        outer.getPackageDeclaration(),
+        outer.getImports(),
+        rebuiltStruct)
+
+    for (var i: int = 0; i < nestedStructs.length; i++):
+    {
+        val nestedStruct: pointer<Struct> = nestedStructs.get(i) as pointer<Struct>
+        val nestedProgram: pointer<NormalizedProgram> = NormalizedProgram.fromStruct(
+            outer.getPreprocessSettings(),
+            outer.getPackageDeclaration(),
+            outer.getImports(),
+            nestedStruct)
+        val child: pointer<NormalizedProgram> = splitTypeDecl(nestedProgram, null)
+
+        result.addChild(child)
+    }
+
+    if dest != null:
+        dest.push(result)
+
+    return result
+}
+
+
 private fun splitProgram(
     program: pointer<Program>,
     diagnostics: pointer<Diagnostics>
 ) -> pointer<ArrayList>
 {
-    // null check
-
+    // 1. Read the package, imports, and preprocessing settings.
     val packageName: pointer<ArrayList> = program.getPackageDeclaration().getQualifiedName()
     val imports: pointer<ArrayList> = program.getImportDeclarations()
     val preprocessSettings: pointer<ArrayList> = program.getPreprocessSettings()
+
+    // 2. Resolve the generated outer-class name.
     val config: pointer<CompilerSettings> = new CompilerSettings(null).setAll(preprocessSettings)
     val outerClassName: pointer<char> = config.getOuterClass()
 
+    // 3. Classify the top-level program members by declaration kind.
     val splitMembers: pointer<SplitterMembers> = new SplitterMembers(program)
 
-    // check have constructors here
+    // 4. Reject constructors declared directly at program level.
     for (var i = 0; i < splitMembers.constructors.length; i++):
     {
         val structConstructor: pointer<StructConstructor> = splitMembers.constructors.get(i) as pointer<StructConstructor>
@@ -180,7 +258,7 @@ private fun splitProgram(
 
     val result: pointer<ArrayList> = new ArrayList(sizeof(NormalizedProgram))
 
-    // generate struct programs
+    // 5. Convert every top-level struct into a normalized program.
     val newImport: pointer<ImportDeclaration> = ImportDeclaration.fromSelective(
         SelectiveImports.fromAll(new QualifiedName(packageName).push(outerClassName)))
     val newImports: pointer<ArrayList> = imports.clone().push(newImport)
@@ -192,16 +270,19 @@ private fun splitProgram(
         if structItem == null:
             continue
 
+        // add static modifiers
+        structItem.addModifier(Modifier.fromStatic())
+
         val normalizedProgram: pointer<NormalizedProgram> = NormalizedProgram.fromStruct(
             preprocessSettings,
             program.getPackageDeclaration(),
             newImports.clone(),
             structItem)
 
-        result.push(normalizedProgram)
+        splitTypeDecl(normalizedProgram, result)
     }
 
-    // generate outer class for program-level fields and functions
+    // 6. Move program-level fields and functions into a static outer class.
     val outerClass: pointer<Struct> = new Struct(outerClassName, null)
 
     for (var i = 0; i < splitMembers.fields.length; i++):
@@ -226,14 +307,16 @@ private fun splitProgram(
         outerClass.addMember(Member.fromFunction(function))
     }
 
+    // 7. Convert the generated outer class into a normalized program.
     val normalizedOuterClass: pointer<NormalizedProgram> = NormalizedProgram.fromStruct(
         preprocessSettings,
         program.getPackageDeclaration(),
         imports,
         outerClass)
 
-    result.push(normalizedOuterClass)
+    splitTypeDecl(normalizedOuterClass, result)
 
+    // 8. Return the normalized structs followed by the generated outer class.
     return result
 }
 
