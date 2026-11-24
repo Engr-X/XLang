@@ -29,6 +29,13 @@ import xlang.compiler.parser.program.PackageDeclaration
 import xlang.compiler.parser.program.PreprocessSetting
 import xlang.compiler.parser.program.Struct
 import xlang.util.ArrayList
+import xlang.util.HashMap
+import xlang.util.MapEntry
+import xlang.util.string.String
+
+
+private fun childNameEq(left: pointer<*>, right: pointer<*>) -> bool =
+    String.streq(left as pointer<char>, right as pointer<char>)
 
 
 /**
@@ -303,18 +310,11 @@ struct NormalizedProgram
 
 
     /**
-     * Stores the nested program elements contained within this normalized program.
+     * Stores child programs by body name.
      *
-     * <p>This list contains elements that belong to the current program scope but
-     * are represented as nested structures after normalization. These elements may
-     * include nested declarations, scopes, or other program units produced during
-     * the normalization process.</p>
-     *
-     * <p>The exact contents of this list depend on the structure of the normalized
-     * program and are intended to preserve hierarchical relationships that cannot
-     * be represented directly by the top-level program body.</p>
+     * <p>The map is created lazily when the first valid child is added.</p>
      */
-    private var nested: pointer<ArrayList>
+    private var children: pointer<HashMap>
 
 
     /**
@@ -387,25 +387,79 @@ struct NormalizedProgram
         this.functionRegistry = new MemberRegistry(functionMembers)
         this.variableRegistry = new MemberRegistry(variableMembers)
         this.constructorRegistry = new MemberRegistry(constructorMembers)
+        this.children = null
     }
 
 
     /**
-     * Adds a nested normalized program to this program.
+     * Adds a child program using its body name as the key.
      *
-     * <p>The given program is appended to the collection of nested programs
-     * associated with the current {@code NormalizedProgram}. If
-     * {@code nestedProgram} is {@code null}, the call is ignored and the
-     * collection remains unchanged.</p>
+     * <p>A null child or a child without a body name is ignored. Adding another
+     * child with the same name replaces the previously stored child.</p>
      *
-     * @param nestedProgram     the nested normalized program to add
+     * @param child             the child program to add
+     * @return                  this normalized program
      */
-    fun addNestedProgram(nestedProgram: pointer<NormalizedProgram>)
+    fun addChild(child: pointer<NormalizedProgram>) -> pointer<NormalizedProgram>
     {
-        if nestedProgram == null:
-            return
+        if child == null || child.getBodyName() == null:
+            return this
 
-        this.nested.push(nestedProgram)
+        if this.children == null:
+            this.children = new HashMap(childNameEq, String.strHash)
+
+        this.children.put(child.getBodyName(), child)
+        return this
+    }
+
+
+    /**
+     * Returns the child program associated with the specified body name.
+     *
+     * @param name              the child body name
+     * @return                  the matching child, or null when it is absent
+     */
+    fun getChild(name: pointer<char>) -> pointer<NormalizedProgram> =
+        if name == null || this.children == null:
+            null
+        else:
+            this.children.get(name) as pointer<NormalizedProgram>
+
+
+    /**
+     * Tests whether a child with the specified body name is present.
+     *
+     * @param name              the child body name
+     * @return                  true when the child exists
+     */
+    fun containChild(name: pointer<char>) -> bool =
+        name != null && this.children != null && this.children.containsKey(name)
+
+
+    /**
+     * Returns all child programs in a new list.
+     *
+     * @return                  a list of child programs, or an empty list when
+     *                          no children have been added
+     */
+    fun getChildren() -> pointer<ArrayList>
+    {
+        val result: pointer<ArrayList> = new ArrayList(sizeof(NormalizedProgram))
+
+        if this.children == null:
+            return result
+
+        val entries: pointer<ArrayList> = this.children.getEntries()
+
+        for (var i: int = 0; i < entries.length; i++):
+        {
+            val entry: pointer<MapEntry> = entries.get(i) as pointer<MapEntry>
+
+            if entry != null && entry.value != null:
+                result.push(entry.value)
+        }
+
+        return result
     }
 
 
