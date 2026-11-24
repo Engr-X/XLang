@@ -28,20 +28,8 @@ struct PackageNode
     private static val ROOT_TYPE: int = 3
 
 
-    static fun fromProgram(program: pointer<NormalizedProgram>) -> pointer<PackageNode> =
-        new PackageNode(PROGRAM_TYPE, program.getBodyName(), program)
-
-    
-    static fun fromSubProgram(subProgram: pointer<NormalizedProgram>) -> pointer<PackageNode> =
-        new PackageNode(SUB_PROGRAM_TYPE, subProgram.getBodyName(), subProgram)
-
-
-    static fun fromPackage(name: pointer<char>) -> pointer<PackageNode> =
-        new PackageNode(PACKAGE_TYPE, name, null)
-
-
     static fun fromRoot() -> pointer<PackageNode> =
-        new PackageNode(ROOT_TYPE, "<root>", null)
+        new PackageNode(null, ROOT_TYPE, "<root>", null)
 
 
     private var type: int
@@ -53,10 +41,18 @@ struct PackageNode
     private var program: pointer<NormalizedProgram>
 
 
+    private var parrent: pointer<PackageNode>
+
+
     private var children: pointer<HashMap>
 
 
-    private constructor(type: int, name: pointer<char>, program: pointer<NormalizedProgram>)
+    private constructor(
+        parrent: pointer<PackageNode>,
+        type: int,
+        name: pointer<char>,
+        program: pointer<NormalizedProgram>
+    )
     {
         this.type = type
         this.name = name
@@ -80,7 +76,7 @@ struct PackageNode
     }
 
 
-    fun addChild(child: pointer<PackageNode>) -> pointer<PackageNode>
+    private fun addChild(child: pointer<PackageNode>) -> pointer<PackageNode>
     {
         if child == null || child.name == null:
             return null
@@ -101,6 +97,7 @@ struct PackageNode
             return null
 
         return this.addChild(new PackageNode(
+            this,
             PROGRAM_TYPE,
             program.getBodyName(),
             program))
@@ -113,6 +110,7 @@ struct PackageNode
             return null
 
         return this.addChild(new PackageNode(
+            this,
             SUB_PROGRAM_TYPE,
             program.getBodyName(),
             program))
@@ -124,11 +122,8 @@ struct PackageNode
         if name == null:
             return null
 
-        return this.addChild(new PackageNode(PACKAGE_TYPE, name, null))
+        return this.addChild(new PackageNode(this, PACKAGE_TYPE, name, null))
     }
-
-
-    fun isSubProgram() -> bool = this.type == SUB_PROGRAM_TYPE
 
 
     fun isProgram() -> bool = this.type == PROGRAM_TYPE
@@ -491,18 +486,6 @@ struct PackageTree
     }
 
 
-    fun check(diagnostics: pointer<Diagnostics>)
-    {
-        if diagnostics == null:
-            return
-
-        if !this.root.check(diagnostics):
-            return
-
-        this.checkExpandedPaths(diagnostics)
-    }
-
-
     fun get(qname: pointer<QualifiedName>) -> pointer<PackageNode>
     {
         if qname == null:
@@ -527,5 +510,17 @@ struct PackageTree
                 current
             else:
                 null
+    }
+
+
+    fun checkPackageTree(diagnostics: pointer<Diagnostics>)
+    {
+        if diagnostics == null:
+            return
+
+        if !this.root.check(diagnostics):
+            return
+
+        this.checkExpandedPaths(diagnostics)
     }
 }

@@ -149,7 +149,7 @@ private fun checkTest() -> int
     val validTree: pointer<PackageTree> = new PackageTree()
     val validDiagnostics: pointer<Diagnostics> = new Diagnostics()
     validTree.registerPrograms(makePrograms())
-    validTree.check(validDiagnostics)
+    validTree.checkPackageTree(validDiagnostics)
 
     if validDiagnostics.hasError():
         return 1
@@ -159,7 +159,7 @@ private fun checkTest() -> int
     val invalidProgram: pointer<NormalizedProgram> =
         makeProgram("Invalid", null)
     invalidTree.getRoot().addSubProgram(invalidProgram)
-    invalidTree.check(invalidDiagnostics)
+    invalidTree.checkPackageTree(invalidDiagnostics)
 
     if !invalidDiagnostics.hasError():
         return 2
@@ -184,7 +184,7 @@ private fun checkTest() -> int
     val duplicateTree: pointer<PackageTree> = new PackageTree()
     val duplicateDiagnostics: pointer<Diagnostics> = new Diagnostics()
     duplicateTree.registerPrograms(duplicatePrograms)
-    duplicateTree.check(duplicateDiagnostics)
+    duplicateTree.checkPackageTree(duplicateDiagnostics)
 
     if !duplicateDiagnostics.hasError():
         return 3
