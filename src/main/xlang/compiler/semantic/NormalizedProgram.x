@@ -308,6 +308,13 @@ struct NormalizedProgram
      */
     private var imports: pointer<ArrayList>
 
+    /**
+     * Stores the normalized program that owns this nested program.
+     *
+     * <p>A null value indicates that this program is top-level or has not yet
+     * been attached to a parent program.</p>
+     */
+    private var parrent: pointer<NormalizedProgram>
 
     /**
      * Stores child programs by body name.
@@ -388,7 +395,31 @@ struct NormalizedProgram
         this.variableRegistry = new MemberRegistry(variableMembers)
         this.constructorRegistry = new MemberRegistry(constructorMembers)
         this.children = null
+        this.parrent = null
     }
+
+
+    /**
+     * Sets the normalized program that owns this program.
+     *
+     * @param parent            the parent program, or null to detach this
+     *                          program
+     * @return                  this normalized program
+     */
+    fun setParent(parent: pointer<NormalizedProgram>) -> pointer<NormalizedProgram>
+    {
+        this.parrent = parent
+        return this
+    }
+
+
+    /**
+     * Returns the normalized program that owns this program.
+     *
+     * @return                  the parent program, or null when this program is
+     *                          top-level or detached
+     */
+    fun getParrent() -> pointer<NormalizedProgram> = this.parrent
 
 
     /**

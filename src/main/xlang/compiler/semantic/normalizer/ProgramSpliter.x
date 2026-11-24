@@ -198,7 +198,11 @@ private fun splitTypeDecl(
             nestedStruct)
         val child: pointer<NormalizedProgram> = splitTypeDecl(nestedProgram, null)
 
-        result.addChild(child)
+        if child != null:
+        {
+            child.setParent(result)
+            result.addChild(child)
+        }
     }
 
     if dest != null:

@@ -14,15 +14,22 @@ struct PackageNode
 
     private static val PROGRAM_TYPE: int = 1
 
+    private static val SUB_PROGRAM_TYPE: int = 1
+
     private static val ROOT_TYPE: int = 2
 
 
     static fun fromProgram(program: pointer<NormalizedProgram>) -> pointer<PackageNode> =
         new PackageNode(PROGRAM_TYPE, program.getBodyName(), program)
 
+    
+    static fun fromSubProgram(subProgram: pointer<NormalizedProgram>) -> pointer<PackageNode> =
+        new PackageNode(SUB_PROGRAM_TYPE, subProgram.getBodyName(), subProgram)
+
 
     static fun fromPackage(name: pointer<char>) -> pointer<PackageNode> =
         new PackageNode(PACKAGE_TYPE, name, null)
+
 
     static fun fromRoot() -> pointer<PackageNode> =
         new PackageNode(ROOT_TYPE, "<root>", null)
@@ -126,96 +133,6 @@ struct PackageNode
 
 
     fun getProgram() -> pointer<NormalizedProgram> = this.program
-
-
-    fun addChild(child: pointer<PackageNode>)
-    {
-        if child == null:
-            return
-
-        this.children.add(child.ref)
-    }
-
-
-    fun addProgram(program: pointer<NormalizedProgram>) -> pointer<PackageNode>
-    {
-        if program == null:
-            return null
-
-        val name: pointer<char> = program.getBodyName()
-
-        if name == null:
-            return null
-
-        val existing: pointer<PackageNode> = this.getChild(name)
-
-        if existing != null:
-        {
-            if existing.isProgram() && existing.getProgram() == program:
-                return existing
-
-            return null
-        }
-
-        val child: pointer<PackageNode> = PackageNode.fromProgram(program)
-        this.addChild(child)
-        return child
-    }
-
-
-    fun addPackage(name: pointer<char>) -> pointer<PackageNode>
-    {
-        if name == null:
-            return null
-
-        val existing: pointer<PackageNode> = this.getChild(name)
-
-        if existing != null:
-        {
-            if existing.isPackage():
-                return existing
-
-            return null
-        }
-
-        val child: pointer<PackageNode> = PackageNode.fromPackage(name)
-        this.addChild(child)
-        return child
-    }
-
-
-    fun addPrograms(programs: pointer<ArrayList>)
-    {
-        if programs == null:
-            return
-
-        for (var i = 0; i < programs.length; i++):
-        {
-            val program: pointer<NormalizedProgram> = programs.get(i) as pointer<NormalizedProgram>
-
-            if program == null:
-                continue
-
-            this.addProgram(program)
-        }
-    }
-
-
-    fun addPackages(packages: pointer<ArrayList>)
-    {
-        if packages == null:
-            return
-
-        for (var i = 0; i < packages.length; i++):
-        {
-            val packageNode: pointer<PackageNode> = packages.get(i) as pointer<PackageNode>
-
-            if packageNode == null:
-                continue
-
-            this.addChild(packageNode)
-        }
-    }
 }
 
 
@@ -255,31 +172,8 @@ struct PackageTree
     }
 
 
-    fun registerAll(programs: pointer<ArrayList>)
+    fun registerProgram(nProgram: pointer<NormalizedProgram>)
     {
-        val classified: pointer<HashMap> = Classifier.classify(programs)
-
-        if classified == null:
-            return
-
-        val entries: pointer<ArrayList> = classified.getEntries()
-
-        for (var i = 0; i < entries.length; i++):
-        {
-            val entry: pointer<MapEntry> =
-                entries.get(i) as pointer<MapEntry>
-
-            if entry == null:
-                continue
-
-            val packageName: pointer<ArrayList> = entry.key as pointer<ArrayList>
-            val packagePrograms: pointer<ArrayList> = entry.value as pointer<ArrayList>
-            val packageNode: pointer<PackageNode> = this.registerPackage(packageName)
-
-            if packageNode == null:
-                continue
-
-            packageNode.addPrograms(packagePrograms)
-        }
+        
     }
 }
