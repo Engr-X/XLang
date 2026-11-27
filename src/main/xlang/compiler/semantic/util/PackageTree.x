@@ -1,4 +1,4 @@
-package xlang.compiler.semantic
+package xlang.compiler.semantic.util
 
 import xlang.Diagnostic
 import xlang.Diagnostics
@@ -6,6 +6,7 @@ import xlang.SourceLocation
 import xlang.compiler.ImportAPI
 import xlang.compiler.Imports
 import xlang.compiler.parser.program.QualifiedName
+import xlang.compiler.semantic.NormalizedProgram
 import xlang.compiler.semantic.classifier.Classifier
 import xlang.util.ArrayList
 import xlang.util.HashMap

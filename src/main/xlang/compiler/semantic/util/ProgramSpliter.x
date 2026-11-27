@@ -21,7 +21,7 @@
  */
 
 #file.outerClass("ProgramSpliter")
-package xlang.compiler.semantic.normalizer
+package xlang.compiler.semantic.util
 
 import xlang.Diagnostic
 import xlang.Diagnostics

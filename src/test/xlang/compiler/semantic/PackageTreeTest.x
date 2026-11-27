@@ -7,6 +7,8 @@ import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.program.PackageDeclaration
 import xlang.compiler.parser.program.QualifiedName
 import xlang.compiler.parser.program.Struct
+import xlang.compiler.semantic.util.PackageNode
+import xlang.compiler.semantic.util.PackageTree
 import xlang.lexer.Token
 import xlang.lexer.TokenPosition
 import xlang.test.TestCase
