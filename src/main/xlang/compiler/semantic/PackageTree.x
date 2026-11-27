@@ -3,6 +3,8 @@ package xlang.compiler.semantic
 import xlang.Diagnostic
 import xlang.Diagnostics
 import xlang.SourceLocation
+import xlang.compiler.ImportAPI
+import xlang.compiler.Imports
 import xlang.compiler.parser.program.QualifiedName
 import xlang.compiler.semantic.classifier.Classifier
 import xlang.util.ArrayList
@@ -27,6 +29,10 @@ struct PackageNode
 
     private static val ROOT_TYPE: int = 3
 
+    private static val IMPORT_TYPE: int = 4
+
+    private static val SUB_IMPORT_TYPE: int = 5
+
 
     static fun fromRoot() -> pointer<PackageNode> =
         new PackageNode(null, ROOT_TYPE, "<root>", null)
@@ -39,6 +45,9 @@ struct PackageNode
 
 
     private var program: pointer<NormalizedProgram>
+
+
+    private var importAPI: pointer<ImportAPI>
 
 
     private var parrent: pointer<PackageNode>
@@ -57,6 +66,8 @@ struct PackageNode
         this.type = type
         this.name = name
         this.program = program
+        this.importAPI = null
+        this.parrent = parrent
         this.children = new HashMap(packagePathEq, String.strHash)
     }
 
@@ -117,6 +128,36 @@ struct PackageNode
     }
 
 
+    fun addImportedProgram(importAPI: pointer<ImportAPI>) -> pointer<PackageNode>
+    {
+        if importAPI == null || importAPI.getBodyName() == null:
+            return null
+
+        val child: pointer<PackageNode> = new PackageNode(
+            this,
+            IMPORT_TYPE,
+            importAPI.getBodyName(),
+            null)
+        child.importAPI = importAPI
+        return this.addChild(child)
+    }
+
+
+    fun addSubImportedProgram(importAPI: pointer<ImportAPI>) -> pointer<PackageNode>
+    {
+        if importAPI == null || importAPI.getBodyName() == null:
+            return null
+
+        val child: pointer<PackageNode> = new PackageNode(
+            this,
+            SUB_IMPORT_TYPE,
+            importAPI.getBodyName(),
+            null)
+        child.importAPI = importAPI
+        return this.addChild(child)
+    }
+
+
     fun addPackage(name: pointer<char>) -> pointer<PackageNode>
     {
         if name == null:
@@ -132,10 +173,19 @@ struct PackageNode
     fun isSubProgram() -> bool = this.type == SUB_PROGRAM_TYPE
 
 
+    fun isImportedProgram() -> bool = this.type == IMPORT_TYPE
+
+
+    fun isSubImportedProgram() -> bool = this.type == SUB_IMPORT_TYPE
+
+
     fun isPackage() -> bool = this.type == PACKAGE_TYPE
 
 
     fun getProgram() -> pointer<NormalizedProgram> = this.program
+
+
+    fun getImportAPI() -> pointer<ImportAPI> = this.importAPI
 
 
     private fun canContain(child: pointer<PackageNode>) -> bool
@@ -144,10 +194,14 @@ struct PackageNode
             return false
 
         if this.type == ROOT_TYPE || this.type == PACKAGE_TYPE:
-            return child.type == PACKAGE_TYPE || child.type == PROGRAM_TYPE
+            return child.type == PACKAGE_TYPE ||
+                child.type == PROGRAM_TYPE || child.type == IMPORT_TYPE
 
         if this.type == PROGRAM_TYPE || this.type == SUB_PROGRAM_TYPE:
             return child.type == SUB_PROGRAM_TYPE
+
+        if this.type == IMPORT_TYPE || this.type == SUB_IMPORT_TYPE:
+            return child.type == SUB_IMPORT_TYPE
 
         return false
     }
@@ -287,6 +341,60 @@ struct PackageTree
     }
 
 
+    private fun registerSubImports(
+        hostImport: pointer<PackageNode>,
+        importAPI: pointer<ImportAPI>
+    )
+    {
+        if hostImport == null || importAPI == null:
+            return
+
+        for (var i: int = 0; i < importAPI.innerSize(); i++):
+        {
+            val inner: pointer<ImportAPI> = importAPI.inner(i)
+
+            if inner == null || inner.getBodyName() == null ||
+                hostImport.hasChild(inner.getBodyName()):
+                continue
+
+            val child: pointer<PackageNode> =
+                hostImport.addSubImportedProgram(inner)
+
+            if child != null:
+                this.registerSubImports(child, inner)
+        }
+    }
+
+
+    private fun registerImport(importAPI: pointer<ImportAPI>)
+    {
+        if importAPI == null || importAPI.getBodyName() == null:
+            return
+
+        val packageNode: pointer<PackageNode> =
+            this.registerPackage(importAPI.getPackageName())
+
+        if packageNode == null || packageNode.hasChild(importAPI.getBodyName()):
+            return
+
+        val importNode: pointer<PackageNode> =
+            packageNode.addImportedProgram(importAPI)
+
+        if importNode != null:
+            this.registerSubImports(importNode, importAPI)
+    }
+
+
+    fun registerImports(imports: pointer<Imports>)
+    {
+        if imports == null:
+            return
+
+        for (var i: int = 0; i < imports.size(); i++):
+            this.registerImport(imports.get(i))
+    }
+
+
     fun registerPrograms(nPrograms: pointer<ArrayList>)
     {
         if nPrograms == null:
@@ -302,6 +410,16 @@ struct PackageTree
 
             this.registerProgram(nProgram)
         }
+    }
+
+
+    fun register(
+        programs: pointer<ArrayList>,
+        imports: pointer<Imports>
+    )
+    {
+        this.registerPrograms(programs)
+        this.registerImports(imports)
     }
 
 
