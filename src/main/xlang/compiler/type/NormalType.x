@@ -51,6 +51,59 @@ import xlang.util.string.StringBuilder
  */
 struct NormalType
 {
+    // Separates enclosing and nested type names in a mangled type name.
+    static val NAME_SPLITER: pointer<char> = "$"
+
+    // Separates package-name components, for example com.wangdi.
+    private static val PACKAGE_SPLITER: pointer<char> = "."
+
+    // Marks the beginning of generic arguments in a mangled type name.
+    private static val TYPES_START: pointer<char> = "?"
+
+    // Marks the end of generic arguments in a mangled type name.
+    private static val TYPES_END: pointer<char> = "~"
+
+    // Separates adjacent generic arguments in a mangled type name.
+    static val GENERIC_SPLITER: pointer<char> = ".."
+
+
+    // Defines the mangling code for the void type.
+    static val VOID_MANGLING: pointer<char> = "V"
+
+    // Defines the mangling code for the boolean type.
+    static val BOOL_MANGLING: pointer<char> = "B"
+
+    // Defines the mangling code for the byte type.
+    static val BYTE_MANGLING: pointer<char> = "A"
+
+    // Defines the mangling code for the short integer type.
+    static val SHORT_MANGLING: pointer<char> = "S"
+
+    // Defines the mangling code for the character type.
+    static val CHAR_MANGLING: pointer<char> = "C"
+
+    // Defines the mangling code for the integer type.
+    static val INT_MANGLING: pointer<char> = "I"
+
+    // Defines the mangling code for the long integer type.
+    static val LONG_MANGLING: pointer<char> = "L"
+
+    // Defines the mangling code for the single-precision floating-point type.
+    static val FLOAT_MANGLING: pointer<char> = "F"
+
+    // Defines the mangling code for the double-precision floating-point type.
+    static val DOUBLE_MANGLING: pointer<char> = "D"
+
+    // Defines the mangling code for pointer types.
+    static val POINTER_MANGLING: pointer<char> = "P"
+
+    // Defines the mangling code for the blob type.
+    static val BLOB_MANGLING: pointer<char> = "X"
+
+    // Defines the mangling code for the funcrion type.
+    static val FUN_MANGLING: pointer<char> = "M"
+
+
     /**
      * Builds a dotted package-name string from package-name components.
      *
@@ -623,11 +676,11 @@ struct NormalType
      *
      * For example:
      *
-     * {@code pointer<int>} -> {@code Pi}
-     * {@code pointer<double>} -> {@code Pd}
+     * {@code pointer<int>} -> {@code P?I~}
+     * {@code pointer<double>} -> {@code P?D~}
      *
-     * Blob types, function types, and other unsupported type kinds cannot
-     * currently be mangled by this method.
+     * Any inner type that can produce its own mangling can be wrapped by this
+     * method. Void is represented by the short pointer form {@code P}.
      *
      * @return                  a builder containing the mangled representation of
      *                          this pointer type, or {@code null} if the pointed-to
@@ -636,34 +689,149 @@ struct NormalType
     private fun pointerMangling() -> pointer<StringBuilder>
     {
         if this.length <= 0:
-            return new StringBuilder("P")
+            return new StringBuilder(POINTER_MANGLING)
 
         val inner: pointer<Type> = this.typeArguments.get(0) as pointer<Type>
 
         if inner == null:
             return null
 
-        if inner.getKind() == Type.BLOB_KIND:
-            return null
-
-        if inner.getKind() == Type.FUNCTION_KIND:
-            return null
-
-        if inner.getKind() != Type.NORMAL_KIND:
-            return null
-
-        val innerType: pointer<NormalType> = inner.getHost() as pointer<NormalType>
-
-        if innerType == null:
-            return null
-
-        val innerMangling: pointer<StringBuilder> = innerType.getMangling()
+        val innerMangling: pointer<StringBuilder> = inner.getMangling()
 
         if innerMangling == null:
             return null
 
-        val result: pointer<StringBuilder> = new StringBuilder("P")
+        if String.streq(innerMangling.getText(), VOID_MANGLING):
+            return new StringBuilder(POINTER_MANGLING)
+
+        val result: pointer<StringBuilder> = new StringBuilder(POINTER_MANGLING)
+        result.append(TYPES_START)
         result.append(innerMangling)
+        result.append(TYPES_END)
+        return result
+    }
+
+
+    /**
+     * Builds the package portion of this type's mangled name.
+     *
+     * <p>Package components are joined with {@link #PACKAGE_SPLITER}. A type
+     * without a package produces an empty builder.</p>
+     *
+     * @return                  the package mangling, or an empty builder when
+     *                          no package is available
+     */
+    private fun constructPackageMangling() -> pointer<StringBuilder>
+    {
+        val result: pointer<StringBuilder> = new StringBuilder()
+
+        if this.packageName == null:
+            return result
+
+        for (var i: int = 0; i < this.packageName.length; i++):
+        {
+            val slot: pointer<pointer<char>> =
+                this.packageName.get(i) as pointer<pointer<char>>
+
+            if slot == null || slot.deref == null:
+                continue
+
+            if result.length > 0:
+                result.append(PACKAGE_SPLITER)
+
+            result.append(slot.deref)
+        }
+
+        return result
+    }
+
+
+    /**
+     * Builds the generic-argument portion of this type's mangled name.
+     *
+     * <p>A type without generic arguments produces an empty builder. Otherwise,
+     * arguments are enclosed by {@link #TYPES_START} and
+     * {@link #TYPES_END}, with adjacent arguments separated by
+     * {@link #GENERIC_SPLITER}.</p>
+     *
+     * @return                  the generic mangling, or null when an argument
+     *                          has not been resolved or cannot be mangled
+     */
+    private fun constructGenericMangling() -> pointer<StringBuilder>
+    {
+        val result: pointer<StringBuilder> = new StringBuilder()
+
+        if this.typeArguments.length <= 0:
+            return result
+
+        result.append(TYPES_START)
+
+        for (var i: int = 0; i < this.typeArguments.length; i++):
+        {
+            val type: pointer<Type> =
+                this.typeArguments.get(i) as pointer<Type>
+
+            if type == null:
+                return null
+
+            if type.getKind() == Type.NORMAL_KIND:
+            {
+                val normalType: pointer<NormalType> =
+                    type.getHost() as pointer<NormalType>
+
+                if normalType == null || !normalType.isResolved():
+                    return null
+            }
+
+            val mangling: pointer<StringBuilder> = type.getMangling()
+
+            if mangling == null:
+                return null
+
+            if i > 0:
+                result.append(GENERIC_SPLITER)
+
+            result.append(mangling)
+        }
+
+        result.append(TYPES_END)
+        return result
+    }
+
+
+    /**
+     * Constructs the mangled name of this class.
+     *
+     * The mangled name consists of the package mangling, class name,
+     * and generic type mangling.
+     *
+     * If the package mangling is not empty, PACKAGE_SPLITER is inserted
+     * between the package prefix and the class name.
+     *
+     * @return                  a StringBuilder containing the complete
+     *                          class mangling, or null if the class is
+     *                          unresolved, its name is unavailable, or
+     *                          generic mangling construction fails.
+     *
+     * @note                    The generic mangling is appended directly
+     *                          after the class name without a separator.
+     */
+    private fun getClassMangling() -> pointer<StringBuilder>
+    {
+        if !this.isResolved() || this.typeName == null:
+            return null
+
+        val result: pointer<StringBuilder> = this.constructPackageMangling()
+        val genericMangling: pointer<StringBuilder> = this.constructGenericMangling()
+
+        if genericMangling == null:
+            return null
+
+        if result.length > 0:
+            result.append(PACKAGE_SPLITER)
+
+        result.append(this.typeName)
+        result.append(genericMangling)
         return result
     }
 
@@ -674,18 +842,20 @@ struct NormalType
      * Primitive types in the {@code xlang.primary} package are encoded
      * using Itanium C++ ABI-compatible type codes:
      *
-     * {@code bool}   -> {@code b}
-     * {@code byte}   -> {@code a}
-     * {@code short}  -> {@code s}
-     * {@code char}   -> {@code c}
-     * {@code int}    -> {@code i}
-     * {@code long}   -> {@code l}
-     * {@code double} -> {@code d}
+     * {@code void}   -> {@code V}
+     * {@code bool}   -> {@code B}
+     * {@code byte}   -> {@code A}
+     * {@code short}  -> {@code S}
+     * {@code char}   -> {@code C}
+     * {@code int}    -> {@code I}
+     * {@code long}   -> {@code L}
+     * {@code float}  -> {@code F}
+     * {@code double} -> {@code D}
      *
      * Pointer types are encoded using {@link #pointerMangling()}.
      *
-     * Class and other non-primitive type mangling is not currently
-     * supported.
+     * Non-primary named types use their package, flattened class name and
+     * generic-argument mangling.
      *
      * @return                  a builder containing the mangled representation of
      *                          this type, or {@code null} if the type is not
@@ -695,24 +865,28 @@ struct NormalType
     {
         val packageName: pointer<char> = this.getPackageNameText()
 
-        return if String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "bool"):
-            new StringBuilder("b")
+        return if String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "void"):
+            new StringBuilder(VOID_MANGLING)
+        elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "bool"):
+            new StringBuilder(BOOL_MANGLING)
         elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "byte"):
-            new StringBuilder("a")
+            new StringBuilder(BYTE_MANGLING)
         elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "short"):
-            new StringBuilder("s")
+            new StringBuilder(SHORT_MANGLING)
         elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "char"):
-            new StringBuilder("c")
+            new StringBuilder(CHAR_MANGLING)
         elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "int"):
-            new StringBuilder("i")
+            new StringBuilder(INT_MANGLING)
         elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "long"):
-            new StringBuilder("l")
+            new StringBuilder(LONG_MANGLING)
+        elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "float"):
+            new StringBuilder(FLOAT_MANGLING)
         elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "double"):
-            new StringBuilder("d")
+            new StringBuilder(DOUBLE_MANGLING)
         elif String.streq(packageName, "xlang.primary") && String.streq(this.typeName, "pointer"):
             this.pointerMangling()
-        // TODO support class type mangling.
-        else: null
+        else:
+            this.getClassMangling()
     }
 
 

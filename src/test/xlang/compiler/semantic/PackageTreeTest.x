@@ -3,6 +3,7 @@ package xlang.compiler.semantic
 
 import xlang.Diagnostics
 import xlang.SourceLocation
+import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.program.PackageDeclaration
 import xlang.compiler.parser.program.QualifiedName
 import xlang.compiler.parser.program.Struct
@@ -52,7 +53,7 @@ private fun makeLocatedProgram(
 {
     val body: pointer<Struct> = new Struct(name, null)
     body.addExtraToken(new Token(
-        0,
+        Tokenizer.TK_IDENTIFIER,
         new TokenPosition(offset, line, 1, 1),
         name))
     return NormalizedProgram.fromStruct(

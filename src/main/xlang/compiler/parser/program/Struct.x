@@ -23,6 +23,8 @@
 package xlang.compiler.parser.program
 
 import xlang.compiler.parser.expression.Expression
+import xlang.compiler.type.NormalType
+import xlang.compiler.type.Type
 import xlang.lexer.Token
 import xlang.lexer.TokenPosition
 import xlang.util.ArrayList
@@ -496,6 +498,9 @@ struct Struct
      */
     private var structName: pointer<char>
 
+    // The ordered collection of generic types declared by this structure.
+    private var types: pointer<ArrayList>
+
     /**
      * The ordered collection of members declared inside this structure.
      *
@@ -540,6 +545,7 @@ struct Struct
         this.annotations = null
         this.modifiers = null
         this.structName = structName
+        this.types = new ArrayList(sizeof(Type))
         this.members = if members == null:
                 new ArrayList(sizeof(Member))
             else:
@@ -547,6 +553,53 @@ struct Struct
 
         this.extraTokens = new ArrayList(sizeof(Token))
     }
+
+
+    /**
+     * Replaces the generic-type collection declared by this structure.
+     *
+     * @param type              the new type collection, or null for an empty list
+     * @return                  this structure
+     */
+    fun setTypes(type: pointer<ArrayList>) -> pointer<Struct>
+    {
+        this.types = if type == null:
+                new ArrayList(sizeof(Type))
+            else:
+                type
+
+        return this
+    }
+
+
+    /**
+     * Returns the generic type declared at the specified index.
+     *
+     * @param index             the zero-based generic-type index
+     * @return                  the generic type at the specified index
+     */
+    fun getGenericType(index: int) -> pointer<Type> =
+        this.types.get(index) as pointer<Type>
+
+
+    /**
+     * Checks whether this instance contains generic type parameters.
+     *
+     * An instance is considered generic if its type parameter
+     * collection contains at least one element.
+     *
+     * @return                  true if at least one generic type parameter
+     *                          exists; false otherwise.
+     */
+    fun isGeneric() -> bool = this.types.length > 0
+
+
+    /**
+     * Returns the number of generic types declared by this structure.
+     *
+     * @return                  the number of declared generic types
+     */
+    fun getTemplateCount() -> int = this.types.length
 
 
     /**
@@ -624,6 +677,25 @@ struct Struct
     }
 
 
+    /**
+     * Adds a modifier to this struct.
+     *
+     * If the modifier collection has not been initialized, a new HashSet
+     * is created using the modifier equality and hash functions.
+     *
+     * The supplied modifier is then added to the collection.
+     * Duplicate modifiers are handled according to the HashSet's
+     * equality and hashing behavior.
+     * 
+     * @param modifier          the modifier to add, or null to skip insertion.
+     *
+     * @return                  this Struct instance for method chaining.
+     *
+     * @note                    The modifier collection is initialized lazily
+     *                          when the first non-null modifier is added.
+     *
+     * @note                    If modifier is null, no modification is performed.
+     */
     fun addModifier(modifier: pointer<Modifier>) -> pointer<Struct>
     {
         if modifier == null:

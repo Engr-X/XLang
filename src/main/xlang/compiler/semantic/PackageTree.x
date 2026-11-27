@@ -104,39 +104,39 @@ struct PackageNode
 
     fun addProgram(program: pointer<NormalizedProgram>) -> pointer<PackageNode>
     {
-        if program == null || program.getBodyName() == null:
+        if program == null || program.getOwnName() == null:
             return null
 
         return this.addChild(new PackageNode(
             this,
             PROGRAM_TYPE,
-            program.getBodyName(),
+            program.getOwnName(),
             program))
     }
 
 
     fun addSubProgram(program: pointer<NormalizedProgram>) -> pointer<PackageNode>
     {
-        if program == null || program.getBodyName() == null:
+        if program == null || program.getOwnName() == null:
             return null
 
         return this.addChild(new PackageNode(
             this,
             SUB_PROGRAM_TYPE,
-            program.getBodyName(),
+            program.getOwnName(),
             program))
     }
 
 
     fun addImportedProgram(importAPI: pointer<ImportAPI>) -> pointer<PackageNode>
     {
-        if importAPI == null || importAPI.getBodyName() == null:
+        if importAPI == null || importAPI.getOwnName() == null:
             return null
 
         val child: pointer<PackageNode> = new PackageNode(
             this,
             IMPORT_TYPE,
-            importAPI.getBodyName(),
+            importAPI.getOwnName(),
             null)
         child.importAPI = importAPI
         return this.addChild(child)
@@ -145,13 +145,13 @@ struct PackageNode
 
     fun addSubImportedProgram(importAPI: pointer<ImportAPI>) -> pointer<PackageNode>
     {
-        if importAPI == null || importAPI.getBodyName() == null:
+        if importAPI == null || importAPI.getOwnName() == null:
             return null
 
         val child: pointer<PackageNode> = new PackageNode(
             this,
             SUB_IMPORT_TYPE,
-            importAPI.getBodyName(),
+            importAPI.getOwnName(),
             null)
         child.importAPI = importAPI
         return this.addChild(child)
@@ -305,10 +305,10 @@ struct PackageTree
             val nProgram: pointer<NormalizedProgram> =
                 nPrograms.get(i) as pointer<NormalizedProgram>
 
-            if nProgram == null || nProgram.getBodyName() == null:
+            if nProgram == null || nProgram.getOwnName() == null:
                 continue
 
-            if hostProgram.hasChild(nProgram.getBodyName()):
+            if hostProgram.hasChild(nProgram.getOwnName()):
                 continue
 
             val subProgram: pointer<PackageNode> = hostProgram.addSubProgram(nProgram)
@@ -325,13 +325,13 @@ struct PackageTree
         if nProgram == null:
             return
 
-        if nProgram.getParrent() != null || nProgram.getBodyName() == null:
+        if nProgram.getParrent() != null || nProgram.getOwnName() == null:
             return
 
         val packageNode: pointer<PackageNode> =
             this.registerPackage(nProgram.getPackageName())
 
-        if packageNode == null || packageNode.hasChild(nProgram.getBodyName()):
+        if packageNode == null || packageNode.hasChild(nProgram.getOwnName()):
             return
 
         val programNode: pointer<PackageNode> = packageNode.addProgram(nProgram)
@@ -353,8 +353,8 @@ struct PackageTree
         {
             val inner: pointer<ImportAPI> = importAPI.inner(i)
 
-            if inner == null || inner.getBodyName() == null ||
-                hostImport.hasChild(inner.getBodyName()):
+            if inner == null || inner.getOwnName() == null ||
+                hostImport.hasChild(inner.getOwnName()):
                 continue
 
             val child: pointer<PackageNode> =
@@ -368,13 +368,13 @@ struct PackageTree
 
     private fun registerImport(importAPI: pointer<ImportAPI>)
     {
-        if importAPI == null || importAPI.getBodyName() == null:
+        if importAPI == null || importAPI.getOwnName() == null:
             return
 
         val packageNode: pointer<PackageNode> =
             this.registerPackage(importAPI.getPackageName())
 
-        if packageNode == null || packageNode.hasChild(importAPI.getBodyName()):
+        if packageNode == null || packageNode.hasChild(importAPI.getOwnName()):
             return
 
         val importNode: pointer<PackageNode> =
@@ -436,7 +436,7 @@ struct PackageTree
 
         while current != null:
         {
-            val name: pointer<char> = current.getBodyName()
+            val name: pointer<char> = current.getOwnName()
 
             if name == null:
                 return null

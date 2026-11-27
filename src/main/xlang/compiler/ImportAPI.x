@@ -75,7 +75,7 @@ struct ImportAPI
     fun getBodyType() -> int = this.bodyType
 
 
-    fun getBodyName() -> pointer<char> = this.bodyName
+    fun getOwnName() -> pointer<char> = this.bodyName
 
 
     fun getFunctionRegistry() -> pointer<MemberRegistry> = this.functionRegistry

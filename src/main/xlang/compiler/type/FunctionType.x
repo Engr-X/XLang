@@ -53,6 +53,15 @@ import xlang.util.string.StringBuilder
  */
 struct FunctionType
 {
+    // Marks the beginning of types in a mangled function type.
+    private static val TYPES_START: pointer<char> = "?"
+
+    // Marks the end of types in a mangled function type.
+    private static val TYPES_END: pointer<char> = "~"
+
+    // Separates adjacent types in a mangled function type.
+    private static val GENERIC_SPLITER: pointer<char> = ".."
+
     /**
      * Stores the ordered parameter type list.
      *
@@ -239,47 +248,74 @@ struct FunctionType
 
 
     /**
-     * Builds the mangled representation of this function type.
+     * Builds the mangled sequence containing parameter types followed by the
+     * return type.
      *
-     * <p>The encoding begins with the function marker {@code "F"}, followed by
-     * the mangled representation of each parameter type in declaration order.
-     * The parameter sequence is terminated by the marker {@code "E"}.</p>
-     * 
-     * <p>For example, a function type with two parameter types whose manglings
-     * are {@code "I"} and {@code "B"} would produce the following encoding:</p>
-     *
-     * <pre>FIBE</pre>
-     *
-     * <p>If no parameter types are present, the resulting mangling consists only
-     * of the opening and terminating markers, producing {@code "FE"}.</p>
-     *
-     * <p>If any parameter type cannot provide a valid mangled representation,
-     * this function returns {@code null}, since the complete function type cannot
-     * be encoded reliably.</p>
-     *
-     * @return                  a {@link StringBuilder} containing the mangled representation of
-     *                          this function type, or {@code null} if any parameter type cannot
-     *                          be mangled
+     * @return                  the separated type sequence, or null when a type
+     *                          is absent or cannot be mangled
      */
-    fun getMangling() -> pointer<StringBuilder>
+    private fun typesMangle() -> pointer<StringBuilder>
     {
-        val result: pointer<StringBuilder> = new StringBuilder("F")
+        val result: pointer<StringBuilder> = new StringBuilder()
 
         if this.parameterTypes != null:
         {
             for (var i = 0; i < this.parameterTypes.length; i++):
             {
                 val parameterType: pointer<Type> = this.parameterTypes.get(i) as pointer<Type>
+
+                if parameterType == null:
+                    return null
+
                 val parameterMangling: pointer<StringBuilder> = parameterType.getMangling()
 
                 if parameterMangling == null:
                     return null
 
+                if result.length > 0:
+                    result.append(GENERIC_SPLITER)
+
                 result.append(parameterMangling)
             }
         }
 
-        result.append('E')
+        if this.returnType == null:
+            return null
+
+        val returnMangling: pointer<StringBuilder> = this.returnType.getMangling()
+
+        if returnMangling == null:
+            return null
+
+        if result.length > 0:
+            result.append(GENERIC_SPLITER)
+
+        result.append(returnMangling)
+        return result
+    }
+
+
+    /**
+     * Builds the mangled representation of this function type.
+     *
+     * <p>The encoding uses the form {@code M?parameters..returnType~}. The
+     * return type is always the final type in the sequence.</p>
+     *
+     * @return                  the function-type mangling, or null when any
+     *                          contained type cannot be mangled
+     */
+    fun getMangling() -> pointer<StringBuilder>
+    {
+        val types: pointer<StringBuilder> = this.typesMangle()
+
+        if types == null:
+            return null
+
+        val result: pointer<StringBuilder> =
+            new StringBuilder(NormalType.FUN_MANGLING)
+        result.append(TYPES_START)
+        result.append(types)
+        result.append(TYPES_END)
         return result
     }
 

@@ -29,11 +29,14 @@ import xlang.compiler.parser.program.MemberRegistry
 import xlang.compiler.parser.program.PackageDeclaration
 import xlang.compiler.parser.program.PreprocessSetting
 import xlang.compiler.parser.program.Struct
+import xlang.compiler.type.NormalType
+import xlang.compiler.type.Type
 import xlang.lexer.Token
 import xlang.util.ArrayList
 import xlang.util.HashMap
 import xlang.util.MapEntry
 import xlang.util.string.String
+import xlang.util.string.StringBuilder
 
 
 private fun childNameEq(left: pointer<*>, right: pointer<*>) -> bool =
@@ -435,13 +438,13 @@ struct NormalizedProgram
      */
     fun addChild(child: pointer<NormalizedProgram>) -> pointer<NormalizedProgram>
     {
-        if child == null || child.getBodyName() == null:
+        if child == null || child.getOwnName() == null:
             return this
 
         if this.children == null:
             this.children = new HashMap(childNameEq, String.strHash)
 
-        this.children.put(child.getBodyName(), child)
+        this.children.put(child.getOwnName(), child)
         return this
     }
 
@@ -544,7 +547,39 @@ struct NormalizedProgram
      * @return                  the name of the current struct body, or {@code null} if the current
      *                          body has no applicable name
      */
-    fun getBodyName() -> pointer<char> = this.bodyName
+    fun getOwnName() -> pointer<char> = this.bodyName
+
+
+    /**
+     * Builds the mangled declaration name represented by this program's parent
+     * chain.
+     *
+     * <p>A top-level declaration contributes only its own name. Each nested
+     * declaration appends the nested-type separator and its own name to the path
+     * produced by its parent. For example, {@code a}, {@code a$b}, and
+     * {@code a$b$bc} represent successive nesting levels.</p>
+     *
+     * <p>The package name is intentionally excluded because this function only
+     * builds the declaration-name portion used by type-name mangling.</p>
+     *
+     * @return                  a builder containing the mangled declaration name
+     */
+    fun getFullPathName() -> pointer<StringBuilder>
+    {
+        val result: pointer<StringBuilder> = if this.parrent == null:
+                new StringBuilder()
+            else:
+                this.parrent.getFullPathName()
+
+        if this.bodyName == null:
+            return result
+
+        if result.length > 0:
+            result.append(NormalType.NAME_SPLITER)
+
+        result.append(this.bodyName)
+        return result
+    }
 
 
     /**
@@ -681,4 +716,31 @@ struct NormalizedProgram
      *                          import-declaration collection
      */
     fun getImports() -> pointer<ArrayList> = this.imports
+
+
+    /**
+     * Creates the type declaration represented by this normalized program.
+     *
+     * <p>The package components are preserved as an {@code ArrayList} of
+     * strings. Nested declaration names are flattened through
+     * {@link #getFullPathName()}, producing names such as {@code a$b$bc}.</p>
+     *
+     * @return                  the declared type, or null when the body is not
+     *                          a structure declaration
+     */
+    fun toTypeDecl() -> pointer<Type>
+    {
+        if this.bodyType != STRUCT_TYPE || this.host == null:
+            return null
+
+        val body: pointer<Struct> = this.host as pointer<Struct>
+        val fullPathName: pointer<StringBuilder> = this.getFullPathName()
+        val declaration: pointer<NormalType> =
+            NormalType.resolved(this.packageName, fullPathName.getText(), -1)
+
+        for (var i: int = 0; i < body.getTemplateCount(); i++):
+            declaration.addTypeArgument(body.getGenericType(i))
+
+        return Type.fromNormal(declaration)
+    }
 }

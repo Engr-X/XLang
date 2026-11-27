@@ -165,7 +165,7 @@ struct BlobType
     /**
      * Returns the mangled representation of the blob type.
      *
-     * <p>The blob type uses the fixed mangling code {@code "B"}. Since a blob
+     * <p>The blob type uses the fixed mangling code {@code "X"}. Since a blob
      * type does not require any additional type information to describe its
      * structure, the returned mangling always consists of this single marker.</p>
      *
@@ -173,9 +173,10 @@ struct BlobType
      * names when the blob type appears as part of a declaration signature.</p>
      *
      * @return                  a new {@link StringBuilder} containing the blob type mangling
-     *                          code {@code "B"}
+     *                          code {@code "X"}
      */
-    fun getMangling() -> pointer<StringBuilder> = new StringBuilder("B")
+    fun getMangling() -> pointer<StringBuilder> =
+        new StringBuilder(NormalType.BLOB_MANGLING)
 
 
     /**
