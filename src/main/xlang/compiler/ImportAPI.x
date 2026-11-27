@@ -25,90 +25,6 @@ package xlang.compiler
 
 import xlang.compiler.parser.program.MemberRegistry
 import xlang.util.ArrayList
-import xlang.util.HashMap
-import xlang.util.string.String
-
-
-/**
- * Compares two imported package names for equality.
- *
- * <p>Package names are considered equal if they contain the same number of
- * components and all corresponding components are equal.
- *
- * @param left              first imported package name
- * @param right             second imported package name
- *
- * @return                  {@code true} if both package names are equal;
- *                          {@code false} otherwise
- */
-private fun importPackageNameEq(left: pointer<*>, right: pointer<*>) -> bool
-{
-    val lhs: pointer<ArrayList> = left as pointer<ArrayList>
-    val rhs: pointer<ArrayList> = right as pointer<ArrayList>
-
-    if lhs == rhs:
-        return true
-
-    if lhs == null || rhs == null:
-        return false
-
-    if lhs.length != rhs.length:
-        return false
-
-    for (var i: int = 0; i < lhs.length; i++):
-    {
-        val lhsSlot: pointer<pointer<char>> = lhs.get(i) as pointer<pointer<char>>
-        val rhsSlot: pointer<pointer<char>> = rhs.get(i) as pointer<pointer<char>>
-
-        val lhsStr: pointer<char> = if lhsSlot == null:
-                null
-            else:
-                lhsSlot.deref
-
-        val rhsStr: pointer<char> = if rhsSlot == null:
-                null
-            else:
-                rhsSlot.deref
-
-        if lhsStr == rhsStr:
-            continue
-
-        if lhsStr == null || rhsStr == null:
-            return false
-
-        if !String.streq(lhsStr, rhsStr):
-            return false
-    }
-
-    return true
-}
-
-
-private fun importPackageNameHash(item: pointer<*>) -> int
-{
-    val packageName: pointer<ArrayList> = item as pointer<ArrayList>
-
-    if packageName == null:
-        return 0
-
-    var hash: int = 1
-
-    for (var i = 0; i < packageName.length; i++):
-    {
-        val slot: pointer<pointer<char>> = packageName.get(i) as pointer<pointer<char>>
-        val part: pointer<char> = if slot == null:
-                null
-            else:
-                slot.deref
-
-        hash = hash * 31 + if part == null:
-                0
-            else:
-                String.strHash(part)
-    }
-
-    return hash
-}
 
 
 struct ImportAPI
@@ -134,6 +50,8 @@ struct ImportAPI
 
     private var constructorRegistry: pointer<MemberRegistry>
 
+    private var inner: pointer<ArrayList>
+
 
     constructor(packageName: pointer<ArrayList>, bodyType: int, bodyName: pointer<char>)
     {
@@ -147,6 +65,7 @@ struct ImportAPI
         this.functionRegistry = new MemberRegistry(null)
         this.variableRegistry = new MemberRegistry(null)
         this.constructorRegistry = new MemberRegistry(null)
+        this.inner = new ArrayList(sizeof(ImportAPI))
     }
 
 
@@ -166,41 +85,41 @@ struct ImportAPI
 
 
     fun getConstructorRegistry() -> pointer<MemberRegistry> = this.constructorRegistry
+
+
+    fun innerSize() -> int = this.inner.length
+
+
+    fun inner(index: int) -> pointer<ImportAPI> =
+        this.inner.get(index) as pointer<ImportAPI>
+
+
+    fun pushInner(importAPI: pointer<ImportAPI>) -> pointer<ImportAPI>
+    {
+        if importAPI != null:
+            this.inner.push(importAPI)
+
+        return this
+    }
 }
 
 
 struct Imports
 {
-    private var packages: pointer<HashMap>
+    private var imports: pointer<ArrayList>
 
 
     constructor()
     {
-        this.packages = new HashMap(importPackageNameEq, importPackageNameHash)
+        this.imports = new ArrayList(sizeof(ImportAPI))
     }
 
 
-    fun getPackages() -> pointer<HashMap> = this.packages
+    fun size() -> int = this.imports.length
 
 
-    fun getEntries() -> pointer<ArrayList> = this.packages.getEntries()
-
-
-    fun containsPackageName(packageName: pointer<ArrayList>) -> bool =
-        this.packages.containsKey(packageName)
-
-
-    fun get(packageName: pointer<ArrayList>) -> pointer<ArrayList> =
-        this.packages.get(packageName) as pointer<ArrayList>
-
-
-    fun put(packageName: pointer<ArrayList>, imports: pointer<ArrayList>) -> pointer<Imports>
-    {
-        if packageName != null && imports != null:
-            this.packages.put(packageName, imports)
-
-        return this
-    }
+    fun get(index: int) -> pointer<ImportAPI> =
+        this.imports.get(index) as pointer<ImportAPI>
 
 
     fun push(importAPI: pointer<ImportAPI>) -> pointer<Imports>
@@ -208,16 +127,7 @@ struct Imports
         if importAPI == null:
             return this
 
-        val packageName: pointer<ArrayList> = importAPI.getPackageName()
-        var imports: pointer<ArrayList> = this.get(packageName)
-
-        if imports == null:
-        {
-            imports = new ArrayList(sizeof(ImportAPI))
-            this.packages.put(packageName, imports)
-        }
-
-        imports.push(importAPI)
+        this.imports.push(importAPI)
         return this
     }
 }
