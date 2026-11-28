@@ -40,7 +40,7 @@ import xlang.compiler.parser.AllFileParseTest
 import xlang.compiler.parser.PrattTest
 import xlang.compiler.parser.RecursiveTest
 import xlang.compiler.semantic.NormalizedProgramTest
-import xlang.compiler.semantic.PackageTreeTest
+import xlang.compiler.semantic.structure.PackageTreeTest
 import xlang.compiler.type.NormalTypeTest
 import xlang.parser.ParserUtilTest
 import xlang.parser.PrattParserTest

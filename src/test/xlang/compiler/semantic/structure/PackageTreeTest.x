@@ -1,14 +1,16 @@
 #file.outerClass("PackageTreeTest")
-package xlang.compiler.semantic
+package xlang.compiler.semantic.structure
 
 import xlang.Diagnostics
 import xlang.SourceLocation
+import xlang.compiler.ImportAPI
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.program.PackageDeclaration
 import xlang.compiler.parser.program.QualifiedName
 import xlang.compiler.parser.program.Struct
-import xlang.compiler.semantic.util.PackageNode
-import xlang.compiler.semantic.util.PackageTree
+import xlang.compiler.semantic.NormalizedProgram
+import xlang.compiler.semantic.structure.PackageNode
+import xlang.compiler.semantic.structure.PackageTree
 import xlang.lexer.Token
 import xlang.lexer.TokenPosition
 import xlang.test.TestCase
@@ -22,7 +24,8 @@ val TEST_GROUP: pointer<TestGroup> = genTest()
 
 fun genTest() -> pointer<TestGroup>
 {
-    val result: pointer<TestGroup> = new TestGroup("xlang.compiler.semantic.PackageTree")
+    val result: pointer<TestGroup> =
+        new TestGroup("xlang.compiler.semantic.structure.PackageTree")
     result.addTestUnion(new TestUnion(
         TestCase.TYPE,
         new TestCase("registerPrograms", registerProgramsTest),
@@ -30,6 +33,10 @@ fun genTest() -> pointer<TestGroup>
     result.addTestUnion(new TestUnion(
         TestCase.TYPE,
         new TestCase("check", checkTest),
+        null))
+    result.addTestUnion(new TestUnion(
+        TestCase.TYPE,
+        new TestCase("packageNodeSlots", packageNodeSlotsTest),
         null))
     return result
 }
@@ -95,53 +102,106 @@ private fun registerProgramsTest() -> int
     tree.registerPrograms(makePrograms())
 
     val root: pointer<PackageNode> = tree.getRoot()
-    val example: pointer<PackageNode> = root.getChild("example")
+    val example: pointer<PackageNode> = root.getPackage("example")
 
     if example == null || !example.isPackage():
         return 1
 
-    val semantic: pointer<PackageNode> = example.getChild("semantic")
+    val semantic: pointer<PackageNode> = example.getPackage("semantic")
 
     if semantic == null || !semantic.isPackage():
         return 2
 
-    val outer: pointer<PackageNode> = semantic.getChild("Outer")
-    val sibling: pointer<PackageNode> = semantic.getChild("Sibling")
+    val outer: pointer<PackageNode> = semantic.getProgram("Outer")
+    val sibling: pointer<PackageNode> = semantic.getProgram("Sibling")
 
     if outer == null || sibling == null ||
         !outer.isProgram() || !sibling.isProgram():
         return 3
 
-    val inner: pointer<PackageNode> = outer.getChild("Inner")
+    val inner: pointer<PackageNode> = outer.getSubProgram("Inner")
 
     if inner == null || inner.getProgram() == null:
         return 4
 
-    val nested: pointer<PackageNode> = inner.getChild("Nested")
+    val nested: pointer<PackageNode> = inner.getSubProgram("Nested")
 
     if nested == null || nested.getProgram() == null:
         return 5
 
-    if semantic.getChild("Inner") != null || semantic.getChild("Nested") != null:
+    if semantic.hasSubProgram("Inner") || semantic.hasSubProgram("Nested"):
         return 6
 
-    val qualifiedInner: pointer<PackageNode> = tree.get(
+    if !tree.containProgram(
         new QualifiedName("example")
             .push("semantic")
             .push("Outer")
-            .push("Inner"))
-
-    if qualifiedInner != inner:
+            .push("Inner")
+            .toPackageDecl()
+            .getQualifiedName()):
         return 7
 
-    if tree.get(new QualifiedName("missing")) != null:
+    if tree.containProgram(
+        new QualifiedName("missing").toPackageDecl().getQualifiedName()):
         return 8
 
-    if tree.get(new QualifiedName("example").push("semantic")) != null:
+    if tree.containProgram(
+        new QualifiedName("example")
+            .push("semantic")
+            .toPackageDecl()
+            .getQualifiedName()):
         return 9
 
-    if tree.get(new QualifiedName()) != null:
+    if tree.containProgram(
+        new QualifiedName().toPackageDecl().getQualifiedName()):
         return 10
+
+    return 0
+}
+
+
+private fun packageNodeSlotsTest() -> int
+{
+    val root: pointer<PackageNode> = PackageNode.fromRoot()
+    val packageNode: pointer<PackageNode> = root.addPackage("Shared")
+    val programNode: pointer<PackageNode> =
+        root.addProgram(makeProgram("Shared", null))
+    val importNode: pointer<PackageNode> = root.addImportedProgram(
+        new ImportAPI(null, ImportAPI.STRUCT_TYPE, "Shared"))
+
+    if !root.hasPackage("Shared") || root.getPackage("Shared") != packageNode:
+        return 1
+
+    if !root.hasImport("Shared") || root.getImport("Shared") != importNode:
+        return 2
+
+    if !root.hasProgram("Shared") || root.getProgram("Shared") != programNode:
+        return 3
+
+    if root.hasSubImport("Shared") || root.getSubImport("Shared") != null:
+        return 4
+
+    if root.hasSubProgram("Shared") || root.getSubProgram("Shared") != null:
+        return 5
+
+    val subImportNode: pointer<PackageNode> = importNode.addSubImportedProgram(
+        new ImportAPI(null, ImportAPI.STRUCT_TYPE, "Inner"))
+    val subProgramNode: pointer<PackageNode> =
+        programNode.addSubProgram(makeProgram("Inner", null))
+
+    if !importNode.hasSubImport("Inner") ||
+        importNode.getSubImport("Inner") != subImportNode:
+        return 6
+
+    if !programNode.hasSubProgram("Inner") ||
+        programNode.getSubProgram("Inner") != subProgramNode:
+        return 7
+
+    if importNode.hasPackage("Inner") || importNode.getPackage("Inner") != null:
+        return 8
+
+    if programNode.hasImport("Inner") || programNode.getImport("Inner") != null:
+        return 9
 
     return 0
 }
