@@ -45,7 +45,6 @@ struct PackageTree
 
     private var programs: pointer<ArrayList>
 
-
     constructor()
     {
         this.root = PackageNode.fromRoot()
@@ -439,4 +438,47 @@ struct PackageTree
 
     fun containProgram(path: pointer<ArrayList>) -> bool =
         this.containContext(this.root, path)
+
+
+    private fun collectNodesAtPath(
+        root: pointer<PackageNode>,
+        path: pointer<ArrayList>,
+        dest: pointer<ArrayList>
+    )
+    {
+        if root == null || path == null || dest == null:
+            return
+
+        if path.length <= 0:
+        {
+            dest.push(root)
+            return
+        }
+
+        val slot: pointer<pointer<char>> =
+            path.get(0) as pointer<pointer<char>>
+
+        if slot == null || slot.deref == null:
+            return
+
+        val name: pointer<char> = slot.deref
+        val remaining: pointer<ArrayList> = path.extract(1, path.length)
+
+        this.collectNodesAtPath(root.getPackage(name), remaining, dest)
+        this.collectNodesAtPath(root.getProgram(name), remaining, dest)
+        this.collectNodesAtPath(root.getSubProgram(name), remaining, dest)
+        this.collectNodesAtPath(root.getImport(name), remaining, dest)
+        this.collectNodesAtPath(root.getSubImport(name), remaining, dest)
+    }
+
+
+    fun getNodesAtPath(path: pointer<ArrayList>) -> pointer<ArrayList>
+    {
+        val result: pointer<ArrayList> = new ArrayList(sizeof(PackageNode))
+
+        if path != null && path.length > 0:
+            this.collectNodesAtPath(this.root, path, result)
+
+        return result
+    }
 }

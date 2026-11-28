@@ -4,6 +4,7 @@ package xlang.compiler.semantic.structure
 import xlang.Diagnostics
 import xlang.SourceLocation
 import xlang.compiler.ImportAPI
+import xlang.compiler.Imports
 import xlang.compiler.lexer.Tokenizer
 import xlang.compiler.parser.program.PackageDeclaration
 import xlang.compiler.parser.program.QualifiedName
@@ -37,6 +38,10 @@ fun genTest() -> pointer<TestGroup>
     result.addTestUnion(new TestUnion(
         TestCase.TYPE,
         new TestCase("packageNodeSlots", packageNodeSlotsTest),
+        null))
+    result.addTestUnion(new TestUnion(
+        TestCase.TYPE,
+        new TestCase("getNodesAtPath", getNodesAtPathTest),
         null))
     return result
 }
@@ -204,6 +209,74 @@ private fun packageNodeSlotsTest() -> int
         return 9
 
     return 0
+}
+
+
+private fun getNodesAtPathTest() -> int
+{
+    val packageDeclaration: pointer<PackageDeclaration> =
+        new QualifiedName("xlang").push("util").toPackageDecl()
+    val programs: pointer<ArrayList> = new ArrayList(sizeof(NormalizedProgram))
+    programs.push(makeProgram("ArrayList", packageDeclaration))
+
+    val imports: pointer<Imports> = new Imports()
+    imports.push(new ImportAPI(
+        packageDeclaration.getQualifiedName(),
+        ImportAPI.STRUCT_TYPE,
+        "ArrayList"))
+
+    val tree: pointer<PackageTree> = new PackageTree()
+    tree.register(programs, imports)
+
+    val utilNodes: pointer<ArrayList> = tree.getNodesAtPath(
+        new QualifiedName("xlang")
+            .push("util")
+            .toPackageDecl()
+            .getQualifiedName())
+
+    if utilNodes.length != 1:
+        return 1
+
+    val util: pointer<PackageNode> = utilNodes.get(0) as pointer<PackageNode>
+
+    if util == null || !util.isPackage():
+        return 2
+
+    val typeNodes: pointer<ArrayList> = tree.getNodesAtPath(
+        new QualifiedName("xlang")
+            .push("util")
+            .push("ArrayList")
+            .toPackageDecl()
+            .getQualifiedName())
+
+    if typeNodes.length != 2:
+        return 3
+
+    var hasProgram: bool = false
+    var hasImport: bool = false
+
+    for (var i: int = 0; i < typeNodes.length; i++):
+    {
+        val node: pointer<PackageNode> =
+            typeNodes.get(i) as pointer<PackageNode>
+
+        if node != null && node.isProgram():
+            hasProgram = true
+
+        if node != null && node.isImportedProgram():
+            hasImport = true
+    }
+
+    if !hasProgram || !hasImport:
+        return 4
+
+    val missing: pointer<ArrayList> = tree.getNodesAtPath(
+        new QualifiedName("xlang")
+            .push("missing")
+            .toPackageDecl()
+            .getQualifiedName())
+
+    return if missing.length == 0: 0 else: 5
 }
 
 
